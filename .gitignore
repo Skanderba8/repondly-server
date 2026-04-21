@@ -1,0 +1,11 @@
+# Secrets
+bot/.env
+chatwoot/.env
+
+# Dependencies
+bot/node_modules/
+bot/package-lock.json
+
+# Docker volumes
+chatwoot/postgres/
+chatwoot/redis/
