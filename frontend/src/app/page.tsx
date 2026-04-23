@@ -220,7 +220,7 @@ export default function Home() {
 
       <nav id="nav">
         <a href="#" className="nav-logo">
-          <img src="/public/Slogo.png" alt="Repondly" />
+          <img src="/logo.png" alt="Repondly" />
           Répondly<span>.</span>
         </a>
         <ul className="nav-links">

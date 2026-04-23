@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Providers from '@/components/Providers'
 
 export const metadata: Metadata = {
   title: 'Repondly',
@@ -9,7 +10,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

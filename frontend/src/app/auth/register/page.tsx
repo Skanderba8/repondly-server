@@ -1,11 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function SignIn() {
+export default function Register() {
   const router = useRouter()
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -15,35 +15,46 @@ export default function SignIn() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const res = await signIn('credentials', { email, password, redirect: false })
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    })
     setLoading(false)
-    if (res?.error) return setError('Invalid email or password')
-    router.push('/dashboard')
+    if (!res.ok) {
+      const data = await res.json()
+      return setError(data.error || 'Something went wrong')
+    }
+    router.push('/auth/signin')
   }
 
   return (
     <main style={styles.page}>
       <div style={styles.card}>
         <div style={styles.logo}>Répondly<span style={styles.dot}>.</span></div>
-        <h1 style={styles.title}>Welcome back</h1>
-        <p style={styles.sub}>Sign in to your account</p>
+        <h1 style={styles.title}>Create your account</h1>
+        <p style={styles.sub}>Get started in seconds</p>
         <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.group}>
+            <label style={styles.label}>Business name</label>
+            <input style={styles.input} type="text" value={name} onChange={e => setName(e.target.value)} placeholder="My Business" required />
+          </div>
           <div style={styles.group}>
             <label style={styles.label}>Email</label>
             <input style={styles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
           </div>
           <div style={styles.group}>
             <label style={styles.label}>Password</label>
-            <input style={styles.input} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+            <input style={styles.input} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" minLength={8} required />
           </div>
           {error && <p style={styles.error}>{error}</p>}
           <button style={{ ...styles.btn, opacity: loading ? 0.7 : 1 }} type="submit" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
         <p style={styles.footer}>
-          No account?{' '}
-          <Link href="/auth/register" style={styles.link}>Create one</Link>
+          Already have an account?{' '}
+          <Link href="/auth/signin" style={styles.link}>Sign in</Link>
         </p>
       </div>
     </main>
