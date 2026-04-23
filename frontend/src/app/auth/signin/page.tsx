@@ -20,7 +20,8 @@ export default function SignIn() {
     const res = await signIn('credentials', { email, password, redirect: false })
     setLoading(false)
     if (res?.error) return setError(tr.signinError)
-    router.push('/dashboard')
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+    router.push(adminEmail && email === adminEmail ? '/admin' : '/dashboard')
   }
 
   return (
