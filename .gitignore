@@ -1,11 +1,55 @@
-# Secrets
-bot/.env
-chatwoot/.env
+# ========================
+# Secrets / Environment
+# ========================
+.env
+.env.*
+!.env.example
 
+# ========================
 # Dependencies
-bot/node_modules/
-bot/package-lock.json
+# ========================
+node_modules/
+.pnp
+.pnp.*
 
-# Docker volumes
+# ========================
+# Next.js (frontend)
+# ========================
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/next-env.d.ts
+frontend/*.tsbuildinfo
+frontend/app/generated/prisma
+
+# ========================
+# Logs
+# ========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ========================
+# Docker volumes (chatwoot)
+# ========================
 chatwoot/postgres/
 chatwoot/redis/
+chatwoot/storage/
+chatwoot/public/
+
+# ========================
+# OS / Editor
+# ========================
+.DS_Store
+Thumbs.db
+*.pem
+.vercel
+.idea/
+.vscode/
+
+# ========================
+# Misc
+# ========================
+coverage/

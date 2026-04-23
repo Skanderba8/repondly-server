@@ -1,0 +1,126 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Business {
+  id                   String         @id @default(cuid())
+  name                 String
+  email                String         @unique
+  passwordHash         String
+  phone                String?
+  chatwootAccountId    Int?           @unique
+  chatwootApiToken     String?
+  plan                 Plan           @default(FREE)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  clients              Client[]
+  autoRules            AutoRule[]
+  reminders            Reminder[]
+  bookings             Booking[]
+}
+
+model Client {
+  id                   String         @id @default(cuid())
+  businessId           String
+  name                 String
+  phone                String?
+  email                String?
+  channel              Channel
+  chatwootContactId    Int?
+  createdAt            DateTime       @default(now())
+
+  business             Business       @relation(fields: [businessId], references: [id])
+  reminders            Reminder[]
+  bookings             Booking[]
+}
+
+model AutoRule {
+  id                   String         @id @default(cuid())
+  businessId           String
+  name                 String
+  trigger              Trigger
+  conditions           Json           // e.g. { "keyword": "price", "channel": "whatsapp" }
+  action               Action
+  responseTemplate     String
+  active               Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  business             Business       @relation(fields: [businessId], references: [id])
+}
+
+model Reminder {
+  id                   String         @id @default(cuid())
+  businessId           String
+  clientId             String
+  message              String
+  scheduledAt          DateTime
+  sentAt               DateTime?
+  status               ReminderStatus @default(PENDING)
+  createdAt            DateTime       @default(now())
+
+  business             Business       @relation(fields: [businessId], references: [id])
+  client               Client         @relation(fields: [clientId], references: [id])
+}
+
+model Booking {
+  id                   String         @id @default(cuid())
+  businessId           String
+  clientId             String
+  service              String
+  datetime             DateTime
+  status               BookingStatus  @default(PENDING)
+  calendarEventId      String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  business             Business       @relation(fields: [businessId], references: [id])
+  client               Client         @relation(fields: [clientId], references: [id])
+}
+
+// ---------- Enums ----------
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+}
+
+enum Channel {
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK
+  EMAIL
+}
+
+enum Trigger {
+  MESSAGE
+  COMMENT
+  KEYWORD
+}
+
+enum Action {
+  REPLY
+  REMINDER
+  TAG
+  ASSIGN
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
