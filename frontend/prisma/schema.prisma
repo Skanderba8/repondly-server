@@ -17,6 +17,13 @@ model Business {
   chatwootAccountId    Int?           @unique
   chatwootApiToken     String?
   plan                 Plan           @default(FREE)
+  status               String         @default("TRIAL")
+  trialEndsAt          DateTime?
+  lastLoginAt          DateTime?
+  paidThisMonth        Boolean        @default(false)
+  paymentMethod        String?
+  channels             String[]       @default([])
+  businessInfo         Json?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 
@@ -24,6 +31,10 @@ model Business {
   autoRules            AutoRule[]
   reminders            Reminder[]
   bookings             Booking[]
+  adminNotes           AdminNote[]
+  onboarding           OnboardingStage?
+  activityLogs         ActivityLog[]
+  botEvents            BotEvent[]
 }
 
 model Client {
@@ -85,12 +96,54 @@ model Booking {
   client               Client         @relation(fields: [clientId], references: [id])
 }
 
+model AdminNote {
+  id          String   @id @default(cuid())
+  businessId  String
+  content     String
+  createdAt   DateTime @default(now())
+
+  business    Business @relation(fields: [businessId], references: [id])
+}
+
+model OnboardingStage {
+  id          String   @id @default(cuid())
+  businessId  String   @unique
+  stage       String   @default("DEMO_BOOKED")
+  updatedAt   DateTime @updatedAt
+
+  business    Business @relation(fields: [businessId], references: [id])
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  businessId  String
+  action      String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  business    Business @relation(fields: [businessId], references: [id])
+}
+
+model BotEvent {
+  id           String   @id @default(cuid())
+  businessId   String?
+  eventType    String
+  channel      String?
+  message      String?
+  ruleMatched  String?
+  wasHandled   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  business     Business? @relation(fields: [businessId], references: [id])
+}
+
 // ---------- Enums ----------
 
 enum Plan {
   FREE
   STARTER
   PRO
+  BUSINESS
 }
 
 enum Channel {

@@ -16,6 +16,7 @@ node_modules/
 # Next.js (frontend)
 # ========================
 frontend/.next/
+frontend/.kiro/
 frontend/out/
 frontend/build/
 frontend/next-env.d.ts
