@@ -1,469 +1,729 @@
-export default function Home() {
+'use client'
+import { useState, useEffect, useRef, CSSProperties } from 'react'
+import Image from 'next/image'
+import { motion, useInView, AnimatePresence } from 'framer-motion'
+import {
+  MessageSquare, CalendarCheck, Bell, Globe, UserCheck, ArrowRight,
+  Check, Plus, Minus, MapPin, Clock, Languages,
+  Bot, Zap, CheckCircle, Smartphone, LayoutDashboard,
+  ChevronDown
+} from 'lucide-react'
+import { useLang } from '@/lib/LangContext'
+
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const C = {
+  bg:        '#ffffff',
+  bgAlt:     '#f4f7fb',
+  blue:      '#1a6bff',
+  blueDark:  '#0f4fd4',
+  blueLight: '#e8f0ff',
+  blueFaint: '#f0f5ff',
+  ink:       '#0d1b2e',
+  mid:       '#5a6a80',
+  border:    '#dde5f0',
+  white:     '#ffffff',
+}
+
+// ── Framer variants ───────────────────────────────────────────────────────────
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (i = 0) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.5, delay: i * 0.07, ease: 'easeOut' as const },
+  }),
+}
+const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }
+
+// ── Icon maps ─────────────────────────────────────────────────────────────────
+const featureIcons = [MessageSquare, CalendarCheck, Bell, MessageSquare, Globe, UserCheck, Smartphone, LayoutDashboard]
+
+// ── Abstract blobs — unique per section via seed offsets ──────────────────────
+function Blobs({ seed = 0, opacity = 0.5 }: { seed?: number; opacity?: number }) {
+  const s = seed * 137
   return (
-    <>
-      <style>{`
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-          --white: #ffffff; --off: #f7f6f3; --ink: #111110; --mid: #6b6b67;
-          --light: #d4d3ce; --accent: #2563eb; --accent-soft: #eff4ff;
-          --radius: 16px; --radius-sm: 8px;
-        }
-        html { scroll-behavior: smooth; }
-        body {
-          font-family: 'DM Sans', sans-serif; background: var(--white);
-          color: var(--ink); overflow-x: hidden; -webkit-font-smoothing: antialiased;
-        }
-        nav {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 20px 48px; background: rgba(255,255,255,0.85);
-          backdrop-filter: blur(16px); border-bottom: 1px solid transparent;
-          transition: border-color 0.3s;
-        }
-        nav.scrolled { border-color: var(--light); }
-        .nav-logo {
-          font-family: 'DM Serif Display', serif; font-size: 1.4rem;
-          letter-spacing: -0.02em; color: var(--ink); text-decoration: none;
-          display: flex; align-items: center; gap: 10px;
-        }
-        .nav-logo span { color: var(--accent); }
-        .nav-logo img { width: 32px; height: 32px; object-fit: contain; }
-        .nav-links { display: flex; gap: 36px; list-style: none; }
-        .nav-links a {
-          font-size: 0.875rem; font-weight: 400; color: var(--mid);
-          text-decoration: none; transition: color 0.2s;
-        }
-        .nav-links a:hover { color: var(--ink); }
-        .nav-right { display: flex; align-items: center; gap: 12px; }
-        .nav-signin {
-          color: var(--mid); font-size: 0.875rem; font-weight: 400;
-          text-decoration: none; transition: color 0.2s; padding: 10px 4px;
-        }
-        .nav-signin:hover { color: var(--ink); }
-        .nav-cta {
-          background: var(--ink); color: var(--white);
-          padding: 10px 22px; border-radius: 100px;
-          font-size: 0.875rem; font-weight: 500;
-          text-decoration: none; transition: background 0.2s, transform 0.15s;
-        }
-        .nav-cta:hover { background: var(--accent); transform: translateY(-1px); }
-        .hero {
-          min-height: 100vh; display: flex; flex-direction: column;
-          align-items: center; justify-content: center; text-align: center;
-          padding: 120px 24px 80px; position: relative; overflow: hidden;
-        }
-        .hero-bg {
-          position: absolute; inset: 0; z-index: 0;
-          background: radial-gradient(ellipse 70% 50% at 50% -10%, #dbeafe 0%, transparent 60%),
-            radial-gradient(ellipse 40% 30% at 80% 90%, #e0f2fe 0%, transparent 50%);
-        }
-        .hero-badge {
-          display: inline-flex; align-items: center; gap: 8px;
-          background: var(--accent-soft); color: var(--accent);
-          padding: 6px 14px; border-radius: 100px;
-          font-size: 0.8rem; font-weight: 500;
-          margin-bottom: 28px; position: relative; z-index: 1;
-          opacity: 0; animation: fadeUp 0.6s 0.1s forwards;
-        }
-        .hero-badge::before {
-          content: ''; width: 6px; height: 6px; border-radius: 50%;
-          background: var(--accent); display: block; animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
-        .hero h1 {
-          font-family: 'DM Serif Display', serif;
-          font-size: clamp(3rem, 7vw, 5.5rem); line-height: 1.08;
-          letter-spacing: -0.03em; max-width: 800px;
-          position: relative; z-index: 1;
-          opacity: 0; animation: fadeUp 0.7s 0.25s forwards;
-        }
-        .hero h1 em { font-style: italic; color: var(--accent); }
-        .hero-sub {
-          font-size: clamp(1rem, 2vw, 1.2rem); color: var(--mid);
-          font-weight: 300; line-height: 1.6; max-width: 520px; margin-top: 24px;
-          position: relative; z-index: 1; opacity: 0; animation: fadeUp 0.7s 0.4s forwards;
-        }
-        .hero-actions {
-          display: flex; gap: 14px; margin-top: 40px;
-          position: relative; z-index: 1;
-          opacity: 0; animation: fadeUp 0.7s 0.55s forwards;
-          flex-wrap: wrap; justify-content: center;
-        }
-        .btn-primary {
-          background: var(--ink); color: var(--white);
-          padding: 14px 32px; border-radius: 100px;
-          font-size: 0.95rem; font-weight: 500; text-decoration: none;
-          transition: all 0.2s; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-        }
-        .btn-primary:hover { background: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(37,99,235,0.25); }
-        .btn-secondary {
-          background: transparent; color: var(--ink);
-          padding: 14px 32px; border-radius: 100px;
-          font-size: 0.95rem; font-weight: 500; text-decoration: none;
-          border: 1.5px solid var(--light); transition: all 0.2s;
-        }
-        .btn-secondary:hover { border-color: var(--ink); transform: translateY(-2px); }
-        .hero-mockup {
-          position: relative; z-index: 1; margin-top: 72px;
-          width: 100%; max-width: 780px;
-          opacity: 0; animation: fadeUp 0.8s 0.7s forwards;
-        }
-        .mockup-shell {
-          background: var(--white); border: 1px solid var(--light);
-          border-radius: 20px; box-shadow: 0 8px 60px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
-          overflow: hidden;
-        }
-        .mockup-bar {
-          background: var(--off); padding: 14px 20px;
-          display: flex; align-items: center; gap: 8px;
-          border-bottom: 1px solid var(--light);
-        }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
-        .dot-r { background: #ff5f57; } .dot-y { background: #ffbd2e; } .dot-g { background: #28c840; }
-        .mockup-bar-title { flex: 1; text-align: center; font-size: 0.78rem; color: var(--mid); font-weight: 400; }
-        .mockup-body { padding: 28px 28px 32px; }
-        .chat-row { display: flex; gap: 10px; margin-bottom: 16px; }
-        .chat-row.right { flex-direction: row-reverse; }
-        .avatar {
-          width: 32px; height: 32px; border-radius: 50%;
-          background: var(--accent-soft); flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 0.75rem; color: var(--accent); font-weight: 600;
-        }
-        .avatar.bot { background: var(--ink); color: var(--white); }
-        .bubble { max-width: 68%; padding: 10px 16px; border-radius: 16px; font-size: 0.875rem; line-height: 1.55; }
-        .bubble.incoming { background: var(--off); color: var(--ink); border-bottom-left-radius: 4px; }
-        .bubble.outgoing { background: var(--accent); color: white; border-bottom-right-radius: 4px; }
-        .typing { display: flex; gap: 4px; padding: 12px 16px; background: var(--off); border-radius: 16px; border-bottom-left-radius: 4px; width: fit-content; }
-        .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--mid); animation: blink 1.2s infinite; }
-        .typing span:nth-child(2) { animation-delay: 0.2s; }
-        .typing span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes blink { 0%,80%,100%{opacity:0.3} 40%{opacity:1} }
-        section { padding: 100px 24px; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        .section-label { font-size: 0.78rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
-        .section-title { font-family: 'DM Serif Display', serif; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.15; letter-spacing: -0.025em; max-width: 560px; }
-        .section-sub { color: var(--mid); font-size: 1.05rem; font-weight: 300; line-height: 1.7; max-width: 480px; margin-top: 14px; }
-        #features { background: var(--off); }
-        .features-header { text-align: center; margin-bottom: 64px; }
-        .features-header .section-title, .features-header .section-sub { max-width: 600px; margin-inline: auto; }
-        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
-        .feature-card { background: var(--white); border: 1px solid var(--light); border-radius: var(--radius); padding: 32px; transition: box-shadow 0.2s, transform 0.2s; }
-        .feature-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.07); transform: translateY(-4px); }
-        .feature-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 20px; }
-        .feature-card h3 { font-family: 'DM Serif Display', serif; font-size: 1.2rem; margin-bottom: 10px; letter-spacing: -0.01em; }
-        .feature-card p { color: var(--mid); font-size: 0.9rem; line-height: 1.65; font-weight: 300; }
-        .how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
-        .steps { display: flex; flex-direction: column; gap: 32px; }
-        .step { display: flex; gap: 20px; }
-        .step-num { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
-        .step h4 { font-family: 'DM Serif Display', serif; font-size: 1.1rem; margin-bottom: 6px; letter-spacing: -0.01em; }
-        .step p { color: var(--mid); font-size: 0.875rem; line-height: 1.65; font-weight: 300; }
-        .how-visual { background: var(--off); border: 1px solid var(--light); border-radius: var(--radius); padding: 40px; display: flex; flex-direction: column; gap: 16px; }
-        .flow-item { display: flex; align-items: center; gap: 14px; background: white; border: 1px solid var(--light); border-radius: var(--radius-sm); padding: 14px 18px; font-size: 0.875rem; font-weight: 400; }
-        .flow-item .fi-icon { font-size: 1.1rem; width: 28px; text-align: center; }
-        .flow-arrow { text-align: center; color: var(--light); font-size: 1.2rem; }
-        #pricing { background: var(--ink); color: var(--white); }
-        #pricing .section-title { color: var(--white); }
-        #pricing .section-sub { color: rgba(255,255,255,0.5); }
-        .pricing-wrapper { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; }
-        .pricing-left { flex: 1; min-width: 260px; }
-        .pricing-card { flex: 1; min-width: 300px; background: white; color: var(--ink); border-radius: var(--radius); padding: 44px 40px; position: relative; overflow: hidden; }
-        .pricing-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); }
-        .price-label { font-size: 0.78rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mid); margin-bottom: 12px; }
-        .price-amount { font-family: 'DM Serif Display', serif; font-size: 3.5rem; line-height: 1; letter-spacing: -0.04em; }
-        .price-amount span { font-family: 'DM Sans', sans-serif; font-size: 1.2rem; font-weight: 300; color: var(--mid); }
-        .price-setup { font-size: 0.85rem; color: var(--mid); margin-top: 8px; margin-bottom: 32px; padding-bottom: 32px; border-bottom: 1px solid var(--light); }
-        .price-features { list-style: none; display: flex; flex-direction: column; gap: 14px; margin-bottom: 36px; }
-        .price-features li { display: flex; gap: 10px; font-size: 0.9rem; align-items: flex-start; }
-        .price-features li::before { content: '✓'; color: var(--accent); font-weight: 600; flex-shrink: 0; }
-        .price-cta { display: block; text-align: center; background: var(--ink); color: white; padding: 14px; border-radius: 100px; font-size: 0.95rem; font-weight: 500; text-decoration: none; transition: all 0.2s; }
-        .price-cta:hover { background: var(--accent); transform: translateY(-2px); }
-        .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .faq-item { border: 1px solid var(--light); border-radius: var(--radius); padding: 28px; cursor: pointer; transition: box-shadow 0.2s; }
-        .faq-item:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.06); }
-        .faq-q { font-family: 'DM Serif Display', serif; font-size: 1rem; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-        .faq-q .icon { color: var(--mid); flex-shrink: 0; transition: transform 0.2s; }
-        .faq-item.open .faq-q .icon { transform: rotate(45deg); }
-        .faq-a { color: var(--mid); font-size: 0.875rem; line-height: 1.7; font-weight: 300; display: none; }
-        .faq-item.open .faq-a { display: block; }
-        #contact { background: var(--off); }
-        .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
-        .contact-form { display: flex; flex-direction: column; gap: 16px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group label { font-size: 0.8rem; font-weight: 500; color: var(--mid); letter-spacing: 0.04em; text-transform: uppercase; }
-        .form-group input, .form-group textarea, .form-group select { background: white; border: 1px solid var(--light); border-radius: var(--radius-sm); padding: 12px 16px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--ink); outline: none; transition: border-color 0.2s; resize: none; }
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--accent); }
-        .form-submit { background: var(--ink); color: white; border: none; padding: 14px; border-radius: 100px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; transition: all 0.2s; margin-top: 4px; }
-        .form-submit:hover { background: var(--accent); transform: translateY(-2px); }
-        footer { padding: 40px 48px; border-top: 1px solid var(--light); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-        .footer-logo { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--ink); text-decoration: none; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
-        .footer-logo span { color: var(--accent); }
-        .footer-logo img { width: 24px; height: 24px; object-fit: contain; }
-        footer p { color: var(--mid); font-size: 0.8rem; }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-        .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
-        .reveal.visible { opacity: 1; transform: translateY(0); }
-        @media (max-width: 768px) {
-          nav { padding: 16px 20px; }
-          .nav-links { display: none; }
-          .how-grid, .contact-grid { grid-template-columns: 1fr; gap: 40px; }
-          .faq-grid { grid-template-columns: 1fr; }
-          .pricing-wrapper { flex-direction: column; }
-          footer { flex-direction: column; text-align: center; }
-        }
-      `}</style>
+    <svg aria-hidden="true" style={{
+      position: 'absolute', inset: 0, width: '100%', height: '100%',
+      pointerEvents: 'none', overflow: 'visible',
+    }} viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <radialGradient id={`bg${seed}a`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={C.blue} stopOpacity={opacity * 0.16} />
+          <stop offset="100%" stopColor={C.blue} stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={`bg${seed}b`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={C.blue} stopOpacity={opacity * 0.10} />
+          <stop offset="100%" stopColor={C.blue} stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={`bg${seed}c`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={C.blue} stopOpacity={opacity * 0.07} />
+          <stop offset="100%" stopColor={C.blue} stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse cx={(900 + s) % 1200} cy={(100 + s * 0.4) % 400} rx="400" ry="320" fill={`url(#bg${seed}a)`} />
+      <ellipse cx={(80  + s * 0.6) % 600} cy={(550 + s * 0.3) % 700} rx="340" ry="260" fill={`url(#bg${seed}b)`} />
+      <ellipse cx={(500 + s * 0.2) % 1000} cy={(350 + s * 0.5) % 600} rx="240" ry="180" fill={`url(#bg${seed}c)`} />
+    </svg>
+  )
+}
 
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+// ── 3 looping chat conversations ──────────────────────────────────────────────
+type Msg = { side: 'left' | 'right'; text: string }
+type Convo = { channel: string; color: string; msgs: Msg[] }
 
-      <nav id="nav">
-        <a href="#" className="nav-logo">
-          <img src="/logo.png" alt="Repondly" />
-          Répondly<span>.</span>
-        </a>
-        <ul className="nav-links">
-          <li><a href="#features">Features</a></li>
-          <li><a href="#how">How it works</a></li>
-          <li><a href="#pricing">Pricing</a></li>
-          <li><a href="#faq">FAQ</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-        <div className="nav-right">
-          <a href="/auth/signin" className="nav-signin">Sign in</a>
-          <a href="#contact" className="nav-cta">Get started</a>
+const convos: Convo[] = [
+  {
+    channel: 'WhatsApp', color: '#25d366',
+    msgs: [
+      { side: 'left',  text: 'Bonjour, je voudrais prendre un rendez-vous pour demain.' },
+      { side: 'right', text: 'Bonjour ! Quelle heure vous convient le mieux, matin ou après-midi ?' },
+      { side: 'left',  text: '10h si possible.' },
+      { side: 'right', text: 'Parfait. RDV mardi à 10h confirmé. Un rappel vous sera envoyé 1h avant.' },
+    ],
+  },
+  {
+    channel: 'Instagram', color: '#e1306c',
+    msgs: [
+      { side: 'left',  text: 'Bonjour, quels sont vos horaires ?' },
+      { side: 'right', text: 'Bonjour ! Nous sommes ouverts lundi-samedi, 9h à 19h.' },
+      { side: 'left',  text: 'Vous proposez des consultations en ligne ?' },
+      { side: 'right', text: 'Oui ! Je peux vous réserver un créneau en ligne dès maintenant.' },
+    ],
+  },
+  {
+    channel: 'Facebook', color: '#1877f2',
+    msgs: [
+      { side: 'left',  text: "J'ai vu votre pub. C'est quoi exactement votre service ?" },
+      { side: 'right', text: 'On automatise vos réponses clients sur tous vos canaux, 24h/24.' },
+      { side: 'left',  text: 'Il y a un essai gratuit ?' },
+      { side: 'right', text: 'Oui, 30 jours gratuits, sans carte bancaire. Je vous envoie le lien ?' },
+    ],
+  },
+]
+
+// ── Chat mockup ───────────────────────────────────────────────────────────────
+function ChatMockup() {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: false, margin: '-40px' })
+  const [ci, setCi] = useState(0)
+  const [shown, setShown] = useState(0)
+  const [fading, setFading] = useState(false)
+
+  useEffect(() => {
+    if (!inView) return
+    const msgs = convos[ci].msgs
+    const timers: ReturnType<typeof setTimeout>[] = []
+
+    // reveal messages one by one
+    msgs.forEach((_, idx) => {
+      timers.push(setTimeout(() => setShown(idx + 1), 300 + idx * 900))
+    })
+
+    // after all shown + 3s pause → fade out → next convo
+    const allDone = 300 + (msgs.length - 1) * 900
+    timers.push(setTimeout(() => setFading(true),  allDone + 3000))
+    timers.push(setTimeout(() => {
+      setCi(c => (c + 1) % convos.length)
+      setShown(0)
+      setFading(false)
+    }, allDone + 3400))
+
+    return () => timers.forEach(clearTimeout)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inView, ci])
+
+  const convo = convos[ci]
+
+  return (
+    <div ref={ref} style={{
+      borderRadius: 18, overflow: 'hidden',
+      border: `1px solid ${C.border}`,
+      boxShadow: '0 8px 40px rgba(26,107,255,0.11)',
+      background: C.white,
+    }}>
+      {/* title bar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 7,
+        padding: '10px 16px', borderBottom: `1px solid ${C.border}`,
+        background: C.bgAlt,
+      }}>
+        <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#ff5f57' }} />
+        <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#ffbd2e' }} />
+        <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#28c840' }} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <motion.div
+            key={ci}
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{ width: 8, height: 8, borderRadius: '50%', background: convo.color, flexShrink: 0 }}
+          />
+          <motion.span
+            key={`label-${ci}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{ fontSize: 12, color: C.mid }}
+          >
+            {convo.channel} — Répondly
+          </motion.span>
         </div>
-      </nav>
+      </div>
 
-      <section className="hero">
-        <div className="hero-bg"></div>
-        <div className="hero-badge">Now available in Tunisia</div>
-        <h1>AI Customer Service<br/>for <em>Tunisian</em> Businesses</h1>
-        <p className="hero-sub">Automate your WhatsApp conversations, book appointments, and never miss a client — in Arabic, French, or Darija.</p>
-        <div className="hero-actions">
-          <a href="#contact" className="btn-primary">Book a free demo</a>
-          <a href="#features" className="btn-secondary">See what&apos;s included</a>
-        </div>
-        <div className="hero-mockup">
-          <div className="mockup-shell">
-            <div className="mockup-bar">
-              <div className="dot dot-r"></div>
-              <div className="dot dot-y"></div>
-              <div className="dot dot-g"></div>
-              <div className="mockup-bar-title">WhatsApp — Répondly Bot</div>
-            </div>
-            <div className="mockup-body">
-              <div className="chat-row">
-                <div className="avatar">C</div>
-                <div className="bubble incoming">Bonjour, je veux savoir comment ça marche votre service 👋</div>
+      {/* messages area — fixed height, no layout shift */}
+      <div style={{ padding: '18px 18px 16px', height: 220, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 10, justifyContent: 'flex-end' }}>
+        <AnimatePresence mode="popLayout">
+          {convo.msgs.slice(0, shown).map((msg, i) => (
+            <motion.div
+              key={`${ci}-${i}`}
+              layout
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: fading ? 0 : 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.28, ease: 'easeOut' }}
+              style={{ display: 'flex', gap: 8, flexDirection: msg.side === 'right' ? 'row-reverse' : 'row', flexShrink: 0 }}
+            >
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, fontWeight: 600,
+                background: msg.side === 'right' ? C.blueLight : '#f0f0f0',
+                color: msg.side === 'right' ? C.blue : C.mid,
+              }}>
+                {msg.side === 'right' ? <Bot size={12} /> : 'C'}
               </div>
-              <div className="chat-row right">
-                <div className="avatar bot">R</div>
-                <div className="bubble outgoing">Bonjour ! Bienvenue chez Répondly 😊 Nous automatisons votre service client sur WhatsApp. Qu&apos;est-ce qui vous intéresse le plus : les réponses automatiques, la prise de RDV, ou les rappels ?</div>
+              <div style={{
+                maxWidth: '74%', padding: '8px 12px', borderRadius: 13, fontSize: 12.5, lineHeight: 1.5,
+                borderBottomRightRadius: msg.side === 'right' ? 3 : 13,
+                borderBottomLeftRadius:  msg.side === 'left'  ? 3 : 13,
+                background: msg.side === 'right' ? C.blue : C.bgAlt,
+                color: msg.side === 'right' ? C.white : C.ink,
+              }}>
+                {msg.text}
               </div>
-              <div className="chat-row">
-                <div className="avatar">C</div>
-                <div className="bubble incoming">La prise de rendez-vous, je voudrais voir ça</div>
-              </div>
-              <div className="chat-row right">
-                <div className="avatar bot">R</div>
-                <div className="bubble outgoing">Parfait ! Je peux vous réserver un appel de 30 min avec notre équipe pour vous montrer tout ça. Vous préférez quand — cette semaine ou la semaine prochaine ? 📅</div>
-              </div>
-              <div className="chat-row">
-                <div className="avatar">C</div>
-                <div className="typing"><span></span><span></span><span></span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
-      <section id="features">
-        <div className="container">
-          <div className="features-header reveal">
-            <div className="section-label">What&apos;s included</div>
-            <h2 className="section-title">Everything your business needs to respond faster</h2>
-            <p className="section-sub">One flat monthly subscription. No hidden fees. No per-message billing.</p>
-          </div>
-          <div className="features-grid">
-            {[
-              { icon: '🤖', title: 'AI Responses', desc: 'Your bot answers customer questions 24/7 in Arabic, French, or Darija — naturally, consistently, and in your brand\'s tone.' },
-              { icon: '📅', title: 'Appointment Booking', desc: 'Clients book directly through WhatsApp. Appointments sync to your calendar automatically — no back and forth needed.' },
-              { icon: '🔔', title: 'Smart Reminders', desc: 'Automated reminders sent to your clients before their appointment, and instant notifications to you when something needs attention.' },
-              { icon: '💬', title: 'Comment Replies', desc: 'Automatically respond to comments on your social media pages with relevant, personalized replies — while you focus on your business.' },
-              { icon: '🌍', title: 'Multilingual by Default', desc: 'The bot detects the language your client uses and replies accordingly — no setup required, works seamlessly from day one.' },
-              { icon: '👤', title: 'Human Handoff', desc: 'When a client needs personal attention, the bot smoothly transfers the conversation to a real agent — nothing falls through the cracks.' },
-            ].map((f) => (
-              <div className="feature-card reveal" key={f.title}>
-                <div className="feature-icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="how">
-        <div className="container">
-          <div className="how-grid">
-            <div className="reveal">
-              <div className="section-label">How it works</div>
-              <h2 className="section-title">Up and running in 48 hours</h2>
-              <p className="section-sub" style={{marginBottom:'48px'}}>We handle the full setup. You just show up and talk to your clients.</p>
-              <div className="steps">
-                {[
-                  { n:'1', title:'Book a free demo call', desc:'We walk you through the platform and understand your business needs in 30 minutes.' },
-                  { n:'2', title:'We configure your bot', desc:'We set up your AI assistant with your business info, tone, and services — ready in 48h.' },
-                  { n:'3', title:'Go live on WhatsApp', desc:'Your bot starts handling conversations, booking appointments, and sending reminders automatically.' },
-                  { n:'4', title:'You stay in control', desc:'View all conversations, step in at any time, and get notified for anything important.' },
-                ].map((s) => (
-                  <div className="step" key={s.n}>
-                    <div className="step-num">{s.n}</div>
-                    <div><h4>{s.title}</h4><p>{s.desc}</p></div>
-                  </div>
+        {/* typing dots */}
+        <AnimatePresence>
+          {!fading && shown > 0 && shown < convo.msgs.length && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: 'flex', gap: 8, flexShrink: 0 }}
+            >
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: C.mid }}>C</div>
+              <div style={{ padding: '9px 12px', borderRadius: 13, borderBottomLeftRadius: 3, background: C.bgAlt, display: 'flex', gap: 4, alignItems: 'center' }}>
+                {[0, 1, 2].map(d => (
+                  <motion.span key={d} style={{ width: 5, height: 5, borderRadius: '50%', background: C.mid, display: 'block' }}
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1.0, repeat: Infinity, delay: d * 0.16 }} />
                 ))}
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* channel dots */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, padding: '0 0 12px' }}>
+        {convos.map((_, i) => (
+          <div key={i} style={{
+            width: i === ci ? 16 : 5, height: 5, borderRadius: 3,
+            background: i === ci ? C.blue : C.border,
+            transition: 'all 0.35s ease',
+          }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── FAQ item ──────────────────────────────────────────────────────────────────
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <motion.div variants={fadeUp} onClick={() => setOpen(o => !o)}
+      style={{
+        border: `1px solid ${open ? C.blue : C.border}`,
+        borderRadius: 12, padding: '18px 22px', cursor: 'pointer',
+        background: C.white, transition: 'border-color 0.2s',
+      }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14 }}>
+        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 14.5, color: C.ink, lineHeight: 1.4 }}>{q}</span>
+        <span style={{ color: C.blue, flexShrink: 0, marginTop: 2 }}>
+          {open ? <Minus size={14} /> : <Plus size={14} />}
+        </span>
+      </div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.p
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
+            style={{ overflow: 'hidden', color: C.mid, fontSize: 13, lineHeight: 1.7, marginTop: 10, fontWeight: 300 }}>
+            {a}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ── Section wrapper ───────────────────────────────────────────────────────────
+function Sec({ id, children, bg = C.bg, style = {} }: {
+  id?: string; children: React.ReactNode; bg?: string; style?: CSSProperties
+}) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-60px' })
+  return (
+    <motion.section id={id} ref={ref}
+      variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}
+      style={{ background: bg, padding: '88px 24px', position: 'relative', overflow: 'hidden', ...style }}>
+      {children}
+    </motion.section>
+  )
+}
+
+const wrap: CSSProperties = { maxWidth: 1100, margin: '0 auto' }
+
+// ── Contact form with "Autre" reveal ─────────────────────────────────────────
+function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext').useLang>['tr'] }) {
+  const [business, setBusiness] = useState('')
+  const [autre, setAutre] = useState('')
+  const [focused, setFocused] = useState<string | null>(null)
+
+  const inputStyle = (name: string): CSSProperties => ({
+    background: C.white, border: `1.5px solid ${focused === name ? C.blue : C.border}`,
+    borderRadius: 10, padding: '11px 14px', fontSize: 13.5, color: C.ink,
+    outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.2s', width: '100%',
+    boxSizing: 'border-box',
+  })
+
+  return (
+    <motion.div variants={fadeUp} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {[
+        { label: tr.formName,  type: 'text', ph: tr.formNamePh,  name: 'name' },
+        { label: tr.formPhone, type: 'tel',  ph: tr.formPhonePh, name: 'phone' },
+      ].map(f => (
+        <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.mid }}>{f.label}</label>
+          <input type={f.type} placeholder={f.ph} style={inputStyle(f.name)}
+            onFocus={() => setFocused(f.name)} onBlur={() => setFocused(null)} />
+        </div>
+      ))}
+
+      {/* business type — custom styled select */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.mid }}>{tr.formBusiness}</label>
+        <div style={{ position: 'relative' }}>
+          <select
+            value={business}
+            onChange={e => setBusiness(e.target.value)}
+            style={{
+              ...inputStyle('business'),
+              appearance: 'none', paddingRight: 36, cursor: 'pointer',
+              background: business ? C.white : C.bgAlt,
+              color: business ? C.ink : C.mid,
+            }}
+            onFocus={() => setFocused('business')} onBlur={() => setFocused(null)}
+          >
+            <option value="" disabled>{tr.formBusinessPh}</option>
+            {tr.formBusinessOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+          <ChevronDown size={15} color={C.mid} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+        </div>
+      </div>
+
+      {/* "Autre" reveal */}
+      <AnimatePresence>
+        {(business === 'Autre' || business === 'Other') && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 2 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.mid }}>
+                {tr.formBusiness === 'Type d\'entreprise' ? 'Précisez votre secteur' : 'Specify your sector'}
+              </label>
+              <input
+                type="text"
+                placeholder={tr.formBusiness === 'Type d\'entreprise' ? 'Ex : Coiffure, Garage, Pharmacie...' : 'Ex: Hair salon, Garage, Pharmacy...'}
+                value={autre}
+                onChange={e => setAutre(e.target.value)}
+                style={inputStyle('autre')}
+                onFocus={() => setFocused('autre')} onBlur={() => setFocused(null)}
+              />
             </div>
-            <div className="how-visual reveal">
-              {[
-                { icon:'📲', text:'Client sends a WhatsApp message' },
-                { icon:'🧠', text:'AI detects language and intent' },
-                { icon:'💬', text:'Bot replies with relevant info' },
-                { icon:'📅', text:'Client books an appointment' },
-                { icon:'✅', text:'Calendar event created automatically' },
-                { icon:'🔔', text:'You get notified instantly' },
-              ].map((item, i) => (
-                <div key={i}>
-                  <div className="flow-item"><span className="fi-icon">{item.icon}</span>{item.text}</div>
-                  {i < 5 && <div className="flow-arrow">↓</div>}
-                </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.mid }}>{tr.formMessage}</label>
+        <textarea rows={3} placeholder={tr.formMessagePh} style={{ ...inputStyle('msg'), resize: 'none' } as CSSProperties}
+          onFocus={() => setFocused('msg')} onBlur={() => setFocused(null)} />
+      </div>
+
+      <button style={{
+        background: C.blue, color: C.white, border: 'none', borderRadius: 100,
+        padding: '13px 0', fontSize: 14, fontWeight: 500, cursor: 'pointer',
+        fontFamily: 'inherit', marginTop: 4, transition: 'background 0.2s', width: '100%',
+      }}
+        onMouseEnter={e => (e.currentTarget.style.background = C.blueDark)}
+        onMouseLeave={e => (e.currentTarget.style.background = C.blue)}>
+        {tr.formSubmit}
+      </button>
+    </motion.div>
+  )
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+export default function Home() {
+  const { lang, tr, toggle } = useLang()
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', fn, { passive: true })
+    return () => window.removeEventListener('scroll', fn)
+  }, [])
+
+  const navLinks = [
+    { href: '#features', label: tr.navFeatures },
+    { href: '#how',      label: tr.navHow },
+    { href: '#pricing',  label: tr.navPricing },
+    { href: '#faq',      label: tr.navFaq },
+    { href: '#contact',  label: tr.navContact },
+  ]
+
+  const howSteps = [
+    {
+      n: '1', icon: MessageSquare,
+      title: lang === 'fr' ? 'Connexion de vos canaux' : 'Connect your channels',
+      desc: lang === 'fr' ? 'WhatsApp, Instagram, Facebook, email et plus encore, tout centralisé.' : 'WhatsApp, Instagram, Facebook, email and more, all in one place.',
+    },
+    {
+      n: '2', icon: Bot,
+      title: lang === 'fr' ? 'Configuration de votre IA' : 'Configure your AI',
+      desc: lang === 'fr' ? 'On paramètre votre assistant avec votre ton, vos services et vos règles.' : 'We set up your assistant with your tone, services and rules.',
+    },
+    {
+      n: '3', icon: Zap,
+      title: lang === 'fr' ? 'Automatisations actives' : 'Automations live',
+      desc: lang === 'fr' ? 'Réponses, RDV, rappels, commentaires — tout tourne en automatique.' : 'Replies, bookings, reminders, comments — all running automatically.',
+    },
+    {
+      n: '4', icon: LayoutDashboard,
+      title: lang === 'fr' ? 'Vous gardez le contrôle' : 'You stay in control',
+      desc: lang === 'fr' ? 'Dashboard centralisé, app mobile, notifications en temps réel.' : 'Centralised dashboard, mobile app, real-time notifications.',
+    },
+  ]
+
+  return (
+    <div style={{ background: C.bg, color: C.ink, fontFamily: "'DM Sans', sans-serif", overflowX: 'hidden' }}>
+
+      {/* ── NAV ── */}
+      <header style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        backdropFilter: 'blur(18px)',
+        background: scrolled ? 'rgba(255,255,255,0.93)' : 'rgba(255,255,255,0.75)',
+        borderBottom: `1px solid ${scrolled ? C.border : 'transparent'}`,
+        transition: 'background 0.3s, border-color 0.3s',
+      }}>
+        <div style={{ maxWidth: 1400, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 48px', height: 64 }}>
+          <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+            <Image src="/logo.png" alt="Répondly" width={30} height={30} style={{ objectFit: 'contain' }} />
+            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.25rem', letterSpacing: '-0.02em', color: C.ink }}>
+              Répondly<span style={{ color: C.blue }}>.</span>
+            </span>
+          </a>
+          <nav style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
+            {navLinks.map(l => (
+              <a key={l.href} href={l.href} style={{ fontSize: 13.5, color: C.mid, textDecoration: 'none', transition: 'color 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = C.ink)}
+                onMouseLeave={e => (e.currentTarget.style.color = C.mid)}>
+                {l.label}
+              </a>
+            ))}
+          </nav>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button onClick={toggle} style={{
+              background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 100,
+              padding: '5px 11px', fontSize: 12, fontWeight: 500, color: C.mid, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              {lang === 'fr' ? 'EN' : 'FR'}
+            </button>
+            <a href="/auth/signin" style={{ fontSize: 13.5, color: C.mid, textDecoration: 'none' }}>{tr.navSignin}</a>
+            <a href="#contact" style={{
+              background: C.blue, color: C.white, borderRadius: 100,
+              padding: '8px 20px', fontSize: 13.5, fontWeight: 500, textDecoration: 'none', transition: 'background 0.2s',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.background = C.blueDark)}
+              onMouseLeave={e => (e.currentTarget.style.background = C.blue)}>
+              {tr.navCta}
+            </a>
+          </div>
+        </div>
+      </header>
+
+      {/* ── HERO ── */}
+      <section style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'flex-start', textAlign: 'center',
+        padding: '96px 24px 80px', position: 'relative', overflow: 'hidden',
+        background: C.bg,
+      }}>
+        <Blobs seed={0} opacity={0.65} />
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: `radial-gradient(circle, ${C.border} 1px, transparent 1px)`,
+          backgroundSize: '36px 36px', opacity: 0.45,
+        }} />
+
+        <motion.h1 variants={fadeUp} custom={0} initial="hidden" animate="visible" style={{
+          fontFamily: "'DM Serif Display', serif",
+          fontSize: 'clamp(2.4rem, 5.5vw, 4.2rem)',
+          lineHeight: 1.1, letterSpacing: '-0.03em',
+          maxWidth: 780, position: 'relative', color: C.ink, margin: 0,
+        }}>
+          {tr.heroTitle}
+          <em style={{ fontStyle: 'italic', color: C.blue }}>{tr.heroTitleEm}</em>
+        </motion.h1>
+
+        <motion.p variants={fadeUp} custom={1} initial="hidden" animate="visible" style={{
+          fontSize: 15, color: C.mid, fontWeight: 300,
+          lineHeight: 1.7, maxWidth: 460, marginTop: 18, position: 'relative',
+        }}>
+          {tr.heroSub}
+        </motion.p>
+
+        <motion.div variants={fadeUp} custom={2} initial="hidden" animate="visible"
+          style={{ display: 'flex', gap: 10, marginTop: 28, flexWrap: 'wrap', justifyContent: 'center', position: 'relative' }}>
+          <a href="#contact" style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            background: C.blue, color: C.white, borderRadius: 100,
+            padding: '11px 26px', fontSize: 13.5, fontWeight: 500, textDecoration: 'none',
+            boxShadow: '0 4px 18px rgba(26,107,255,0.28)', transition: 'background 0.2s',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.background = C.blueDark)}
+            onMouseLeave={e => (e.currentTarget.style.background = C.blue)}>
+            {tr.heroBtn1} <ArrowRight size={14} />
+          </a>
+          <a href="#features" style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            background: 'transparent', color: C.ink, borderRadius: 100,
+            padding: '11px 26px', fontSize: 13.5, fontWeight: 500, textDecoration: 'none',
+            border: `1.5px solid ${C.border}`, transition: 'border-color 0.2s',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = C.blue)}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
+            {tr.heroBtn2}
+          </a>
+        </motion.div>
+
+        {/* mockup with bottom padding so it doesn't sit on section edge */}
+        <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible"
+          style={{ marginTop: 44, width: '100%', maxWidth: 580, position: 'relative', paddingBottom: 0 }}>
+          <ChatMockup />
+        </motion.div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <Sec id="features" bg={C.bgAlt}>
+        <Blobs seed={1} opacity={0.38} />
+        <div style={{ ...wrap, position: 'relative' }}>
+          <motion.div variants={fadeUp} style={{ textAlign: 'center', marginBottom: 48 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.featuresLabel}</p>
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', maxWidth: 540, margin: '0 auto', color: C.ink }}>
+              {tr.featuresTitle}
+            </h2>
+            <p style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, maxWidth: 420, margin: '12px auto 0', fontWeight: 300 }}>{tr.featuresSub}</p>
+          </motion.div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+            {tr.features.map((f, i) => {
+              const Icon = featureIcons[i] ?? MessageSquare
+              return (
+                <motion.div key={f.title} variants={fadeUp} custom={i}
+                  whileHover={{ y: -3, transition: { duration: 0.16 } }}
+                  style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px 24px 28px', transition: 'box-shadow 0.2s' }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = '0 6px 28px rgba(26,107,255,0.09)')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = 'none')}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: C.blueLight, color: C.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                    <Icon size={17} />
+                  </div>
+                  <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1rem', marginBottom: 7, color: C.ink }}>{f.title}</h3>
+                  <p style={{ color: C.mid, fontSize: 13, lineHeight: 1.65, fontWeight: 300 }}>{f.desc}</p>
+                </motion.div>
+              )
+            })}
+          </div>
+        </div>
+      </Sec>
+
+      {/* ── HOW IT WORKS ── */}
+      <Sec id="how" bg={C.bg}>
+        <Blobs seed={2} opacity={0.45} />
+        <div style={{ ...wrap, position: 'relative' }}>
+          <motion.div variants={fadeUp} style={{ textAlign: 'center', marginBottom: 48 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.howLabel}</p>
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink, maxWidth: 500, margin: '0 auto' }}>
+              {tr.howTitle}
+            </h2>
+            <p style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, maxWidth: 400, margin: '12px auto 0' }}>{tr.howSub}</p>
+          </motion.div>
+
+          {/* 4-column step cards with connector */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 26, left: '12.5%', right: '12.5%', height: 2, background: C.blueLight, zIndex: 0 }} />
+            {howSteps.map((s, i) => {
+              const Icon = s.icon
+              return (
+                <motion.div key={s.n} variants={fadeUp} custom={i} style={{ position: 'relative', zIndex: 1 }}>
+                  <div style={{
+                    width: 52, height: 52, borderRadius: '50%',
+                    background: i === 0 ? C.blue : C.white,
+                    border: `2px solid ${i === 0 ? C.blue : C.border}`,
+                    color: i === 0 ? C.white : C.blue,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 16px',
+                    boxShadow: i === 0 ? '0 4px 14px rgba(26,107,255,0.28)' : 'none',
+                  }}>
+                    <Icon size={20} />
+                  </div>
+                  <div style={{
+                    background: C.white, border: `1px solid ${C.border}`,
+                    borderRadius: 12, padding: '16px 15px',
+                    boxShadow: '0 2px 10px rgba(26,107,255,0.05)',
+                  }}>
+                    <h4 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.9rem', color: C.ink, marginBottom: 6 }}>{s.title}</h4>
+                    <p style={{ color: C.mid, fontSize: 12.5, lineHeight: 1.6, fontWeight: 300 }}>{s.desc}</p>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {/* flow pills */}
+          <motion.div variants={fadeUp} style={{ marginTop: 40, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+            {[
+              { Icon: Zap,          label: lang === 'fr' ? 'Détection IA' : 'AI Detection' },
+              { Icon: MessageSquare,label: lang === 'fr' ? 'Réponse instantanée' : 'Instant Reply' },
+              { Icon: CalendarCheck,label: lang === 'fr' ? 'Réservation auto' : 'Auto Booking' },
+              { Icon: Bell,         label: lang === 'fr' ? 'Rappel envoyé' : 'Reminder Sent' },
+              { Icon: CheckCircle,  label: lang === 'fr' ? 'Client satisfait' : 'Happy Client' },
+            ].map(({ Icon, label }, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                background: C.blueFaint, border: `1px solid ${C.blueLight}`,
+                borderRadius: 100, padding: '7px 14px',
+                fontSize: 12.5, color: C.blue, fontWeight: 500,
+              }}>
+                <Icon size={13} />{label}
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </Sec>
+
+      {/* ── PRICING ── */}
+      <Sec id="pricing" bg={C.bgAlt}>
+        <Blobs seed={3} opacity={0.32} />
+        <div style={{ ...wrap, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 72, alignItems: 'start', position: 'relative' }}>
+          <div>
+            <motion.p variants={fadeUp} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.mid, marginBottom: 12 }}>{tr.pricingLabel}</motion.p>
+            <motion.h2 variants={fadeUp} style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink, marginBottom: 12 }}>
+              {tr.pricingTitle}
+            </motion.h2>
+            <motion.p variants={fadeUp} style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, marginBottom: 28 }}>{tr.pricingSub}</motion.p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {tr.pricingPerks.map((perk, i) => (
+                <motion.div key={perk} variants={fadeUp} custom={i} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.5, color: C.mid }}>
+                  <Check size={13} color={C.blue} style={{ flexShrink: 0 }} />{perk}
+                </motion.div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
 
-      <section id="pricing">
-        <div className="container">
-          <div className="pricing-wrapper">
-            <div className="pricing-left reveal">
-              <div className="section-label" style={{color:'rgba(255,255,255,0.4)'}}>Pricing</div>
-              <h2 className="section-title">Simple, honest pricing.</h2>
-              <p className="section-sub" style={{marginTop:'16px'}}>One plan. Everything included. No contracts, cancel anytime.</p>
-              <div style={{marginTop:'40px',display:'flex',flexDirection:'column',gap:'12px'}}>
-                {['30-day free trial available','Full setup handled by our team','Support included'].map(t => (
-                  <p key={t} style={{fontSize:'0.875rem',color:'rgba(255,255,255,0.4)',display:'flex',alignItems:'center',gap:'8px'}}><span style={{color:'#2563eb'}}>✓</span>{t}</p>
-                ))}
-              </div>
+          <motion.div variants={fadeUp} style={{
+            background: C.white, border: `1px solid ${C.border}`,
+            borderRadius: 18, padding: '36px 32px', position: 'relative', overflow: 'hidden',
+            boxShadow: '0 4px 28px rgba(26,107,255,0.08)',
+          }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.blue }} />
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.mid, marginBottom: 12 }}>{tr.planLabel}</p>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 7, marginBottom: 4 }}>
+              <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2.8rem', lineHeight: 1, letterSpacing: '-0.04em', color: C.ink }}>{tr.planPrice}</span>
+              <span style={{ fontSize: 14, color: C.mid, fontWeight: 300, marginBottom: 5 }}>{tr.planPer}</span>
             </div>
-            <div className="pricing-card reveal">
-              <div className="price-label">Monthly plan</div>
-              <div className="price-amount">79 DT<span> / month</span></div>
-              <div className="price-setup">+ 29 DT one-time setup fee</div>
-              <ul className="price-features">
-                {['AI-powered responses in Arabic, French and Darija','Appointment booking directly on WhatsApp','Automatic calendar sync','Smart reminders for you and your clients','Comment reply automation','Human handoff when needed','Instant push notifications','Full setup included'].map(f => <li key={f}>{f}</li>)}
-              </ul>
-              <a href="#contact" className="price-cta">Get started today</a>
-            </div>
-          </div>
+            <p style={{ fontSize: 12.5, color: C.mid, marginBottom: 22, paddingBottom: 22, borderBottom: `1px solid ${C.border}` }}>{tr.planSetup}</p>
+            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {tr.planFeatures.map(f => (
+                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13, color: C.ink }}>
+                  <Check size={13} color={C.blue} style={{ flexShrink: 0, marginTop: 2 }} />{f}
+                </li>
+              ))}
+            </ul>
+            <a href="#contact" style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+              background: C.blue, color: C.white, borderRadius: 100,
+              padding: '12px 0', fontSize: 13.5, fontWeight: 500, textDecoration: 'none', transition: 'background 0.2s',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.background = C.blueDark)}
+              onMouseLeave={e => (e.currentTarget.style.background = C.blue)}>
+              {tr.planCta} <ArrowRight size={14} />
+            </a>
+          </motion.div>
         </div>
-      </section>
+      </Sec>
 
-      <section id="faq">
-        <div className="container">
-          <div style={{textAlign:'center',marginBottom:'56px'}} className="reveal">
-            <div className="section-label">FAQ</div>
-            <h2 className="section-title" style={{marginInline:'auto'}}>Questions you might have</h2>
-          </div>
-          <div className="faq-grid" id="faqGrid">
-            {[
-              { q:'Does it work with my existing WhatsApp number?', a:'Yes — we connect the bot to your business WhatsApp number using the official WhatsApp Business API. Your number stays the same and your clients won\'t notice a difference.' },
-              { q:'Can I customize what the bot says?', a:'Absolutely. During setup, we tailor the bot\'s tone, the information it shares, and how it handles specific questions based on your business. You can request changes at any time.' },
-              { q:'What if a client asks something the bot doesn\'t know?', a:'The bot will gracefully let the client know it\'s transferring them to a human agent. You get notified immediately and can take over the conversation from your phone.' },
-              { q:'How does appointment booking work exactly?', a:'The bot asks for the client\'s preferred time, confirms their booking in the chat, and creates a calendar event. You receive a push notification and the client gets a reminder before the appointment.' },
-              { q:'Is my data secure?', a:'Yes. All data is stored on private servers and we never sell or share your business or client information. Conversations are only accessible to you and your team.' },
-              { q:'Can I cancel at any time?', a:'Yes, there are no long-term contracts. You can cancel your subscription at any time with no penalties. The 29 DT setup fee is one-time and non-refundable.' },
-            ].map((item) => (
-              <div className="faq-item reveal" key={item.q}>
-                <div className="faq-q">{item.q}<span className="icon">+</span></div>
-                <div className="faq-a">{item.a}</div>
-              </div>
-            ))}
-          </div>
+      {/* ── FAQ ── */}
+      <Sec id="faq" bg={C.bg}>
+        <Blobs seed={4} opacity={0.28} />
+        <div style={{ ...wrap, maxWidth: 740, position: 'relative' }}>
+          <motion.div variants={fadeUp} style={{ textAlign: 'center', marginBottom: 44 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.faqLabel}</p>
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink }}>{tr.faqTitle}</h2>
+          </motion.div>
+          <motion.div variants={stagger} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {tr.faqs.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
+          </motion.div>
         </div>
-      </section>
+      </Sec>
 
-      <section id="contact">
-        <div className="container">
-          <div className="contact-grid">
-            <div className="reveal">
-              <div className="section-label">Book a demo</div>
-              <h2 className="section-title">Let&apos;s talk about your business</h2>
-              <p className="section-sub" style={{marginTop:'16px'}}>Fill in the form and we&apos;ll reach out within 24 hours to schedule a free 30-minute demo call — no commitment required.</p>
-              <div style={{marginTop:'40px',display:'flex',flexDirection:'column',gap:'16px'}}>
-                {[
-                  { icon:'📍', text:'Based in Tunisia — serving businesses nationwide' },
-                  { icon:'⏱', text:'Demo calls are 30 minutes, free of charge' },
-                  { icon:'🌍', text:'Available in Arabic, French, and Darija' },
-                ].map(i => (
-                  <div key={i.text} style={{display:'flex',alignItems:'center',gap:'12px',fontSize:'0.875rem',color:'var(--mid)'}}>
-                    <span style={{fontSize:'1.1rem'}}>{i.icon}</span>{i.text}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="contact-form reveal">
-              <div className="form-group"><label>Full name</label><input type="text" placeholder="Ahmed Ben Ali" /></div>
-              <div className="form-group"><label>WhatsApp number</label><input type="tel" placeholder="+216 XX XXX XXX" /></div>
-              <div className="form-group">
-                <label>Business type</label>
-                <select>
-                  <option value="">Select your sector</option>
-                  {['Medical / Clinic','Beauty & Wellness','Retail / E-commerce','Real Estate','Education / Tutoring','Restaurant / Food','Other'].map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-              <div className="form-group"><label>What would you like to automate?</label><textarea rows={3} placeholder="Ex: appointment booking, FAQ responses, reminders..."></textarea></div>
-              <button className="form-submit" id="submitBtn">Send my request →</button>
+      {/* ── CONTACT ── */}
+      <Sec id="contact" bg={C.bgAlt}>
+        <Blobs seed={5} opacity={0.38} />
+        <div style={{ ...wrap, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 72, alignItems: 'start', position: 'relative' }}>
+          <div>
+            <motion.p variants={fadeUp} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.contactLabel}</motion.p>
+            <motion.h2 variants={fadeUp} style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink, marginBottom: 12 }}>
+              {tr.contactTitle}
+            </motion.h2>
+            <motion.p variants={fadeUp} style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, marginBottom: 28 }}>{tr.contactSub}</motion.p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {([MapPin, Clock, Languages] as const).map((Icon, i) => (
+                <motion.div key={i} variants={fadeUp} custom={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 11, fontSize: 13, color: C.mid }}>
+                  <Icon size={14} color={C.blue} style={{ flexShrink: 0, marginTop: 2 }} />
+                  {tr.contactInfo[i]?.text}
+                </motion.div>
+              ))}
             </div>
           </div>
+          <ContactForm tr={tr} />
         </div>
-      </section>
+      </Sec>
 
-      <footer>
-        <a href="#" className="footer-logo">
-          <img src="/logo.png" alt="Repondly" />
-          Répondly<span>.</span>
-        </a>
-        <p>© 2026 Répondly. All rights reserved.</p>
-        <p style={{fontSize:'0.8rem',color:'var(--mid)'}}>Made in Tunisia</p>
+      {/* ── FOOTER ── */}
+      <footer style={{ borderTop: `1px solid ${C.border}`, padding: '28px 48px', background: C.white }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+            <Image src="/logo.png" alt="Répondly" width={22} height={22} style={{ objectFit: 'contain' }} />
+            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1rem', color: C.ink, letterSpacing: '-0.02em' }}>
+              Répondly<span style={{ color: C.blue }}>.</span>
+            </span>
+          </a>
+          <p style={{ fontSize: 12, color: C.mid }}>{tr.footerRights}</p>
+        </div>
       </footer>
-
-      <script dangerouslySetInnerHTML={{__html: `
-        const nav = document.getElementById('nav');
-        window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 20));
-        const reveals = document.querySelectorAll('.reveal');
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach((e, i) => {
-            if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i * 60); observer.unobserve(e.target); }
-          });
-        }, { threshold: 0.1 });
-        reveals.forEach(el => observer.observe(el));
-        document.querySelectorAll('.faq-item').forEach(item => {
-          item.addEventListener('click', () => {
-            const wasOpen = item.classList.contains('open');
-            document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-            if (!wasOpen) item.classList.add('open');
-          });
-        });
-        const btn = document.getElementById('submitBtn');
-        if (btn) btn.addEventListener('click', () => {
-          btn.textContent = '✓ Request sent!';
-          btn.style.background = '#16a34a';
-          btn.disabled = true;
-        });
-      `}} />
-    </>
+    </div>
   )
 }

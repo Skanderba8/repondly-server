@@ -3,9 +3,11 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useLang } from '@/lib/LangContext'
 
 export default function SignIn() {
   const router = useRouter()
+  const { tr, lang, toggle } = useLang()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -17,33 +19,36 @@ export default function SignIn() {
     setError('')
     const res = await signIn('credentials', { email, password, redirect: false })
     setLoading(false)
-    if (res?.error) return setError('Invalid email or password')
+    if (res?.error) return setError(tr.signinError)
     router.push('/dashboard')
   }
 
   return (
     <main style={styles.page}>
       <div style={styles.card}>
-        <div style={styles.logo}>Répondly<span style={styles.dot}>.</span></div>
-        <h1 style={styles.title}>Welcome back</h1>
-        <p style={styles.sub}>Sign in to your account</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+          <div style={styles.logo}>Répondly<span style={styles.dot}>.</span></div>
+          <button onClick={toggle} style={styles.langBtn}>{lang === 'fr' ? 'EN' : 'FR'}</button>
+        </div>
+        <h1 style={styles.title}>{tr.signinTitle}</h1>
+        <p style={styles.sub}>{tr.signinSub}</p>
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.group}>
-            <label style={styles.label}>Email</label>
-            <input style={styles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
+            <label style={styles.label}>{tr.signinEmail}</label>
+            <input style={styles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" required />
           </div>
           <div style={styles.group}>
-            <label style={styles.label}>Password</label>
+            <label style={styles.label}>{tr.signinPassword}</label>
             <input style={styles.input} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
           </div>
           {error && <p style={styles.error}>{error}</p>}
           <button style={{ ...styles.btn, opacity: loading ? 0.7 : 1 }} type="submit" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? tr.signinLoading : tr.signinBtn}
           </button>
         </form>
         <p style={styles.footer}>
-          No account?{' '}
-          <Link href="/auth/register" style={styles.link}>Create one</Link>
+          {tr.signinNoAccount}{' '}
+          <Link href="/auth/register" style={styles.link}>{tr.signinCreate}</Link>
         </p>
       </div>
     </main>
@@ -53,8 +58,9 @@ export default function SignIn() {
 const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f7f6f3', fontFamily: "'DM Sans', sans-serif" },
   card: { background: '#fff', border: '1px solid #e5e5e3', borderRadius: '16px', padding: '48px 40px', width: '100%', maxWidth: '400px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' },
-  logo: { fontFamily: "'DM Serif Display', serif", fontSize: '1.4rem', marginBottom: '28px', color: '#111' },
+  logo: { fontFamily: "'DM Serif Display', serif", fontSize: '1.4rem', color: '#111' },
   dot: { color: '#2563eb' },
+  langBtn: { background: 'transparent', border: '1px solid #e5e5e3', color: '#6b6b67', padding: '5px 10px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' },
   title: { fontSize: '1.5rem', fontWeight: 600, marginBottom: '6px', letterSpacing: '-0.02em' },
   sub: { color: '#6b6b67', fontSize: '0.9rem', marginBottom: '28px' },
   form: { display: 'flex', flexDirection: 'column', gap: '16px' },
