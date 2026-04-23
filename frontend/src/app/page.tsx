@@ -627,51 +627,83 @@ export default function Home() {
       {/* ── PRICING ── */}
       <Sec id="pricing" bg={C.bgAlt}>
         <Blobs seed={3} opacity={0.32} />
-        <div style={{ ...wrap, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 72, alignItems: 'start', position: 'relative' }}>
-          <div>
-            <motion.p variants={fadeUp} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.mid, marginBottom: 12 }}>{tr.pricingLabel}</motion.p>
-            <motion.h2 variants={fadeUp} style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink, marginBottom: 12 }}>
+        <div style={{ ...wrap, position: 'relative' }}>
+          {/* Header */}
+          <motion.div variants={fadeUp} style={{ textAlign: 'center', marginBottom: 48 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.pricingLabel}</p>
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink, marginBottom: 12 }}>
               {tr.pricingTitle}
-            </motion.h2>
-            <motion.p variants={fadeUp} style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, marginBottom: 28 }}>{tr.pricingSub}</motion.p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {tr.pricingPerks.map((perk, i) => (
-                <motion.div key={perk} variants={fadeUp} custom={i} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.5, color: C.mid }}>
-                  <Check size={13} color={C.blue} style={{ flexShrink: 0 }} />{perk}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          <motion.div variants={fadeUp} style={{
-            background: C.white, border: `1px solid ${C.border}`,
-            borderRadius: 18, padding: '36px 32px', position: 'relative', overflow: 'hidden',
-            boxShadow: '0 4px 28px rgba(26,107,255,0.08)',
-          }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.blue }} />
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.mid, marginBottom: 12 }}>{tr.planLabel}</p>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 7, marginBottom: 4 }}>
-              <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2.8rem', lineHeight: 1, letterSpacing: '-0.04em', color: C.ink }}>{tr.planPrice}</span>
-              <span style={{ fontSize: 14, color: C.mid, fontWeight: 300, marginBottom: 5 }}>{tr.planPer}</span>
-            </div>
-            <p style={{ fontSize: 12.5, color: C.mid, marginBottom: 22, paddingBottom: 22, borderBottom: `1px solid ${C.border}` }}>{tr.planSetup}</p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {tr.planFeatures.map(f => (
-                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13, color: C.ink }}>
-                  <Check size={13} color={C.blue} style={{ flexShrink: 0, marginTop: 2 }} />{f}
-                </li>
-              ))}
-            </ul>
-            <a href="#contact" style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              background: C.blue, color: C.white, borderRadius: 100,
-              padding: '12px 0', fontSize: 13.5, fontWeight: 500, textDecoration: 'none', transition: 'background 0.2s',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.background = C.blueDark)}
-              onMouseLeave={e => (e.currentTarget.style.background = C.blue)}>
-              {tr.planCta} <ArrowRight size={14} />
-            </a>
+            </h2>
+            <p style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, maxWidth: 460, margin: '0 auto' }}>{tr.pricingSub}</p>
           </motion.div>
+
+          {/* 3-column plan cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
+            {tr.plans.map((plan, i) => {
+              const isPro = i === 1
+              return (
+                <motion.div key={plan.name} variants={fadeUp} custom={i} style={{
+                  background: C.white,
+                  border: `1px solid ${isPro ? C.blue : C.border}`,
+                  borderRadius: 14,
+                  padding: 28,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: isPro ? '0 4px 28px rgba(26,107,255,0.12)' : 'none',
+                  opacity: isPro ? 1 : 0.92,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}>
+                  {/* Blue top border accent for Pro */}
+                  {isPro && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.blue }} />}
+
+                  {/* Recommandé badge */}
+                  {isPro && (
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      background: C.blueLight, color: C.blue,
+                      borderRadius: 100, padding: '3px 10px',
+                      fontSize: 11, fontWeight: 600, letterSpacing: '0.06em',
+                      marginBottom: 14,
+                    }}>
+                      {tr.pricingBadge}
+                    </div>
+                  )}
+
+                  <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.mid, marginBottom: 10, marginTop: isPro ? 0 : 14 }}>{plan.name}</p>
+
+                  {/* Price */}
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 2 }}>
+                    <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2.2rem', lineHeight: 1, letterSpacing: '-0.04em', color: C.ink }}>{plan.price}</span>
+                    <span style={{ fontSize: 13, color: C.mid, fontWeight: 300, marginBottom: 4 }}>{tr.planPer}</span>
+                  </div>
+                  <p style={{ fontSize: 12.5, color: C.mid, marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${C.border}` }}>{plan.setup}</p>
+
+                  {/* Features */}
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
+                    {plan.features.map(f => (
+                      <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: C.ink }}>
+                        <Check size={13} color={C.blue} style={{ flexShrink: 0, marginTop: 2 }} />{f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <a href="#contact" style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                    background: isPro ? C.blue : 'transparent',
+                    color: isPro ? C.white : C.blue,
+                    border: `1.5px solid ${C.blue}`,
+                    borderRadius: 100,
+                    padding: '11px 0', fontSize: 13.5, fontWeight: 500, textDecoration: 'none', transition: 'background 0.2s, color 0.2s',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.background = C.blue; e.currentTarget.style.color = C.white }}
+                    onMouseLeave={e => { e.currentTarget.style.background = isPro ? C.blue : 'transparent'; e.currentTarget.style.color = isPro ? C.white : C.blue }}>
+                    {tr.planCta} <ArrowRight size={14} />
+                  </a>
+                </motion.div>
+              )
+            })}
+          </div>
         </div>
       </Sec>
 
