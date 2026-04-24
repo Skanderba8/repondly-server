@@ -8,53 +8,53 @@ propriétés couvrant les 10 invariants de sécurité et de routage définis dan
 
 ## Tâches
 
-- [ ] 1. Créer le script de migration `migrate.sh`
-  - [ ] 1.1 Écrire `migrate.sh` à la racine du dépôt avec `set -e` et les blocs `cp`/`mkdir` pour les trois projets
+- [x] 1. Créer le script de migration `migrate.sh`
+  - [x] 1.1 Écrire `migrate.sh` à la racine du dépôt avec `set -e` et les blocs `cp`/`mkdir` pour les trois projets
     - Créer les répertoires `marketing-site/`, `dashboard-app/`, `admin-internal/` avec leurs sous-dossiers
     - Copier tous les fichiers listés dans les requirements 1.2, 1.3, 1.4 depuis `frontend/`
     - Protéger les `.env` existants avec `[ ! -f "$DIR/.env" ]` (requirement 1.5)
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
-  - [ ] 1.2 Écrire les tests unitaires de `migrate.sh`
+  - [x] 1.2 Écrire les tests unitaires de `migrate.sh`
     - Vérifier que les trois répertoires sont créés après exécution
     - Vérifier que chaque fichier listé dans les requirements est présent dans la destination
     - Vérifier qu'un `.env` existant n'est pas écrasé lors d'une seconde exécution
     - _Requirements: 1.1, 1.5_
 
 - [ ] 2. Configurer `marketing-site`
-  - [ ] 2.1 Créer `marketing-site/next.config.ts` avec `allowedDevOrigins` pour le port 3005
+  - [x] 2.1 Créer `marketing-site/next.config.ts` avec `allowedDevOrigins` pour le port 3005
     - Pas de `basePath`, pas de secrets
     - _Requirements: 7.1, 7.4_
-  - [ ] 2.2 Créer `marketing-site/package.json` allégé sans `next-auth`, `@prisma/client`, `bcryptjs`, `pg`
+  - [x] 2.2 Créer `marketing-site/package.json` allégé sans `next-auth`, `@prisma/client`, `bcryptjs`, `pg`
     - Inclure uniquement : `next`, `react`, `react-dom`, `framer-motion`, `lucide-react` + devDependencies TS/ESLint/Vitest
     - _Requirements: 6.1, 6.2_
-  - [ ] 2.3 Créer `marketing-site/.env.example` avec `NEXT_PUBLIC_SITE_URL` et `NEXT_PUBLIC_APP_URL`
+  - [x] 2.3 Créer `marketing-site/.env.example` avec `NEXT_PUBLIC_SITE_URL` et `NEXT_PUBLIC_APP_URL`
     - _Requirements: 2.1, 2.2, 2.3_
-  - [ ] 2.4 Mettre à jour les liens de navigation dans `marketing-site/src/app/page.tsx`
+  - [x] 2.4 Mettre à jour les liens de navigation dans `marketing-site/src/app/page.tsx`
     - Lien "Connexion" → `https://app.repondly.com/auth/signin`
     - Bouton CTA principal → `https://app.repondly.com/auth/register`
     - _Requirements: 2.4, 2.5_
-  - [ ] 2.5 Écrire le test de propriété 8 : `marketing-site` sans dépendances auth/db
+  - [x] 2.5 Écrire le test de propriété 8 : `marketing-site` sans dépendances auth/db
     - **Property 8 : marketing-site sans dépendances auth/db**
     - **Validates: Requirements 2.3, 6.2**
     - Lire `marketing-site/package.json` et vérifier l'absence de `next-auth`, `@prisma/client`, `bcryptjs`, `pg`
     - _Requirements: 2.3, 6.2_
-  - [ ] 2.6 Écrire le test de propriété 9 : liens de navigation pointent vers `app.repondly.com`
+  - [x] 2.6 Écrire le test de propriété 9 : liens de navigation pointent vers `app.repondly.com`
     - **Property 9 : Liens de navigation marketing pointent vers app.repondly.com**
     - **Validates: Requirements 2.4, 2.5**
     - Vérifier que le lien "Connexion" a `href="https://app.repondly.com/auth/signin"` et le CTA `href="https://app.repondly.com/auth/register"`
     - _Requirements: 2.4, 2.5_
 
-- [ ] 3. Configurer `dashboard-app`
-  - [ ] 3.1 Créer `dashboard-app/next.config.ts` avec `allowedDevOrigins` pour le port 3004, sans `basePath`
+- [-] 3. Configurer `dashboard-app`
+  - [x] 3.1 Créer `dashboard-app/next.config.ts` avec `allowedDevOrigins` pour le port 3004, sans `basePath`
     - _Requirements: 7.2, 7.4_
-  - [ ] 3.2 Créer `dashboard-app/src/middleware.ts` adapté au périmètre dashboard/auth
+  - [x] 3.2 Créer `dashboard-app/src/middleware.ts` adapté au périmètre dashboard/auth
     - Protéger `/dashboard/:path*`, `/auth/signin`, `/auth/register`
     - Rediriger non-authentifié vers `/auth/signin`, authentifié hors auth vers `/dashboard`
     - _Requirements: 3.5, 3.6, 5.2_
-  - [ ] 3.3 Créer `dashboard-app/src/app/page.tsx` avec redirection racine côté serveur
+  - [x] 3.3 Créer `dashboard-app/src/app/page.tsx` avec redirection racine côté serveur
     - Session valide → `redirect('/dashboard')`, sinon → `redirect('/auth/signin')`
     - _Requirements: 3.4, 12.1, 12.2, 12.3_
-  - [ ] 3.4 Créer `dashboard-app/.env.example` avec toutes les variables requises
+  - [x] 3.4 Créer `dashboard-app/.env.example` avec toutes les variables requises
     - `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `AUTH_TRUST_HOST`, `ADMIN_EMAIL`, `INTERNAL_SECRET`
     - _Requirements: 3.1, 3.2_
   - [ ] 3.5 Écrire le test de propriété 1 : protection des routes `/dashboard/*` sans session
@@ -81,17 +81,17 @@ propriétés couvrant les 10 invariants de sécurité et de routage définis dan
 - [ ] 4. Checkpoint — Vérifier la cohérence des configurations dashboard-app
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Configurer `admin-internal`
-  - [ ] 5.1 Créer `admin-internal/next.config.ts` avec `basePath: '/admin'` et `allowedDevOrigins` pour le port 3006
+- [-] 5. Configurer `admin-internal`
+  - [x] 5.1 Créer `admin-internal/next.config.ts` avec `basePath: '/admin'` et `allowedDevOrigins` pour le port 3006
     - _Requirements: 7.3, 7.5_
-  - [ ] 5.2 Créer `admin-internal/src/middleware.ts` avec `matcher: ['/:path*']` et double guard auth + isAdmin
+  - [x] 5.2 Créer `admin-internal/src/middleware.ts` avec `matcher: ['/:path*']` et double guard auth + isAdmin
     - Non-authentifié → redirect `https://app.repondly.com/auth/signin`
     - Authentifié non-admin → redirect `https://app.repondly.com/dashboard`
     - _Requirements: 4.3, 4.4, 5.3, 5.4, 5.5_
-  - [ ] 5.3 Créer `admin-internal/src/lib/auth.config.ts` avec `pages.signIn` pointant vers l'URL absolue de `dashboard-app`
+  - [x] 5.3 Créer `admin-internal/src/lib/auth.config.ts` avec `pages.signIn` pointant vers l'URL absolue de `dashboard-app`
     - `signIn: 'https://app.repondly.com/auth/signin'`
     - _Requirements: 4.3, 4.6_
-  - [ ] 5.4 Créer `admin-internal/.env.example` avec toutes les variables requises
+  - [x] 5.4 Créer `admin-internal/.env.example` avec toutes les variables requises
     - `DATABASE_URL`, `NEXTAUTH_SECRET` (identique à dashboard-app), `NEXTAUTH_URL`, `AUTH_TRUST_HOST`, `ADMIN_EMAIL`, `INTERNAL_SECRET`
     - _Requirements: 4.1, 4.2_
   - [ ] 5.5 Écrire le test de propriété 5 : redirection non-authentifié vers signin absolu
@@ -115,16 +115,16 @@ propriétés couvrant les 10 invariants de sécurité et de routage définis dan
     - Scanner tous les fichiers `.tsx`/`.ts` de `admin-internal/src/` et vérifier l'absence d'imports `LangContext` ou `i18n`
     - _Requirements: 6.5_
 
-- [ ] 6. Mettre à jour la configuration Nginx
-  - [ ] 6.1 Modifier `nginx.conf` pour ajouter le bloc `repondly.com` → port 3005 et le bloc `/admin` → port 3006
+- [x] 6. Mettre à jour la configuration Nginx
+  - [x] 6.1 Modifier `nginx.conf` pour ajouter le bloc `repondly.com` → port 3005 et le bloc `/admin` → port 3006
     - Bloc `repondly.com`/`www.repondly.com` → `proxy_pass http://127.0.0.1:3005`
     - Bloc `location /admin` avant `location /` → `proxy_pass http://127.0.0.1:3006` avec `X-Forwarded-Proto: https`
     - Conserver les blocs `/bot/` et `/chatwoot-webhook` inchangés
     - Redirection HTTP 80 → HTTPS 301
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
 
-- [ ] 7. Documenter les commandes PM2
-  - [ ] 7.1 Ajouter les commandes PM2 dans `README.md` ou un fichier `deploy.sh` à la racine
+- [x] 7. Documenter les commandes PM2
+  - [x] 7.1 Ajouter les commandes PM2 dans `README.md` ou un fichier `deploy.sh` à la racine
     - `pm2 start` pour les trois projets avec les bons ports et noms de processus
     - `pm2 save` et `pm2 startup` pour la persistance
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
