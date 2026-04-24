@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import KanbanBoard from '@/components/admin/KanbanBoard'
+import OnboardingClient from './OnboardingClient'
 
 export default async function OnboardingPage() {
   const businesses = await prisma.business.findMany({
@@ -20,7 +20,7 @@ export default async function OnboardingPage() {
           {businesses.length} client{businesses.length !== 1 ? 's' : ''} en cours de suivi
         </p>
       </div>
-      <KanbanBoard businesses={businesses} />
+      <OnboardingClient businesses={businesses} />
     </div>
   )
 }
