@@ -241,9 +241,9 @@ const HANDOFF_TRIGGERS = [
 ];
 
 const HANDOFF_REPLIES = {
-  fr: `Bien sûr ! 🙏 Un membre de notre équipe va vous rejoindre dans quelques instants.\n\nEn attendant, pouvez-vous nous décrire brièvement votre demande ? Ça nous permettra de vous aider plus rapidement 😊`,
-  ar: `بالتأكيد ! 🙏 سيتولى أحد موظفينا محادثتك خلال لحظات.\n\nفي انتظار ذلك، هل يمكنك وصف طلبك باختصار ؟ سيساعدنا ذلك على مساعدتك بشكل أسرع 😊`,
-  en: `Of course! 🙏 A member of our team will be with you in just a moment.\n\nWhile you wait, could you briefly describe what you need? It'll help us assist you faster 😊`
+  fr: "Bien sûr ! Un membre de notre équipe va reprendre la conversation dans quelques instants. 🙏",
+  ar: "بالتأكيد ! سيتولى أحد موظفينا محادثتك خلال لحظات. 🙏",
+  en: "Of course! A member of our team will take over your conversation shortly. 🙏"
 };
 
 function needsHumanHandover(message) {
@@ -274,43 +274,14 @@ async function replyViaChatwoot(conversationId, message) {
 async function assignToHuman(conversationId) {
   const agentId = parseInt(process.env.HANDOFF_AGENT_ID);
   if (!agentId) {
-    console.warn(`[${conversationId}] HANDOFF_AGENT_ID not set — skipping`);
+    console.warn(`[${conversationId}] HANDOFF_AGENT_ID not set in .env — skipping assignment`);
     return;
   }
-  try {
-    // 1. Assign in Chatwoot
-    await axios.post(
-      `${chatwootBase()}/conversations/${conversationId}/assignments`,
-      { assignee_id: agentId },
-      { headers: chatwootHeaders() }
-    );
-    console.log(`[${conversationId}] Assigned to agent ${agentId}`);
-    // Send private note to trigger Chatwoot notification
-await axios.post(
-  `${chatwootBase()}/conversations/${conversationId}/messages`,
-  { 
-    content: `@Repondly client requested a human agent. Please take over this conversation.`, 
-    message_type: 'outgoing', 
-    private: true 
-  },
-  { headers: chatwootHeaders() }
-);
-console.log(`[${conversationId}] Private note sent`);
-    // 2. Notify YOU via WhatsApp directly
-    await axios.post(
-      `https://graph.facebook.com/v19.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-      {
-        messaging_product: 'whatsapp',
-        to: process.env.OWNER_PHONE,
-        type: 'text',
-        text: { body: `🔔 Conversation #${conversationId} needs your attention — a client requested a human agent.` }
-      },
-      { headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` } }
-    );
-    console.log(`[${conversationId}] Owner notified via WhatsApp`);
-  } catch (err) {
-    console.error(`[${conversationId}] Assignment/notify failed:`, err.response?.data || err.message);
-  }
+  await axios.patch(
+    `${chatwootBase()}/conversations/${conversationId}/assignments`,
+    { assignee_id: agentId },
+    { headers: chatwootHeaders() }
+  );
 }
 
 // ─── Groq API ─────────────────────────────────────────────────────────────────
@@ -418,6 +389,6 @@ app.get('/health', (_req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-const PORT = process.env.PORT || 3001;
-const server = await app.listen(PORT);
-console.log(`Répondly bot running on port ${PORT}`);
+app.listen(process.env.PORT, () => {
+  console.log(`Répondly bot running on port ${process.env.PORT}`);
+});
