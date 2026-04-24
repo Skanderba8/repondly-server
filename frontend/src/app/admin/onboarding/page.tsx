@@ -11,10 +11,15 @@ export default async function OnboardingPage() {
   })
 
   return (
-    <div>
-      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0d1b2e', marginBottom: 24 }}>
-        Suivi d&apos;onboarding
-      </h1>
+    <div style={{ padding: '32px 36px', background: '#f4f7fb', minHeight: '100vh' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0d1b2e', margin: 0 }}>
+          Suivi d&apos;onboarding
+        </h1>
+        <p style={{ fontSize: 13, color: '#5a6a80', margin: '4px 0 0' }}>
+          {businesses.length} client{businesses.length !== 1 ? 's' : ''} en cours de suivi
+        </p>
+      </div>
       <KanbanBoard businesses={businesses} />
     </div>
   )

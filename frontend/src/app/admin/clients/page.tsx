@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import ClientsTable from '@/components/admin/ClientsTable'
-import Link from 'next/link'
+import ClientsHeader from './ClientsHeader'
 
 export default async function AdminClientsPage() {
   const businesses = await prisma.business.findMany({
@@ -8,24 +8,8 @@ export default async function AdminClientsPage() {
   })
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0d1b2e' }}>Clients</h1>
-        <Link
-          href="/admin/clients/new"
-          style={{
-            background: '#1a6bff',
-            color: '#fff',
-            padding: '8px 16px',
-            borderRadius: 8,
-            textDecoration: 'none',
-            fontSize: 14,
-            fontWeight: 600,
-          }}
-        >
-          + Ajouter un client
-        </Link>
-      </div>
+    <div style={{ padding: '32px 36px', background: '#f4f7fb', minHeight: '100vh' }}>
+      <ClientsHeader count={businesses.length} />
       <ClientsTable businesses={businesses} />
     </div>
   )
