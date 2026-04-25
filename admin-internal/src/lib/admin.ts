@@ -1,8 +1,29 @@
-import type { Session } from 'next-auth'
+import { auth } from '@/lib/auth'
 
-export function isAdmin(session: Session | null): boolean {
-  return session?.user?.email === process.env.ADMIN_EMAIL
+/**
+ * Returns true if the current session user has the ADMIN or SUPER_ADMIN role.
+ * Replaces the legacy email-based isAdmin check.
+ */
+export async function isAdminRole(): Promise<boolean> {
+  const session = await auth()
+  const role = session?.user?.role
+  return role === 'ADMIN' || role === 'SUPER_ADMIN'
 }
+
+/**
+ * Returns true only if the current session user has the SUPER_ADMIN role.
+ * Use this to gate destructive or reserved operations.
+ */
+export async function isSuperAdmin(): Promise<boolean> {
+  const session = await auth()
+  return session?.user?.role === 'SUPER_ADMIN'
+}
+
+/**
+ * Backward-compatible alias for isAdminRole().
+ * @deprecated Use isAdminRole() instead.
+ */
+export const isAdmin = isAdminRole
 
 export const PLAN_PRICES: Record<string, number> = {
   STARTER: 49,

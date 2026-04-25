@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
   Users, TrendingUp, AlertTriangle, Settings2,
-  Bot, Globe, ArrowRight, Activity,
+  Bot, Globe, ArrowRight, Activity, Workflow, MessageSquare, Megaphone, LayoutDashboard,
 } from 'lucide-react'
 
 const C = {
@@ -57,12 +57,20 @@ type Props = {
     trialsExpiring: number
     pendingConfig: number
   }
-  services: { botOnline: boolean; appOnline: boolean }
+  services: {
+    botOnline: boolean
+    appOnline: boolean
+    n8nOnline: boolean
+    chatwootOnline: boolean
+    marketingOnline: boolean
+    dashboardOnline: boolean
+  }
+  globalStatus: 'ok' | 'degraded' | 'critical'
   recentActivity: Array<{ id: string; businessName: string; action: string; createdAt: string }>
   planBreakdown: Record<string, number>
 }
 
-export default function AdminOverviewClient({ stats, services, recentActivity, planBreakdown }: Props) {
+export default function AdminOverviewClient({ stats, services, globalStatus, recentActivity, planBreakdown }: Props) {
   const statCards = [
     {
       label: 'Total clients',
@@ -111,10 +119,23 @@ export default function AdminOverviewClient({ stats, services, recentActivity, p
         transition={{ duration: 0.3 }}
         style={{ marginBottom: 28 }}
       >
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>Vue d&apos;ensemble</h1>
-        <p style={{ fontSize: 13, color: C.mid, margin: '4px 0 0' }}>
-          {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>Vue d&apos;ensemble</h1>
+            <p style={{ fontSize: 13, color: C.mid, margin: '4px 0 0' }}>
+              {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: 700,
+            background: globalStatus === 'ok' ? C.greenBg : globalStatus === 'degraded' ? C.yellowBg : C.redBg,
+            color: globalStatus === 'ok' ? C.green : globalStatus === 'degraded' ? C.yellow : C.red,
+          }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
+            {globalStatus === 'ok' ? 'Tous les systèmes opérationnels' : globalStatus === 'degraded' ? 'Système dégradé' : 'Système critique'}
+          </span>
+        </div>
       </motion.div>
 
       {/* Stat cards */}
@@ -186,6 +207,10 @@ export default function AdminOverviewClient({ stats, services, recentActivity, p
               {[
                 { label: 'Bot WhatsApp', online: services.botOnline, icon: Bot, href: '/admin/bot' },
                 { label: 'app.repondly.com', online: services.appOnline, icon: Globe, href: '/admin/system' },
+                { label: 'n8n', online: services.n8nOnline, icon: Workflow, href: '/admin/n8n' },
+                { label: 'Chatwoot', online: services.chatwootOnline, icon: MessageSquare, href: '/admin/chatwoot' },
+                { label: 'Marketing', online: services.marketingOnline, icon: Megaphone, href: '/admin/system' },
+                { label: 'Dashboard', online: services.dashboardOnline, icon: LayoutDashboard, href: '/admin/system' },
               ].map(svc => (
                 <Link key={svc.label} href={svc.href} style={{ textDecoration: 'none' }}>
                   <div style={{

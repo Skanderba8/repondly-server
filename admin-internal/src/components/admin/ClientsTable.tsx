@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Business } from '@prisma/client'
-import { filterBusinesses } from '@/lib/admin'
+import { filterBusinesses } from '@/lib/admin-utils'
 import { Search, SlidersHorizontal, ArrowUpRight, ChevronUp, ChevronDown } from 'lucide-react'
 
 const C = {

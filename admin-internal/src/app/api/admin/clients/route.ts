@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
-import { isAdmin } from '@/lib/admin'
+import { requireAdmin } from '@/lib/admin-auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
-export async function GET() {
-  const session = await auth()
-  if (!isAdmin(session)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+export async function GET(request: NextRequest) {
+  const auth = await requireAdmin(request)
+  if (auth instanceof NextResponse) return auth
 
   const businesses = await prisma.business.findMany({
     orderBy: { createdAt: 'desc' },
@@ -15,11 +14,11 @@ export async function GET() {
   return NextResponse.json(businesses)
 }
 
-export async function POST(req: NextRequest) {
-  const session = await auth()
-  if (!isAdmin(session)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request)
+  if (auth instanceof NextResponse) return auth
 
-  const body = await req.json()
+  const body = await request.json() as { name?: string; email?: string; password?: string; plan?: string; trialEndsAt?: string }
   const { name, email, password, plan, trialEndsAt } = body
 
   if (!name || !email || !password) {
@@ -35,7 +34,7 @@ export async function POST(req: NextRequest) {
       name,
       email,
       passwordHash,
-      plan: plan ?? 'FREE',
+      plan: (plan ?? 'FREE') as 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS',
       trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
     },
   })

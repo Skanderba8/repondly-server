@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -16,6 +16,9 @@ import {
   ChevronRight,
   LogOut,
   Shield,
+  Workflow,
+  MessageSquare,
+  Database,
 } from 'lucide-react'
 
 const C = {
@@ -29,19 +32,50 @@ const C = {
   hover: '#f8faff',
 }
 
-const navLinks = [
+type NavLink = {
+  label: string
+  href: string
+  icon: React.ElementType
+  exact: boolean
+  superAdminOnly?: boolean
+  badgeKey?: 'trialsExpiring' | 'pendingMigrations'
+}
+
+const navLinks: NavLink[] = [
   { label: "Vue d'ensemble", href: '/admin', icon: LayoutDashboard, exact: true },
-  { label: 'Clients', href: '/admin/clients', icon: Users, exact: false },
+  { label: 'Clients', href: '/admin/clients', icon: Users, exact: false, badgeKey: 'trialsExpiring' },
   { label: 'Onboarding', href: '/admin/onboarding', icon: Kanban, exact: false },
   { label: 'Bot Monitor', href: '/admin/bot', icon: Activity, exact: false },
   { label: 'Facturation', href: '/admin/billing', icon: CreditCard, exact: false },
   { label: 'Système', href: '/admin/system', icon: Server, exact: false },
+  { label: 'n8n', href: '/admin/n8n', icon: Workflow, exact: false },
+  { label: 'Chatwoot', href: '/admin/chatwoot', icon: MessageSquare, exact: false },
+  { label: 'Base de données', href: '/admin/database', icon: Database, exact: false, badgeKey: 'pendingMigrations' },
+  { label: 'Accès', href: '/admin/access', icon: Shield, exact: false, superAdminOnly: true },
 ]
 
-export default function AdminSidebar({ adminEmail }: { adminEmail: string }) {
+interface AdminSidebarProps {
+  adminUser: {
+    email: string
+    name: string
+    role: 'SUPER_ADMIN' | 'ADMIN'
+  }
+}
+
+export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [hoveredHref, setHoveredHref] = useState<string | null>(null)
+  const [badges, setBadges] = useState<{ trialsExpiring: number; pendingMigrations: number }>({ trialsExpiring: 0, pendingMigrations: 0 })
+
+  useEffect(() => {
+    fetch('/api/admin/badges', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setBadges(d as typeof badges) })
+      .catch(() => {})
+  }, [])
+
+  const visibleLinks = navLinks.filter(l => !l.superAdminOnly || adminUser.role === 'SUPER_ADMIN')
 
   function isActive(href: string, exact: boolean) {
     if (exact) return pathname === href
@@ -161,9 +195,10 @@ export default function AdminSidebar({ adminEmail }: { adminEmail: string }) {
         gap: 2,
         overflowY: 'auto',
       }}>
-        {navLinks.map(({ label, href, icon: Icon, exact }) => {
+        {visibleLinks.map(({ label, href, icon: Icon, exact, badgeKey }) => {
           const active = isActive(href, exact)
           const hovered = hoveredHref === href
+          const badgeCount = badgeKey ? badges[badgeKey] : 0
           return (
             <Link
               key={href}
@@ -211,12 +246,22 @@ export default function AdminSidebar({ adminEmail }: { adminEmail: string }) {
                     animate={{ opacity: 1, width: 'auto' }}
                     exit={{ opacity: 0, width: 0 }}
                     transition={{ duration: 0.18 }}
-                    style={{ position: 'relative', zIndex: 1, overflow: 'hidden' }}
+                    style={{ position: 'relative', zIndex: 1, overflow: 'hidden', flex: 1 }}
                   >
                     {label}
                   </motion.span>
                 )}
               </AnimatePresence>
+              {!collapsed && badgeCount > 0 && (
+                <span style={{
+                  position: 'relative', zIndex: 1,
+                  background: badgeKey === 'pendingMigrations' ? '#d97706' : '#dc2626',
+                  color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700,
+                  padding: '1px 6px', minWidth: 18, textAlign: 'center',
+                }}>
+                  {badgeCount}
+                </span>
+              )}
             </Link>
           )
         })}
@@ -252,14 +297,16 @@ export default function AdminSidebar({ adminEmail }: { adminEmail: string }) {
                 flexShrink: 0,
               }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>
-                  {adminEmail.slice(0, 2).toUpperCase()}
+                  {(adminUser.name || adminUser.email).slice(0, 2).toUpperCase()}
                 </span>
               </div>
               <div style={{ overflow: 'hidden', flex: 1 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {adminEmail}
+                  {adminUser.name || adminUser.email}
                 </div>
-                <div style={{ fontSize: 10, color: C.mid }}>Administrateur</div>
+                <div style={{ fontSize: 10, color: C.mid }}>
+                  {adminUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Administrateur'}
+                </div>
               </div>
             </motion.div>
           )}

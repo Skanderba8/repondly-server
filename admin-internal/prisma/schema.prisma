@@ -116,12 +116,26 @@ model OnboardingStage {
 
 model ActivityLog {
   id          String   @id @default(cuid())
-  businessId  String
+  businessId  String?
+  adminUserId String?
   action      String
   metadata    Json?
+  ipAddress   String?
   createdAt   DateTime @default(now())
 
-  business    Business @relation(fields: [businessId], references: [id])
+  business    Business? @relation(fields: [businessId], references: [id])
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  role         AdminRole @default(ADMIN)
+  active       Boolean   @default(true)
+  passwordHash String
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model BotEvent {
@@ -176,4 +190,9 @@ enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELLED
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
 }

@@ -20,8 +20,11 @@ export default function SignIn() {
     const res = await signIn('credentials', { email, password, redirect: false })
     setLoading(false)
     if (res?.error) return setError(tr.signinError)
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
-    router.push(adminEmail && email === adminEmail ? '/admin' : '/dashboard')
+
+    const sessionRes = await fetch('/api/auth/session', { cache: 'no-store' })
+    const session = await sessionRes.json() as { user?: { role?: 'SUPER_ADMIN' | 'ADMIN' } }
+    const role = session?.user?.role
+    router.push(role === 'SUPER_ADMIN' || role === 'ADMIN' ? '/admin' : '/dashboard')
   }
 
   return (

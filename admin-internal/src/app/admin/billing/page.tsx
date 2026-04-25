@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import type { Business } from '@prisma/client'
-import { PLAN_PRICES, calculateExpectedRevenue, calculateConfirmedRevenue, calculatePendingRevenue } from '@/lib/admin'
+import { PLAN_PRICES, calculateExpectedRevenue, calculateConfirmedRevenue, calculatePendingRevenue } from '@/lib/admin-utils'
 import { TrendingUp, CheckCircle, Clock, RotateCcw, MessageCircle } from 'lucide-react'
 
 const C = {

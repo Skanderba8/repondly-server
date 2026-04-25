@@ -12,7 +12,7 @@ async function checkHealth(url: string): Promise<boolean> {
 }
 
 export default async function AdminOverviewPage() {
-  const [businesses, recentActivity, botOnline, appOnline] = await Promise.all([
+  const [businesses, recentActivity, botOnline, appOnline, n8nOnline, chatwootOnline, marketingOnline, dashboardOnline] = await Promise.all([
     prisma.business.findMany({ include: { onboarding: true } }),
     prisma.activityLog.findMany({
       take: 10,
@@ -21,6 +21,10 @@ export default async function AdminOverviewPage() {
     }).catch(() => []),
     checkHealth('http://127.0.0.1:3001/health'),
     checkHealth('https://app.repondly.com'),
+    checkHealth('https://n8n.repondly.com'),
+    checkHealth('http://127.0.0.1:3000'),
+    checkHealth('http://127.0.0.1:3005'),
+    checkHealth('http://127.0.0.1:3004'),
   ])
 
   const now = new Date()
@@ -44,13 +48,19 @@ export default async function AdminOverviewPage() {
     BUSINESS: businesses.filter(b => b.plan === 'BUSINESS').length,
   }
 
+  const serviceStatuses = { botOnline, appOnline, n8nOnline, chatwootOnline, marketingOnline, dashboardOnline }
+  const offlineCount = Object.values(serviceStatuses).filter(v => !v).length
+  const globalStatus: 'ok' | 'degraded' | 'critical' =
+    offlineCount === 0 ? 'ok' : offlineCount <= 2 ? 'degraded' : 'critical'
+
   return (
     <AdminOverviewClient
       stats={{ totalClients, activeClients, trialClients, mrr, trialsExpiring, pendingConfig }}
-      services={{ botOnline, appOnline }}
+      services={serviceStatuses}
+      globalStatus={globalStatus}
       recentActivity={recentActivity.map(e => ({
         id: e.id,
-        businessName: e.business.name,
+        businessName: e.business?.name ?? 'Admin',
         action: e.action,
         createdAt: e.createdAt.toISOString(),
       }))}

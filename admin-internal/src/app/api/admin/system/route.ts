@@ -1,13 +1,24 @@
-import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
-import { isAdmin } from '@/lib/admin'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-auth'
 import { prisma } from '@/lib/prisma'
 import os from 'os'
 import { X509Certificate } from 'crypto'
 import * as fs from 'fs'
 import { execSync } from 'child_process'
+import * as net from 'net'
+import { Pool } from 'pg'
 
-async function checkService(url: string): Promise<{ online: boolean; latency: number | null }> {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ServiceStatus = { online: boolean; latency: number | null }
+type DbStatus      = { connected: boolean; latency: number | null }
+type RedisStatus   = { connected: boolean; latency: number | null }
+type ResourceMetric = { used: number; total: number; percent: number }
+type Pm2Process    = { name: string; status: string; cpu: number; memory: number; uptime: number | null }
+
+// ─── Service checks ───────────────────────────────────────────────────────────
+
+async function checkService(url: string): Promise<ServiceStatus> {
   const start = Date.now()
   try {
     const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(4000) })
@@ -17,16 +28,88 @@ async function checkService(url: string): Promise<{ online: boolean; latency: nu
   }
 }
 
-async function checkDatabase(): Promise<{ online: boolean }> {
+/**
+ * Check the Prisma (admin-internal) database using the existing Prisma client.
+ */
+async function checkPrismaDatabase(): Promise<DbStatus> {
+  const start = Date.now()
   try {
     await prisma.$queryRaw`SELECT 1`
-    return { online: true }
+    return { connected: true, latency: Date.now() - start }
   } catch {
-    return { online: false }
+    return { connected: false, latency: null }
   }
 }
 
-function getDiskUsage(): { used: number; total: number; percent: number } {
+/**
+ * Check an arbitrary PostgreSQL database via a direct pg connection.
+ * Uses a 5 000 ms connect + query timeout.
+ */
+async function checkDatabase(connectionString: string): Promise<DbStatus> {
+  const start = Date.now()
+  const pool = new Pool({
+    connectionString,
+    connectionTimeoutMillis: 5000,
+    query_timeout: 5000,
+    max: 1,
+  })
+  try {
+    const client = await pool.connect()
+    try {
+      await client.query('SELECT 1')
+      return { connected: true, latency: Date.now() - start }
+    } finally {
+      client.release()
+    }
+  } catch {
+    return { connected: false, latency: null }
+  } finally {
+    await pool.end().catch(() => {})
+  }
+}
+
+/**
+ * Check Redis availability via a raw TCP PING command on port 6379.
+ * Does not require ioredis — uses Node's built-in `net` module.
+ */
+function checkRedis(): Promise<RedisStatus> {
+  return new Promise((resolve) => {
+    const start = Date.now()
+    const socket = new net.Socket()
+    let resolved = false
+
+    const done = (result: RedisStatus) => {
+      if (!resolved) {
+        resolved = true
+        socket.destroy()
+        resolve(result)
+      }
+    }
+
+    socket.setTimeout(4000)
+
+    socket.connect(6379, '127.0.0.1', () => {
+      // Send inline PING command
+      socket.write('PING\r\n')
+    })
+
+    socket.on('data', (data) => {
+      const response = data.toString()
+      if (response.includes('+PONG') || response.includes('PONG')) {
+        done({ connected: true, latency: Date.now() - start })
+      } else {
+        done({ connected: false, latency: null })
+      }
+    })
+
+    socket.on('timeout', () => done({ connected: false, latency: null }))
+    socket.on('error', () => done({ connected: false, latency: null }))
+  })
+}
+
+// ─── System metrics ───────────────────────────────────────────────────────────
+
+function getDiskUsage(): ResourceMetric {
   try {
     const output = execSync("df / --output=size,used,avail --block-size=1 | tail -1").toString().trim()
     const [total, used] = output.split(/\s+/).map(Number)
@@ -38,7 +121,7 @@ function getDiskUsage(): { used: number; total: number; percent: number } {
   }
 }
 
-function getMemoryUsage(): { used: number; total: number; percent: number } {
+function getMemoryUsage(): ResourceMetric {
   const total = os.totalmem()
   const free = os.freemem()
   const used = total - free
@@ -58,7 +141,7 @@ function getSslDaysRemaining(domain: string): number | null {
   }
 }
 
-function getPm2Status(): { name: string; status: string; cpu: number; memory: number; uptime: number | null }[] {
+function getPm2Status(): Pm2Process[] {
   try {
     const output = execSync('pm2 jlist', { timeout: 5000 }).toString()
     const list = JSON.parse(output) as Array<{
@@ -78,26 +161,64 @@ function getPm2Status(): { name: string; status: string; cpu: number; memory: nu
   }
 }
 
-export async function GET() {
-  const session = await auth()
-  if (!isAdmin(session)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+// ─── Route handler ────────────────────────────────────────────────────────────
 
-  const [bot, app, n8n, database] = await Promise.all([
+export async function GET(request: NextRequest) {
+  const authResult = await requireAdmin(request)
+  if (authResult instanceof NextResponse) return authResult
+
+  const chatwootDbUrl = process.env.DATABASE_URL_CHATWOOT
+
+  const [
+    bot,
+    app,
+    n8n,
+    chatwoot,
+    marketing,
+    dashboard,
+    prismaDb,
+    chatwootDb,
+    redis,
+  ] = await Promise.all([
     checkService('http://127.0.0.1:3001/health'),
     checkService('https://app.repondly.com'),
     checkService('https://n8n.repondly.com'),
-    checkDatabase(),
+    checkService('http://127.0.0.1:3000'),
+    checkService('http://127.0.0.1:3005'),
+    checkService('http://127.0.0.1:3004'),
+    checkPrismaDatabase(),
+    chatwootDbUrl
+      ? checkDatabase(chatwootDbUrl)
+      : Promise.resolve<DbStatus>({ connected: false, latency: null }),
+    checkRedis(),
   ])
 
-  const disk = getDiskUsage()
+  const disk   = getDiskUsage()
   const memory = getMemoryUsage()
-  const pm2 = getPm2Status()
+  const pm2    = getPm2Status()
 
   const ssl = {
-    'repondly.com': getSslDaysRemaining('repondly.com'),
-    'app.repondly.com': getSslDaysRemaining('app.repondly.com'),
-    'n8n.repondly.com': getSslDaysRemaining('n8n.repondly.com'),
+    'repondly.com':        getSslDaysRemaining('repondly.com'),
+    'app.repondly.com':    getSslDaysRemaining('app.repondly.com'),
+    'n8n.repondly.com':    getSslDaysRemaining('n8n.repondly.com'),
+    'inbox.repondly.com':  getSslDaysRemaining('inbox.repondly.com'),
   }
 
-  return NextResponse.json({ bot, app, n8n, database, disk, memory, ssl, pm2 })
+  return NextResponse.json({
+    services: {
+      bot,
+      app,
+      n8n,
+      chatwoot,
+      marketing,
+      dashboard,
+      prismaDb,
+      chatwootDb,
+      redis,
+    },
+    disk,
+    memory,
+    ssl,
+    pm2,
+  })
 }

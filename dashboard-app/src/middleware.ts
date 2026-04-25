@@ -8,12 +8,14 @@ export default auth((req) => {
   const { pathname } = req.nextUrl
   const session = req.auth
   const isAuthenticated = !!session?.user
+  const role = session?.user?.role
 
   if (pathname.startsWith('/dashboard') && !isAuthenticated) {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
   if ((pathname === '/auth/signin' || pathname === '/auth/register') && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+    const target = role === 'SUPER_ADMIN' || role === 'ADMIN' ? '/admin' : '/dashboard'
+    return NextResponse.redirect(new URL(target, req.url))
   }
   return NextResponse.next()
 })

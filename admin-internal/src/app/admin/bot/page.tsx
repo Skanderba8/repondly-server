@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { groupNoRuleEvents } from '@/lib/admin'
+import { groupNoRuleEvents } from '@/lib/admin-utils'
 import { RefreshCw, RotateCcw, Filter, CheckCircle, XCircle, Wifi, WifiOff } from 'lucide-react'
 
 const C = {
