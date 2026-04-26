@@ -16,6 +16,7 @@ model Business {
   phone                String?
   chatwootAccountId    Int?           @unique
   chatwootApiToken     String?
+  chatwootPassword     String?
   plan                 Plan           @default(FREE)
   status               String         @default("TRIAL")
   trialEndsAt          DateTime?
@@ -176,4 +177,15 @@ enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELLED
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("ADMIN")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

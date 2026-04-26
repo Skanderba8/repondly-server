@@ -340,58 +340,73 @@ async function getAIReply(conversationId, message, lang) {
 // ─── Chatwoot Webhook ─────────────────────────────────────────────────────────
 
 app.post('/chatwoot-webhook', async (req, res) => {
-  res.sendStatus(200); // always ack immediately
+  // 1. Get the signature from headers
+  const signature = req.headers['x-chatwoot-webhook-signature'];
+  const secret = process.env.CHATWOOT_WEBHOOK_SECRET;
 
-  const event          = req.body;
-  const messageType    = event.message_type;
-  const senderType     = event.conversation?.meta?.sender?.type;
-  const text           = event.content;
-  const conversationId = event.conversation?.id;
-
-  if (messageType !== 'incoming') return;
-  if (senderType === 'agent')     return;
-  if (!text || !conversationId)   return;
-
-  const lang = detectLanguage(text);
-  const conv = getConversation(conversationId);
-
-  // Bot goes completely silent after a human takes over
-  if (conv.humanTookOver) {
-    console.log(`[${conversationId}] Human took over — bot silent`);
-    return;
+  // Debug: If they don't match, this will show you exactly why
+  if (signature !== secret) {
+    console.warn(`[Security] Mismatch! Received: ${signature} | Expected: ${secret}`);
+    return res.sendStatus(401);
   }
 
-  console.log(`[${conversationId}] [${lang}] Customer: ${text}`);
+  // 2. ACK IMMEDIATELY
+  res.sendStatus(200);
 
-  try {
+  // ... rest of your code
 
-    // Human handover request
-    if (needsHumanHandover(text)) {
-      console.log(`[${conversationId}] Handover triggered`);
-      conv.humanTookOver = true;
-      saveState();
-      await replyViaChatwoot(conversationId, HANDOFF_REPLIES[lang]);
-      await assignToHuman(conversationId);
-      return;
-    }
+   const event = req.body;
+   
+   // Chatwoot structure often places content and ID directly in the root of req.body for 'message_created'
+   const messageType = event.message_type;
+   const content     = event.content;
+   const conversationId = event.conversation?.id;
+   
+   // Crucial fix: structure check for the sender
+   const senderType = event.sender ? event.sender.type : event.conversation?.meta?.sender?.type;
 
-    // First message → welcome menu
-    if (!conv.greeted) {
-      conv.greeted = true;
-      saveState();
-      await replyViaChatwoot(conversationId, WELCOME[lang]);
-      addToHistory(conversationId, 'assistant', WELCOME[lang]);
-      return;
-    }
+   // 3. Filters
+   if (messageType !== 'incoming') return; // Don't reply to outgoing messages
+   if (senderType === 'agent') return;      // Don't reply if a human is typing in dashboard
+   if (!content || !conversationId) return;
 
-    // All subsequent messages → AI reply
-    const reply = await getAIReply(conversationId, text, lang);
-    console.log(`[${conversationId}] Bot: ${reply}`);
-    await replyViaChatwoot(conversationId, reply);
+   const lang = detectLanguage(content);
+   const conv = getConversation(conversationId);
 
-  } catch (err) {
-    console.error(`[${conversationId}] Error:`, err.response?.data || err.message);
-  }
+   if (conv.humanTookOver) {
+     console.log(`[${conversationId}] Human took over — bot silent`);
+     return;
+   }
+
+   console.log(`[${conversationId}] [${lang}] Customer: ${content}`);
+
+   try {
+     // Human handover request
+     if (needsHumanHandover(content)) {
+       conv.humanTookOver = true;
+       saveState();
+       await replyViaChatwoot(conversationId, HANDOFF_REPLIES[lang]);
+       await assignToHuman(conversationId);
+       return;
+     }
+
+     // First message → welcome menu
+     if (!conv.greeted) {
+       conv.greeted = true;
+       saveState();
+       await replyViaChatwoot(conversationId, WELCOME[lang]);
+       addToHistory(conversationId, 'assistant', WELCOME[lang]);
+       return;
+     }
+
+     // Subsequent messages → AI reply
+     const reply = await getAIReply(conversationId, content, lang);
+     console.log(`[${conversationId}] Bot: ${reply}`);
+     await replyViaChatwoot(conversationId, reply);
+
+   } catch (err) {
+     console.error(`[${conversationId}] Error:`, err.response?.data || err.message);
+   }
 });
 
 // ─── Meta Webhook Verification ───────────────────────────────────────────────
