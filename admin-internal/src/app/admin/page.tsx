@@ -20,7 +20,7 @@ export default async function AdminOverviewPage() {
       include: { business: { select: { name: true } } },
     }).catch(() => []),
     checkHealth('http://127.0.0.1:3001/health'),
-    checkHealth('https://app.repondly.com'),
+    checkHealth('https://admin.repondly.com'),
     checkHealth('https://n8n.repondly.com'),
     checkHealth('http://127.0.0.1:3000'),
     checkHealth('http://127.0.0.1:3005'),

@@ -24,7 +24,7 @@ export default function SignIn() {
     const sessionRes = await fetch('/api/auth/session', { cache: 'no-store' })
     const session = await sessionRes.json() as { user?: { role?: 'SUPER_ADMIN' | 'ADMIN' } }
     const role = session?.user?.role
-    router.push(role === 'SUPER_ADMIN' || role === 'ADMIN' ? '/admin' : '/dashboard')
+    router.push(role === 'SUPER_ADMIN' || role === 'ADMIN' ? 'https://admin.repondly.com' : '/dashboard')
   }
 
   return (

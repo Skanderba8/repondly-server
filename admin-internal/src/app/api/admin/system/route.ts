@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
     redis,
   ] = await Promise.all([
     checkService('http://127.0.0.1:3001/health'),
-    checkService('https://app.repondly.com'),
+    checkService('https://admin.repondly.com'),
     checkService('https://n8n.repondly.com'),
     checkService('http://127.0.0.1:3000'),
     checkService('http://127.0.0.1:3005'),
@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
 
   const ssl = {
     'repondly.com':        getSslDaysRemaining('repondly.com'),
-    'app.repondly.com':    getSslDaysRemaining('app.repondly.com'),
+    'admin.repondly.com':   getSslDaysRemaining('admin.repondly.com'),
     'n8n.repondly.com':    getSslDaysRemaining('n8n.repondly.com'),
     'inbox.repondly.com':  getSslDaysRemaining('inbox.repondly.com'),
   }

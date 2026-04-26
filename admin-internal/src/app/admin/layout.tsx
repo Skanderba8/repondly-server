@@ -8,7 +8,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const role = (session?.user as { role?: string } | undefined)?.role
 
   if (!role || !['SUPER_ADMIN', 'ADMIN'].includes(role)) {
-    redirect(session?.user ? '/dashboard' : '/auth/signin')
+    redirect('/auth/signin')
   }
 
   // Fetch fresh AdminUser from DB to get up-to-date name and role

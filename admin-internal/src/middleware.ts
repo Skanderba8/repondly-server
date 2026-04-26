@@ -8,7 +8,8 @@ export default auth((req) => {
   const role = req.auth?.user?.role
 
   if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
-    return NextResponse.redirect('https://app.repondly.com/auth/signin')
+    const signInUrl = new URL('/auth/signin', req.nextUrl.origin)
+    return NextResponse.redirect(signInUrl)
   }
 
   return NextResponse.next()
