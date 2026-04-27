@@ -9,133 +9,140 @@ datasource db {
 }
 
 model Business {
-  id                   String         @id @default(cuid())
-  name                 String
-  email                String         @unique
-  passwordHash         String
-  phone                String?
-  chatwootAccountId    Int?           @unique
-  chatwootApiToken     String?
-  chatwootPassword     String?
-  plan                 Plan           @default(FREE)
-  status               String         @default("TRIAL")
-  trialEndsAt          DateTime?
-  lastLoginAt          DateTime?
-  paidThisMonth        Boolean        @default(false)
-  paymentMethod        String?
-  channels             String[]       @default([])
-  businessInfo         Json?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  id                    String          @id @default(cuid())
+  name                  String
+  email                 String          @unique
+  passwordHash          String
+  phone                 String?
+  chatwootAccountId     Int?            @unique
+  chatwootApiToken      String?
+  chatwootPassword      String?
+  plan                  Plan            @default(FREE)
+  status                String          @default("TRIAL")
+  trialEndsAt           DateTime?
+  lastLoginAt           DateTime?
+  paidThisMonth         Boolean         @default(false)
+  paymentMethod         String?
+  channels              String[]        @default([])
+  businessInfo          Json?
 
-  clients              Client[]
-  autoRules            AutoRule[]
-  reminders            Reminder[]
-  bookings             Booking[]
-  adminNotes           AdminNote[]
-  onboarding           OnboardingStage?
-  activityLogs         ActivityLog[]
-  botEvents            BotEvent[]
+  // WhatsApp Embedded Signup
+  wabaId                String?
+  whatsappPhoneNumberId String?
+  whatsappInboxId       Int?
+  whatsappConnected     Boolean         @default(false)
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  clients               Client[]
+  autoRules             AutoRule[]
+  reminders             Reminder[]
+  bookings              Booking[]
+  adminNotes            AdminNote[]
+  onboarding            OnboardingStage?
+  activityLogs          ActivityLog[]
+  botEvents             BotEvent[]
 }
 
 model Client {
-  id                   String         @id @default(cuid())
-  businessId           String
-  name                 String
-  phone                String?
-  email                String?
-  channel              Channel
-  chatwootContactId    Int?
-  createdAt            DateTime       @default(now())
+  id                String         @id @default(cuid())
+  businessId        String
+  name              String
+  phone             String?
+  email             String?
+  channel           Channel
+  chatwootContactId Int?
+  createdAt         DateTime       @default(now())
 
-  business             Business       @relation(fields: [businessId], references: [id])
-  reminders            Reminder[]
-  bookings             Booking[]
+  business          Business       @relation(fields: [businessId], references: [id])
+  reminders         Reminder[]
+  bookings          Booking[]
 }
 
 model AutoRule {
-  id                   String         @id @default(cuid())
-  businessId           String
-  name                 String
-  trigger              Trigger
-  conditions           Json           // e.g. { "keyword": "price", "channel": "whatsapp" }
-  action               Action
-  responseTemplate     String
-  active               Boolean        @default(true)
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  id               String   @id @default(cuid())
+  businessId       String
+  name             String
+  trigger          Trigger
+  conditions       Json
+  action           Action
+  responseTemplate String
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  business             Business       @relation(fields: [businessId], references: [id])
+  business         Business @relation(fields: [businessId], references: [id])
 }
 
 model Reminder {
-  id                   String         @id @default(cuid())
-  businessId           String
-  clientId             String
-  message              String
-  scheduledAt          DateTime
-  sentAt               DateTime?
-  status               ReminderStatus @default(PENDING)
-  createdAt            DateTime       @default(now())
+  id          String         @id @default(cuid())
+  businessId  String
+  clientId    String
+  message     String
+  scheduledAt DateTime
+  sentAt      DateTime?
+  status      ReminderStatus @default(PENDING)
+  createdAt   DateTime       @default(now())
 
-  business             Business       @relation(fields: [businessId], references: [id])
-  client               Client         @relation(fields: [clientId], references: [id])
+  business    Business       @relation(fields: [businessId], references: [id])
+  client      Client         @relation(fields: [clientId], references: [id])
 }
 
 model Booking {
-  id                   String         @id @default(cuid())
-  businessId           String
-  clientId             String
-  service              String
-  datetime             DateTime
-  status               BookingStatus  @default(PENDING)
-  calendarEventId      String?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  id              String        @id @default(cuid())
+  businessId      String
+  clientId        String
+  service         String
+  datetime        DateTime
+  status          BookingStatus @default(PENDING)
+  calendarEventId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  business             Business       @relation(fields: [businessId], references: [id])
-  client               Client         @relation(fields: [clientId], references: [id])
+  business        Business      @relation(fields: [businessId], references: [id])
+  client          Client        @relation(fields: [clientId], references: [id])
 }
 
 model AdminNote {
-  id          String   @id @default(cuid())
-  businessId  String
-  content     String
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  businessId String
+  content    String
+  createdAt  DateTime @default(now())
 
-  business    Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id])
 }
 
 model OnboardingStage {
-  id          String   @id @default(cuid())
-  businessId  String   @unique
-  stage       String   @default("DEMO_BOOKED")
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  businessId String   @unique
+  stage      String   @default("DEMO_BOOKED")
+  updatedAt  DateTime @updatedAt
 
-  business    Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id])
 }
 
 model ActivityLog {
-  id          String   @id @default(cuid())
-  businessId  String
-  action      String
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  businessId String
+  action     String
+  metadata   Json?
+  createdAt  DateTime @default(now())
 
-  business    Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id])
 }
 
 model BotEvent {
-  id           String   @id @default(cuid())
-  businessId   String?
-  eventType    String
-  channel      String?
-  message      String?
-  ruleMatched  String?
-  wasHandled   Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  id          String    @id @default(cuid())
+  businessId  String?
+  eventType   String
+  channel     String?
+  message     String?
+  ruleMatched String?
+  wasHandled  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
 
-  business     Business? @relation(fields: [businessId], references: [id])
+  business    Business? @relation(fields: [businessId], references: [id])
 }
 
 // ---------- Enums ----------

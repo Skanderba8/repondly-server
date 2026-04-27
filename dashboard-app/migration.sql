@@ -1,0 +1,5 @@
+ALTER TABLE "Business"
+  ADD COLUMN IF NOT EXISTS "wabaId" TEXT,
+  ADD COLUMN IF NOT EXISTS "whatsappPhoneNumberId" TEXT,
+  ADD COLUMN IF NOT EXISTS "whatsappInboxId" INTEGER,
+  ADD COLUMN IF NOT EXISTS "whatsappConnected" BOOLEAN NOT NULL DEFAULT false;
