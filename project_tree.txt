@@ -1,0 +1,228 @@
+.
+├── README.md
+├── admin-internal
+│   ├── next-env.d.ts
+│   ├── next.config.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── prisma
+│   │   └── schema.prisma
+│   ├── prisma.config.ts
+│   ├── public
+│   │   ├── file.svg
+│   │   ├── globe.svg
+│   │   ├── logo.png
+│   │   ├── next.svg
+│   │   ├── vercel.svg
+│   │   └── window.svg
+│   ├── src
+│   │   ├── app
+│   │   │   ├── admin
+│   │   │   │   ├── OverviewClient.tsx
+│   │   │   │   ├── access
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── billing
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── bot
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── chatwoot
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── clients
+│   │   │   │   │   ├── ClientsHeader.tsx
+│   │   │   │   │   ├── [id]
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   ├── new
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── database
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── layout.tsx
+│   │   │   │   ├── n8n
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── onboarding
+│   │   │   │   │   ├── OnboardingClient.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── system
+│   │   │   │       └── page.tsx
+│   │   │   ├── api
+│   │   │   │   ├── admin
+│   │   │   │   │   ├── access
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── auto-rules
+│   │   │   │   │   │   └── [id]
+│   │   │   │   │   │       └── route.ts
+│   │   │   │   │   ├── badges
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── bot
+│   │   │   │   │   │   ├── events
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── restart
+│   │   │   │   │   │       └── route.ts
+│   │   │   │   │   ├── chatwoot
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── clients
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   ├── notes
+│   │   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   │   ├── route.ts
+│   │   │   │   │   │   │   ├── stage
+│   │   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   │   └── sync
+│   │   │   │   │   │   │       └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── database
+│   │   │   │   │   │   ├── migrate
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── n8n
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── system
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── auth
+│   │   │   │       └── [...nextauth]
+│   │   │   │           └── route.ts
+│   │   │   ├── auth
+│   │   │   │   └── signin
+│   │   │   │       └── page.tsx
+│   │   │   └── layout.tsx
+│   │   ├── components
+│   │   │   ├── AdminSidebar.tsx
+│   │   │   ├── OnboardingDPACheckbox.tsx
+│   │   │   ├── Providers.tsx
+│   │   │   └── admin
+│   │   │       ├── AccessManager.tsx
+│   │   │       ├── ChatwootPanel.tsx
+│   │   │       ├── ClientsTable.tsx
+│   │   │       ├── DatabaseManager.tsx
+│   │   │       ├── KanbanBoard.tsx
+│   │   │       ├── N8nPanel.tsx
+│   │   │       └── RoutingMap.tsx
+│   │   ├── lib
+│   │   │   ├── admin-auth.ts
+│   │   │   ├── admin-utils.ts
+│   │   │   ├── admin.ts
+│   │   │   ├── auth.config.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── prisma.ts
+│   │   │   └── system-utils.ts
+│   │   ├── middleware.ts
+│   │   └── types
+│   │       └── next-auth.d.ts
+│   ├── tsconfig.json
+│   └── tsconfig.tsbuildinfo
+├── bot
+│   ├── conversations.json
+│   ├── index.js
+│   ├── index_backup.js
+│   ├── package-lock.json
+│   └── package.json
+├── chatwoot
+│   └── docker-compose.yml
+├── dashboard-app
+│   ├── next-env.d.ts
+│   ├── next.config.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── prisma
+│   │   └── schema.prisma
+│   ├── prisma.config.ts
+│   ├── public
+│   │   ├── file.svg
+│   │   ├── globe.svg
+│   │   ├── logo.png
+│   │   ├── next.svg
+│   │   ├── vercel.svg
+│   │   └── window.svg
+│   ├── src
+│   │   ├── app
+│   │   │   ├── api
+│   │   │   │   ├── auth
+│   │   │   │   │   ├── [...nextauth]
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── register
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── internal
+│   │   │   │   │   └── bot-event
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── messagerie
+│   │   │   │       └── route.ts
+│   │   │   ├── auth
+│   │   │   │   ├── register
+│   │   │   │   │   ├── layout.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── signin
+│   │   │   │       ├── layout.tsx
+│   │   │   │       ├── metadata.ts
+│   │   │   │       └── page.tsx
+│   │   │   ├── dashboard
+│   │   │   │   ├── DashboardShell.tsx
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   ├── messagerie
+│   │   │   │   └── page.tsx
+│   │   │   └── page.tsx
+│   │   ├── components
+│   │   │   ├── OnboardingDPACheckbox.tsx
+│   │   │   ├── Providers.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   └── Topbar.tsx
+│   │   ├── lib
+│   │   │   ├── LangContext.tsx
+│   │   │   ├── auth.config.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── chatwoot.ts
+│   │   │   ├── i18n.ts
+│   │   │   └── prisma.ts
+│   │   ├── middleware.ts
+│   │   └── types
+│   │       └── next-auth.d.ts
+│   └── tsconfig.json
+├── marketing-site
+│   ├── eslint.config.mjs
+│   ├── next-env.d.ts
+│   ├── next.config.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.mjs
+│   ├── public
+│   │   ├── file.svg
+│   │   ├── globe.svg
+│   │   ├── logo.png
+│   │   ├── next.svg
+│   │   ├── vercel.svg
+│   │   └── window.svg
+│   ├── src
+│   │   ├── app
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── privacy
+│   │   │   │   ├── __tests__
+│   │   │   │   │   └── page.test.ts
+│   │   │   │   └── page.tsx
+│   │   │   ├── sla
+│   │   │   │   ├── __tests__
+│   │   │   │   │   └── page.test.ts
+│   │   │   │   └── page.tsx
+│   │   │   └── terms
+│   │   │       ├── __tests__
+│   │   │       │   └── page.test.ts
+│   │   │       └── page.tsx
+│   │   ├── components
+│   │   │   └── LegalShell.tsx
+│   │   └── lib
+│   │       ├── LangContext.tsx
+│   │       └── i18n.ts
+│   ├── tsconfig.json
+│   └── tsconfig.tsbuildinfo
+├── n8n
+│   └── docker-compose.yml
+├── nginx.conf
+└── project_tree.txt
+
+82 directories, 144 files

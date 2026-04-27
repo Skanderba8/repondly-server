@@ -4,235 +4,368 @@ import Image from 'next/image'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare, CalendarCheck, Bell, Globe, UserCheck, ArrowRight,
-  Check, Plus, Minus, MapPin, Clock, Languages,
+  Check, Plus, MapPin, Clock, Languages,
   Bot, Zap, CheckCircle, Smartphone, LayoutDashboard,
-  ChevronDown
+  ChevronDown,
 } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
   bg:        '#ffffff',
-  bgAlt:     '#f4f7fb',
+  bgAlt:     '#f5f7fa',
   blue:      '#1a6bff',
   blueDark:  '#0f4fd4',
   blueLight: '#e8f0ff',
-  blueFaint: '#f0f5ff',
   ink:       '#0d1b2e',
   mid:       '#5a6a80',
-  border:    '#dde5f0',
+  muted:     '#8899aa',
+  border:    '#e2e8f2',
   white:     '#ffffff',
 }
 
-// ── Framer variants ───────────────────────────────────────────────────────────
+// ── Animation variants ────────────────────────────────────────────────────────
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 22 },
   visible: (i = 0) => ({
     opacity: 1, y: 0,
-    transition: { duration: 0.5, delay: i * 0.07, ease: 'easeOut' as const },
+    transition: { duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] as const },
   }),
 }
-const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }
+const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.09 } } }
 
-// ── Icon maps ─────────────────────────────────────────────────────────────────
 const featureIcons = [MessageSquare, CalendarCheck, Bell, MessageSquare, Globe, UserCheck, Smartphone, LayoutDashboard]
 
-// ── Abstract blobs — unique per section via seed offsets ──────────────────────
-function Blobs({ seed = 0, opacity = 0.5 }: { seed?: number; opacity?: number }) {
-  const s = seed * 137
+// ── Dot grid ──────────────────────────────────────────────────────────────────
+function DotGrid() {
   return (
-    <svg aria-hidden="true" style={{
-      position: 'absolute', inset: 0, width: '100%', height: '100%',
-      pointerEvents: 'none', overflow: 'visible',
-    }} viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <radialGradient id={`bg${seed}a`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={C.blue} stopOpacity={opacity * 0.16} />
-          <stop offset="100%" stopColor={C.blue} stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id={`bg${seed}b`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={C.blue} stopOpacity={opacity * 0.10} />
-          <stop offset="100%" stopColor={C.blue} stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id={`bg${seed}c`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={C.blue} stopOpacity={opacity * 0.07} />
-          <stop offset="100%" stopColor={C.blue} stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <ellipse cx={(900 + s) % 1200} cy={(100 + s * 0.4) % 400} rx="400" ry="320" fill={`url(#bg${seed}a)`} />
-      <ellipse cx={(80  + s * 0.6) % 600} cy={(550 + s * 0.3) % 700} rx="340" ry="260" fill={`url(#bg${seed}b)`} />
-      <ellipse cx={(500 + s * 0.2) % 1000} cy={(350 + s * 0.5) % 600} rx="240" ry="180" fill={`url(#bg${seed}c)`} />
-    </svg>
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none',
+      backgroundImage: `radial-gradient(circle, #c8d6e8 1px, transparent 1px)`,
+      backgroundSize: '28px 28px', opacity: 0.5,
+    }} />
   )
 }
 
-// ── 3 looping chat conversations ──────────────────────────────────────────────
-type Msg = { side: 'left' | 'right'; text: string }
-type Convo = { channel: string; color: string; msgs: Msg[] }
+// ── Soft glow ─────────────────────────────────────────────────────────────────
+function Glow({ x = '70%', y = '30%', size = 600, opacity = 0.10 }: { x?: string; y?: string; size?: number; opacity?: number }) {
+  return (
+    <div style={{
+      position: 'absolute', pointerEvents: 'none',
+      left: x, top: y, width: size, height: size,
+      transform: 'translate(-50%,-50%)', borderRadius: '50%',
+      background: `radial-gradient(circle, rgba(26,107,255,${opacity}) 0%, transparent 70%)`,
+    }} />
+  )
+}
 
-const convos: Convo[] = [
+// ── DEMO 1 — Booking flow (Darija) ────────────────────────────────────────────
+function BookingDemo({ active, fading }: { active: boolean; fading: boolean }) {
+  const STEPS = [
+    { dir: 'left',    text: 'Salam! prix mta3na yabda men 49 DT/mois. Tnajem tchouf les détails: repondly.com/tarifs' },
+    { dir: 'left',    text: 'T7eb nreservilk appel bech na7kiw akther?' },
+    { dir: 'right',   text: 'Oui n7eb nchouf démo' },
+    { dir: 'booking', text: '' },
+  ]
+  const [shown, setShown] = useState(0)
+
+  useEffect(() => {
+    if (!active) return
+    const timers: ReturnType<typeof setTimeout>[] = []
+    timers.push(setTimeout(() => setShown(0), 0))
+    STEPS.forEach((_, i) => {
+      timers.push(setTimeout(() => setShown(i + 1), 800 + i * 1800))
+    })
+    return () => timers.forEach(clearTimeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: 272, justifyContent: 'flex-end' }}>
+      <AnimatePresence>
+        {shown >= 1 && (
+          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: fading ? 0 : 1, y: 0 }} exit={{ opacity: 0 }}
+            style={{ display: 'flex', gap: 5 }}>
+            {['Darija', 'Français', 'Arabe'].map((l, i) => (
+              <span key={l} style={{
+                fontSize: 10.5, padding: '2px 9px', borderRadius: 100,
+                background: i === 0 ? C.blueLight : 'transparent',
+                color: i === 0 ? C.blue : C.muted,
+                border: `1px solid ${i === 0 ? C.blueLight : C.border}`,
+                fontWeight: i === 0 ? 600 : 400,
+              }}>{l}</span>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {STEPS.map((step, i) => (
+        <AnimatePresence key={i}>
+          {shown > i && (
+            <motion.div
+              initial={{ opacity: 0, y: 7 }} animate={{ opacity: fading ? 0 : 1, y: 0 }}
+              exit={{ opacity: 0 }} transition={{ duration: 0.35 }}
+              style={{ display: 'flex', gap: 8, flexDirection: step.dir === 'right' ? 'row-reverse' : 'row', flexShrink: 0 }}>
+              {step.dir !== 'booking' && (
+                <div style={{
+                  width: 27, height: 27, borderRadius: '50%', flexShrink: 0,
+                  background: step.dir === 'right' ? C.blueLight : '#eef0f3',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9,
+                  color: step.dir === 'right' ? C.blue : C.mid,
+                }}>
+                  {step.dir === 'right' ? 'C' : <Bot size={12} />}
+                </div>
+              )}
+              {step.dir === 'booking' ? (
+                <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}
+                  style={{
+                    background: C.white, border: `1px solid ${C.border}`, borderRadius: 12,
+                    padding: '12px 14px', boxShadow: '0 2px 16px rgba(26,107,255,0.09)',
+                    width: '100%', maxWidth: 210,
+                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
+                    <CalendarCheck size={12} color={C.blue} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>Réserver une démo</span>
+                  </div>
+                  <p style={{ fontSize: 11, color: C.mid, margin: '0 0 9px', lineHeight: 1.5 }}>Choisissez un créneau horaire qui vous convient.</p>
+                  <div style={{ background: C.blue, color: C.white, borderRadius: 7, padding: '7px 0', fontSize: 11, fontWeight: 500, textAlign: 'center' }}>
+                    Voir le calendrier →
+                  </div>
+                </motion.div>
+              ) : (
+                <div style={{
+                  maxWidth: '75%', padding: '8px 12px', borderRadius: 12, fontSize: 12.5, lineHeight: 1.55,
+                  borderBottomRightRadius: step.dir === 'right' ? 3 : 12,
+                  borderBottomLeftRadius: step.dir === 'left' ? 3 : 12,
+                  background: step.dir === 'right' ? C.blue : C.bgAlt,
+                  color: step.dir === 'right' ? C.white : C.ink,
+                }}>
+                  {step.text}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      ))}
+
+      <AnimatePresence>
+        {!fading && shown > 0 && shown < STEPS.length && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <div style={{ width: 27, height: 27, borderRadius: '50%', background: '#eef0f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Bot size={12} color={C.mid} />
+            </div>
+            <div style={{ padding: '9px 12px', borderRadius: 12, borderBottomLeftRadius: 3, background: C.bgAlt, display: 'flex', gap: 4, alignItems: 'center' }}>
+              {[0, 1, 2].map(d => (
+                <motion.span key={d} style={{ width: 5, height: 5, borderRadius: '50%', background: C.mid, display: 'block' }}
+                  animate={{ opacity: [0.25, 1, 0.25] }}
+                  transition={{ duration: 1.1, repeat: Infinity, delay: d * 0.2 }} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ── DEMO 2 & 3 — Chat ─────────────────────────────────────────────────────────
+const chatConvos = [
   {
     channel: 'WhatsApp', color: '#25d366',
     msgs: [
-      { side: 'left',  text: 'Bonjour, je voudrais prendre un rendez-vous pour demain.' },
-      { side: 'right', text: 'Bonjour ! Quelle heure vous convient le mieux, matin ou après-midi ?' },
-      { side: 'left',  text: '10h si possible.' },
-      { side: 'right', text: 'Parfait. RDV mardi à 10h confirmé. Un rappel vous sera envoyé 1h avant.' },
+      { side: 'left' as const,  text: 'Bonjour, je voudrais prendre un rendez-vous pour demain.' },
+      { side: 'right' as const, text: 'Bonjour ! Quelle heure vous convient le mieux, matin ou après-midi ?' },
+      { side: 'left' as const,  text: '10h si possible.' },
+      { side: 'right' as const, text: 'Parfait. RDV mardi à 10h confirmé. Un rappel vous sera envoyé 1h avant. ✓' },
     ],
   },
   {
     channel: 'Instagram', color: '#e1306c',
     msgs: [
-      { side: 'left',  text: 'Bonjour, quels sont vos horaires ?' },
-      { side: 'right', text: 'Bonjour ! Nous sommes ouverts lundi-samedi, 9h à 19h.' },
-      { side: 'left',  text: 'Vous proposez des consultations en ligne ?' },
-      { side: 'right', text: 'Oui ! Je peux vous réserver un créneau en ligne dès maintenant.' },
-    ],
-  },
-  {
-    channel: 'Facebook', color: '#1877f2',
-    msgs: [
-      { side: 'left',  text: "J'ai vu votre pub. C'est quoi exactement votre service ?" },
-      { side: 'right', text: 'On automatise vos réponses clients sur tous vos canaux, 24h/24.' },
-      { side: 'left',  text: 'Il y a un essai gratuit ?' },
-      { side: 'right', text: 'Oui, 30 jours gratuits, sans carte bancaire. Je vous envoie le lien ?' },
+      { side: 'left' as const,  text: 'Bonjour, quels sont vos horaires d\'ouverture ?' },
+      { side: 'right' as const, text: 'Bonjour ! Nous sommes ouverts lundi–samedi, 9h à 19h.' },
+      { side: 'left' as const,  text: 'Vous proposez des consultations en ligne ?' },
+      { side: 'right' as const, text: 'Oui ! Je peux vous réserver un créneau en ligne dès maintenant si vous souhaitez.' },
     ],
   },
 ]
 
-// ── Chat mockup ───────────────────────────────────────────────────────────────
-function ChatMockup() {
+function ChatDemo({ convo, active, fading }: { convo: typeof chatConvos[0]; active: boolean; fading: boolean }) {
+  const [shown, setShown] = useState(0)
+
+  useEffect(() => {
+    if (!active) return
+    const timers: ReturnType<typeof setTimeout>[] = []
+    timers.push(setTimeout(() => setShown(0), 0))
+    convo.msgs.forEach((_, i) => {
+      timers.push(setTimeout(() => setShown(i + 1), 800 + i * 1750))
+    })
+    return () => timers.forEach(clearTimeout)
+  }, [active, convo])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: 272, justifyContent: 'flex-end' }}>
+      <AnimatePresence mode="popLayout">
+        {convo.msgs.slice(0, shown).map((msg, i) => (
+          <motion.div key={i} layout
+            initial={{ opacity: 0, y: 7 }} animate={{ opacity: fading ? 0 : 1, y: 0 }}
+            exit={{ opacity: 0 }} transition={{ duration: 0.32 }}
+            style={{ display: 'flex', gap: 8, flexDirection: msg.side === 'right' ? 'row-reverse' : 'row', flexShrink: 0 }}>
+            <div style={{
+              width: 27, height: 27, borderRadius: '50%', flexShrink: 0,
+              background: msg.side === 'right' ? C.blueLight : '#eef0f3',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9,
+              color: msg.side === 'right' ? C.blue : C.mid,
+            }}>
+              {msg.side === 'right' ? <Bot size={12} /> : 'C'}
+            </div>
+            <div style={{
+              maxWidth: '74%', padding: '8px 12px', borderRadius: 12, fontSize: 12.5, lineHeight: 1.55,
+              borderBottomRightRadius: msg.side === 'right' ? 3 : 12,
+              borderBottomLeftRadius: msg.side === 'left' ? 3 : 12,
+              background: msg.side === 'right' ? C.blue : C.bgAlt,
+              color: msg.side === 'right' ? C.white : C.ink,
+            }}>
+              {msg.text}
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!fading && shown > 0 && shown < convo.msgs.length && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <div style={{ width: 27, height: 27, borderRadius: '50%', background: '#eef0f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Bot size={12} color={C.mid} />
+            </div>
+            <div style={{ padding: '9px 12px', borderRadius: 12, borderBottomLeftRadius: 3, background: C.bgAlt, display: 'flex', gap: 4, alignItems: 'center' }}>
+              {[0, 1, 2].map(d => (
+                <motion.span key={d} style={{ width: 5, height: 5, borderRadius: '50%', background: C.mid, display: 'block' }}
+                  animate={{ opacity: [0.25, 1, 0.25] }}
+                  transition={{ duration: 1.1, repeat: Infinity, delay: d * 0.2 }} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ── Hero mockup ───────────────────────────────────────────────────────────────
+const DEMOS = [
+  { label: 'Prise de démo',  channel: 'WhatsApp',  color: '#25d366' },
+  { label: 'Répondly Chat',  channel: 'WhatsApp',  color: '#25d366' },
+  { label: 'Répondly Chat',  channel: 'Instagram', color: '#e1306c' },
+]
+const DEMO_DURATION = 9500
+
+function HeroMockup() {
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: false, margin: '-40px' })
   const [ci, setCi] = useState(0)
-  const [shown, setShown] = useState(0)
   const [fading, setFading] = useState(false)
+  const [key, setKey] = useState(0)
 
   useEffect(() => {
     if (!inView) return
-    const msgs = convos[ci].msgs
-    const timers: ReturnType<typeof setTimeout>[] = []
-
-    // reveal messages one by one
-    msgs.forEach((_, idx) => {
-      timers.push(setTimeout(() => setShown(idx + 1), 300 + idx * 900))
-    })
-
-    // after all shown + 3s pause → fade out → next convo
-    const allDone = 300 + (msgs.length - 1) * 900
-    timers.push(setTimeout(() => setFading(true),  allDone + 3000))
-    timers.push(setTimeout(() => {
-      setCi(c => (c + 1) % convos.length)
-      setShown(0)
+    const t1 = setTimeout(() => setFading(true), DEMO_DURATION - 800)
+    const t2 = setTimeout(() => {
       setFading(false)
-    }, allDone + 3400))
-
-    return () => timers.forEach(clearTimeout)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      setKey(k => k + 1)
+      setCi(c => (c + 1) % DEMOS.length)
+    }, DEMO_DURATION)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [inView, ci])
 
-  const convo = convos[ci]
+  const demo = DEMOS[ci]
 
   return (
     <div ref={ref} style={{
       borderRadius: 18, overflow: 'hidden',
       border: `1px solid ${C.border}`,
-      boxShadow: '0 8px 40px rgba(26,107,255,0.11)',
+      boxShadow: '0 16px 48px rgba(26,107,255,0.11), 0 2px 8px rgba(0,0,0,0.04)',
       background: C.white,
     }}>
-      {/* title bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 7,
-        padding: '10px 16px', borderBottom: `1px solid ${C.border}`,
-        background: C.bgAlt,
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '11px 16px', borderBottom: `1px solid ${C.border}`, background: C.bgAlt }}>
         <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#ff5f57' }} />
         <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#ffbd2e' }} />
         <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#28c840' }} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <motion.div
-            key={ci}
-            initial={{ scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            style={{ width: 8, height: 8, borderRadius: '50%', background: convo.color, flexShrink: 0 }}
-          />
-          <motion.span
-            key={`label-${ci}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            style={{ fontSize: 12, color: C.mid }}
-          >
-            {convo.channel} — Répondly
+          <motion.div key={`dot-${ci}`} initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            style={{ width: 7, height: 7, borderRadius: '50%', background: demo.color }} />
+          <motion.span key={`lbl-${ci}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            style={{ fontSize: 11.5, color: C.mid, fontWeight: 500 }}>
+            {demo.channel} — Répondly
           </motion.span>
         </div>
       </div>
 
-      {/* messages area — fixed height, no layout shift */}
-      <div style={{ padding: '18px 18px 16px', height: 220, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 10, justifyContent: 'flex-end' }}>
-        <AnimatePresence mode="popLayout">
-          {convo.msgs.slice(0, shown).map((msg, i) => (
-            <motion.div
-              key={`${ci}-${i}`}
-              layout
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: fading ? 0 : 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.28, ease: 'easeOut' }}
-              style={{ display: 'flex', gap: 8, flexDirection: msg.side === 'right' ? 'row-reverse' : 'row', flexShrink: 0 }}
-            >
-              <div style={{
-                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 10, fontWeight: 600,
-                background: msg.side === 'right' ? C.blueLight : '#f0f0f0',
-                color: msg.side === 'right' ? C.blue : C.mid,
-              }}>
-                {msg.side === 'right' ? <Bot size={12} /> : 'C'}
-              </div>
-              <div style={{
-                maxWidth: '74%', padding: '8px 12px', borderRadius: 13, fontSize: 12.5, lineHeight: 1.5,
-                borderBottomRightRadius: msg.side === 'right' ? 3 : 13,
-                borderBottomLeftRadius:  msg.side === 'left'  ? 3 : 13,
-                background: msg.side === 'right' ? C.blue : C.bgAlt,
-                color: msg.side === 'right' ? C.white : C.ink,
-              }}>
-                {msg.text}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {/* typing dots */}
-        <AnimatePresence>
-          {!fading && shown > 0 && shown < convo.msgs.length && (
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              style={{ display: 'flex', gap: 8, flexShrink: 0 }}
-            >
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: C.mid }}>C</div>
-              <div style={{ padding: '9px 12px', borderRadius: 13, borderBottomLeftRadius: 3, background: C.bgAlt, display: 'flex', gap: 4, alignItems: 'center' }}>
-                {[0, 1, 2].map(d => (
-                  <motion.span key={d} style={{ width: 5, height: 5, borderRadius: '50%', background: C.mid, display: 'block' }}
-                    animate={{ opacity: [0.3, 1, 0.3] }}
-                    transition={{ duration: 1.0, repeat: Infinity, delay: d * 0.16 }} />
-                ))}
-              </div>
-            </motion.div>
-          )}
+      <div style={{ padding: '18px 18px 14px' }}>
+        <AnimatePresence mode="wait">
+          <motion.div key={`demo-${ci}-${key}`}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}>
+            {ci === 0
+              ? <BookingDemo active={inView} fading={fading} />
+              : <ChatDemo convo={chatConvos[ci - 1]} active={inView} fading={fading} />
+            }
+          </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* channel dots */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, padding: '0 0 12px' }}>
-        {convos.map((_, i) => (
-          <div key={i} style={{
-            width: i === ci ? 16 : 5, height: 5, borderRadius: 3,
-            background: i === ci ? C.blue : C.border,
-            transition: 'all 0.35s ease',
-          }} />
+      <div style={{ display: 'flex', gap: 5, padding: '2px 16px 13px', justifyContent: 'center' }}>
+        {DEMOS.map((d, i) => (
+          <button key={i} onClick={() => { setFading(false); setKey(k => k + 1); setCi(i) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '4px 11px', borderRadius: 100, border: 'none', cursor: 'pointer',
+              fontSize: 11, fontWeight: i === ci ? 600 : 400,
+              background: i === ci ? C.blueLight : 'transparent',
+              color: i === ci ? C.blue : C.muted,
+              transition: 'all 0.2s',
+            }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: i === ci ? C.blue : d.color, opacity: i === ci ? 1 : 0.5 }} />
+            {d.label}
+          </button>
         ))}
       </div>
+
+      <div style={{ height: 2, background: C.border, position: 'relative', overflow: 'hidden' }}>
+        <motion.div key={`bar-${ci}-${key}`}
+          initial={{ width: '0%' }} animate={{ width: '100%' }}
+          transition={{ duration: DEMO_DURATION / 1000, ease: 'linear' }}
+          style={{ height: '100%', background: C.blue, position: 'absolute', left: 0, top: 0 }} />
+      </div>
+    </div>
+  )
+}
+
+// ── Stats row ─────────────────────────────────────────────────────────────────
+function StatsRow({ lang }: { lang: string }) {
+  const stats = lang === 'fr'
+    ? [
+        { value: '+200', label: 'entreprises actives' },
+        { value: '98%',  label: 'satisfaction client' },
+        { value: '24/7', label: 'disponibilité IA' },
+        { value: '<2s',  label: 'temps de réponse' },
+      ]
+    : [
+        { value: '200+', label: 'active businesses' },
+        { value: '98%',  label: 'client satisfaction' },
+        { value: '24/7', label: 'AI availability' },
+        { value: '<2s',  label: 'response time' },
+      ]
+  return (
+    <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
+      {stats.map((s, i) => (
+        <div key={i}>
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.45rem', color: C.ink, letterSpacing: '-0.03em', lineHeight: 1 }}>{s.value}</div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>{s.label}</div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -242,23 +375,19 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
     <motion.div variants={fadeUp} onClick={() => setOpen(o => !o)}
-      style={{
-        border: `1px solid ${open ? C.blue : C.border}`,
-        borderRadius: 12, padding: '18px 22px', cursor: 'pointer',
-        background: C.white, transition: 'border-color 0.2s',
-      }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14 }}>
-        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 14.5, color: C.ink, lineHeight: 1.4 }}>{q}</span>
-        <span style={{ color: C.blue, flexShrink: 0, marginTop: 2 }}>
-          {open ? <Minus size={14} /> : <Plus size={14} />}
-        </span>
+      style={{ borderBottom: `1px solid ${C.border}`, padding: '20px 0', cursor: 'pointer' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+        <span style={{ fontSize: 15, color: C.ink, lineHeight: 1.4, fontWeight: 500 }}>{q}</span>
+        <motion.span animate={{ rotate: open ? 45 : 0 }} transition={{ duration: 0.22 }}
+          style={{ color: C.blue, flexShrink: 0, display: 'flex' }}>
+          <Plus size={16} />
+        </motion.span>
       </div>
       <AnimatePresence initial={false}>
         {open && (
-          <motion.p
-            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+          <motion.p initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
-            style={{ overflow: 'hidden', color: C.mid, fontSize: 13, lineHeight: 1.7, marginTop: 10, fontWeight: 300 }}>
+            style={{ overflow: 'hidden', color: C.mid, fontSize: 14, lineHeight: 1.75, margin: '12px 0 0', fontWeight: 300 }}>
             {a}
           </motion.p>
         )}
@@ -276,100 +405,89 @@ function Sec({ id, children, bg = C.bg, style = {} }: {
   return (
     <motion.section id={id} ref={ref}
       variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}
-      style={{ background: bg, padding: '88px 24px', position: 'relative', overflow: 'hidden', ...style }}>
+      style={{ background: bg, padding: '72px 40px', position: 'relative', overflow: 'hidden', ...style }}>
       {children}
     </motion.section>
   )
 }
 
-const wrap: CSSProperties = { maxWidth: 1100, margin: '0 auto' }
+const wrap: CSSProperties = { maxWidth: 1080, margin: '0 auto' }
 
-// ── Contact form with "Autre" reveal ─────────────────────────────────────────
+function Eyebrow({ label }: { label: string }) {
+  return (
+    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.13em', textTransform: 'uppercase', color: C.blue, marginBottom: 12, margin: '0 0 12px' }}>
+      {label}
+    </p>
+  )
+}
+
+// ── Contact form ──────────────────────────────────────────────────────────────
 function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext').useLang>['tr'] }) {
   const [business, setBusiness] = useState('')
   const [autre, setAutre] = useState('')
   const [focused, setFocused] = useState<string | null>(null)
 
-  const inputStyle = (name: string): CSSProperties => ({
+  const inp = (name: string): CSSProperties => ({
     background: C.white, border: `1.5px solid ${focused === name ? C.blue : C.border}`,
-    borderRadius: 10, padding: '11px 14px', fontSize: 13.5, color: C.ink,
-    outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.2s', width: '100%',
+    borderRadius: 9, padding: '11px 14px', fontSize: 14, color: C.ink,
+    outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.18s', width: '100%',
     boxSizing: 'border-box',
   })
 
   return (
-    <motion.div variants={fadeUp} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <motion.div variants={fadeUp} style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
       {[
         { label: tr.formName,  type: 'text', ph: tr.formNamePh,  name: 'name' },
         { label: tr.formPhone, type: 'tel',  ph: tr.formPhonePh, name: 'phone' },
       ].map(f => (
         <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.mid }}>{f.label}</label>
-          <input type={f.type} placeholder={f.ph} style={inputStyle(f.name)}
+          <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid }}>{f.label}</label>
+          <input type={f.type} placeholder={f.ph} style={inp(f.name)}
             onFocus={() => setFocused(f.name)} onBlur={() => setFocused(null)} />
         </div>
       ))}
 
-      {/* business type — custom styled select */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.mid }}>{tr.formBusiness}</label>
+        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid }}>{tr.formBusiness}</label>
         <div style={{ position: 'relative' }}>
-          <select
-            value={business}
-            onChange={e => setBusiness(e.target.value)}
-            style={{
-              ...inputStyle('business'),
-              appearance: 'none', paddingRight: 36, cursor: 'pointer',
-              background: business ? C.white : C.bgAlt,
-              color: business ? C.ink : C.mid,
-            }}
-            onFocus={() => setFocused('business')} onBlur={() => setFocused(null)}
-          >
+          <select value={business} onChange={e => setBusiness(e.target.value)}
+            style={{ ...inp('business'), appearance: 'none', paddingRight: 34, cursor: 'pointer', color: business ? C.ink : C.mid }}
+            onFocus={() => setFocused('business')} onBlur={() => setFocused(null)}>
             <option value="" disabled>{tr.formBusinessPh}</option>
             {tr.formBusinessOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
-          <ChevronDown size={15} color={C.mid} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+          <ChevronDown size={14} color={C.mid} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
         </div>
       </div>
 
-      {/* "Autre" reveal */}
       <AnimatePresence>
         {(business === 'Autre' || business === 'Other') && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 2 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.mid }}>
-                {tr.formBusiness === 'Type d\'entreprise' ? 'Précisez votre secteur' : 'Specify your sector'}
-              </label>
-              <input
-                type="text"
-                placeholder={tr.formBusiness === 'Type d\'entreprise' ? 'Ex : Coiffure, Garage, Pharmacie...' : 'Ex: Hair salon, Garage, Pharmacy...'}
-                value={autre}
-                onChange={e => setAutre(e.target.value)}
-                style={inputStyle('autre')}
-                onFocus={() => setFocused('autre')} onBlur={() => setFocused(null)}
-              />
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} style={{ overflow: 'hidden' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid }}>Précisez</label>
+              <input type="text" placeholder="Ex : Coiffure, Pharmacie, Garage…" value={autre}
+                onChange={e => setAutre(e.target.value)} style={inp('autre')}
+                onFocus={() => setFocused('autre')} onBlur={() => setFocused(null)} />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.mid }}>{tr.formMessage}</label>
-        <textarea rows={3} placeholder={tr.formMessagePh} style={{ ...inputStyle('msg'), resize: 'none' } as CSSProperties}
+        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid }}>{tr.formMessage}</label>
+        <textarea rows={3} placeholder={tr.formMessagePh}
+          style={{ ...inp('msg'), resize: 'none' } as CSSProperties}
           onFocus={() => setFocused('msg')} onBlur={() => setFocused(null)} />
       </div>
 
       <button style={{
         background: C.blue, color: C.white, border: 'none', borderRadius: 100,
-        padding: '13px 0', fontSize: 14, fontWeight: 500, cursor: 'pointer',
-        fontFamily: 'inherit', marginTop: 4, transition: 'background 0.2s', width: '100%',
+        padding: '13px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        fontFamily: 'inherit', marginTop: 4, transition: 'all 0.18s', width: '100%',
       }}
-        onMouseEnter={e => (e.currentTarget.style.background = C.blueDark)}
-        onMouseLeave={e => (e.currentTarget.style.background = C.blue)}>
+        onMouseEnter={e => { e.currentTarget.style.background = C.blueDark; e.currentTarget.style.transform = 'translateY(-1px)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = C.blue; e.currentTarget.style.transform = 'none' }}>
         {tr.formSubmit}
       </button>
     </motion.div>
@@ -396,162 +514,191 @@ export default function Home() {
   ]
 
   const howSteps = [
-    {
-      n: '1', icon: MessageSquare,
+    { n: '1', icon: MessageSquare,
       title: lang === 'fr' ? 'Connexion de vos canaux' : 'Connect your channels',
-      desc: lang === 'fr' ? 'WhatsApp, Instagram, Facebook, email et plus encore, tout centralisé.' : 'WhatsApp, Instagram, Facebook, email and more, all in one place.',
-    },
-    {
-      n: '2', icon: Bot,
+      desc:  lang === 'fr' ? 'WhatsApp, Instagram, Facebook, email — tout centralisé en un seul endroit.' : 'WhatsApp, Instagram, Facebook, email — all in one place.' },
+    { n: '2', icon: Bot,
       title: lang === 'fr' ? 'Configuration de votre IA' : 'Configure your AI',
-      desc: lang === 'fr' ? 'On paramètre votre assistant avec votre ton, vos services et vos règles.' : 'We set up your assistant with your tone, services and rules.',
-    },
-    {
-      n: '3', icon: Zap,
+      desc:  lang === 'fr' ? 'On paramètre votre assistant avec votre ton, vos services et vos règles métier.' : 'We set up your assistant with your tone, services and business rules.' },
+    { n: '3', icon: Zap,
       title: lang === 'fr' ? 'Automatisations actives' : 'Automations live',
-      desc: lang === 'fr' ? 'Réponses, RDV, rappels, commentaires — tout tourne en automatique.' : 'Replies, bookings, reminders, comments — all running automatically.',
-    },
-    {
-      n: '4', icon: LayoutDashboard,
+      desc:  lang === 'fr' ? 'Réponses, RDV, rappels, commentaires — tout tourne en automatique.' : 'Replies, bookings, reminders, comments — all running automatically.' },
+    { n: '4', icon: LayoutDashboard,
       title: lang === 'fr' ? 'Vous gardez le contrôle' : 'You stay in control',
-      desc: lang === 'fr' ? 'Dashboard centralisé, app mobile, notifications en temps réel.' : 'Centralised dashboard, mobile app, real-time notifications.',
-    },
+      desc:  lang === 'fr' ? 'Dashboard centralisé, app mobile, notifications en temps réel.' : 'Centralised dashboard, mobile app, real-time notifications.' },
   ]
 
   return (
     <div style={{ background: C.bg, color: C.ink, fontFamily: "'DM Sans', sans-serif", overflowX: 'hidden' }}>
 
-      {/* ── NAV ── */}
+      {/* ── NAV ──────────────────────────────────────────────────────────── */}
       <header style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        backdropFilter: 'blur(18px)',
-        background: scrolled ? 'rgba(255,255,255,0.93)' : 'rgba(255,255,255,0.75)',
+        backdropFilter: 'blur(18px) saturate(160%)',
+        background: scrolled ? 'rgba(255,255,255,0.96)' : 'rgba(255,255,255,0.82)',
         borderBottom: `1px solid ${scrolled ? C.border : 'transparent'}`,
-        transition: 'background 0.3s, border-color 0.3s',
+        transition: 'all 0.3s',
       }}>
-        <div style={{ maxWidth: 1400, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 48px', height: 64 }}>
-          <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <Image src="/logo.png" alt="Répondly" width={30} height={30} style={{ objectFit: 'contain' }} />
-            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.25rem', letterSpacing: '-0.02em', color: C.ink }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', height: 60 }}>
+          {/* logo */}
+          <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', flexShrink: 0 }}>
+            <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} />
+            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.18rem', letterSpacing: '-0.02em', color: C.ink }}>
               Répondly<span style={{ color: C.blue }}>.</span>
             </span>
           </a>
-          <nav style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
+
+          {/* nav */}
+          <nav style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             {navLinks.map(l => (
-              <a key={l.href} href={l.href} style={{ fontSize: 13.5, color: C.mid, textDecoration: 'none', transition: 'color 0.2s' }}
+              <a key={l.href} href={l.href}
+                style={{ fontSize: 13.5, color: C.mid, textDecoration: 'none', transition: 'color 0.15s', fontWeight: 400, padding: '4px 10px', borderRadius: 8 }}
                 onMouseEnter={e => (e.currentTarget.style.color = C.ink)}
                 onMouseLeave={e => (e.currentTarget.style.color = C.mid)}>
                 {l.label}
               </a>
             ))}
+            <div style={{ width: 1, height: 16, background: C.border, margin: '0 6px' }} />
+            <a href="https://repondly.com/privacy"
+              style={{ fontSize: 12.5, color: C.muted, textDecoration: 'none', transition: 'color 0.15s', padding: '4px 8px', borderRadius: 8 }}
+              onMouseEnter={e => (e.currentTarget.style.color = C.mid)}
+              onMouseLeave={e => (e.currentTarget.style.color = C.muted)}>
+              Confidentialité
+            </a>
+            <a href="https://repondly.com/terms"
+              style={{ fontSize: 12.5, color: C.muted, textDecoration: 'none', transition: 'color 0.15s', padding: '4px 8px', borderRadius: 8 }}
+              onMouseEnter={e => (e.currentTarget.style.color = C.mid)}
+              onMouseLeave={e => (e.currentTarget.style.color = C.muted)}>
+              CGU
+            </a>
           </nav>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+
+          {/* right */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <button onClick={toggle} style={{
               background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 100,
-              padding: '5px 11px', fontSize: 12, fontWeight: 500, color: C.mid, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
+              padding: '5px 12px', fontSize: 12, fontWeight: 500, color: C.mid, cursor: 'pointer',
+              fontFamily: 'inherit', transition: 'border-color 0.15s',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = C.blue)}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
               {lang === 'fr' ? 'EN' : 'FR'}
             </button>
-            <a href="https://app.repondly.com/auth/signin" style={{ fontSize: 13.5, color: C.mid, textDecoration: 'none' }}>{tr.navSignin}</a>
+            <a href="https://app.repondly.com/auth/signin"
+              style={{ fontSize: 13.5, color: C.mid, textDecoration: 'none', fontWeight: 400, padding: '5px 6px' }}>
+              {tr.navSignin}
+            </a>
             <a href="#contact" style={{
               background: C.blue, color: C.white, borderRadius: 100,
-              padding: '8px 20px', fontSize: 13.5, fontWeight: 500, textDecoration: 'none', transition: 'background 0.2s',
+              padding: '8px 20px', fontSize: 13.5, fontWeight: 600, textDecoration: 'none',
+              transition: 'all 0.18s', boxShadow: '0 2px 10px rgba(26,107,255,0.25)',
             }}
-              onMouseEnter={e => (e.currentTarget.style.background = C.blueDark)}
-              onMouseLeave={e => (e.currentTarget.style.background = C.blue)}>
+              onMouseEnter={e => { e.currentTarget.style.background = C.blueDark; e.currentTarget.style.transform = 'translateY(-1px)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = C.blue; e.currentTarget.style.transform = 'none' }}>
               {tr.navCta}
             </a>
           </div>
         </div>
       </header>
 
-      {/* ── HERO ── */}
+      {/* ── HERO — split layout ───────────────────────────────────────────── */}
       <section style={{
-        minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'flex-start', textAlign: 'center',
-        padding: '96px 24px 80px', position: 'relative', overflow: 'hidden',
+        minHeight: '100vh',
+        padding: '0 40px',
+        position: 'relative', overflow: 'hidden',
         background: C.bg,
+        display: 'flex', alignItems: 'center',
       }}>
-        <Blobs seed={0} opacity={0.65} />
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          backgroundImage: `radial-gradient(circle, ${C.border} 1px, transparent 1px)`,
-          backgroundSize: '36px 36px', opacity: 0.45,
-        }} />
+        <DotGrid />
+        <Glow x="64%" y="44%" size={700} opacity={0.09} />
+        <Glow x="10%" y="70%" size={350} opacity={0.06} />
 
-        <motion.h1 variants={fadeUp} custom={0} initial="hidden" animate="visible" style={{
-          fontFamily: "'DM Serif Display', serif",
-          fontSize: 'clamp(2.4rem, 5.5vw, 4.2rem)',
-          lineHeight: 1.1, letterSpacing: '-0.03em',
-          maxWidth: 780, position: 'relative', color: C.ink, margin: 0,
-        }}>
-          {tr.heroTitle}
-          <em style={{ fontStyle: 'italic', color: C.blue }}>{tr.heroTitleEm}</em>
-        </motion.h1>
+        <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center', position: 'relative', paddingTop: 60 }}>
+          {/* LEFT */}
+          <motion.div variants={stagger} initial="hidden" animate="visible">
+            <motion.h1 variants={fadeUp} custom={0} style={{
+              fontFamily: "'DM Serif Display', serif",
+              fontSize: 'clamp(2.4rem, 4vw, 3.5rem)',
+              lineHeight: 1.08, letterSpacing: '-0.03em',
+              color: C.ink, margin: '0 0 18px',
+            }}>
+              {tr.heroTitle}
+              <em style={{ fontStyle: 'italic', color: C.blue, display: 'block' }}>{tr.heroTitleEm}</em>
+            </motion.h1>
 
-        <motion.p variants={fadeUp} custom={1} initial="hidden" animate="visible" style={{
-          fontSize: 15, color: C.mid, fontWeight: 300,
-          lineHeight: 1.7, maxWidth: 460, marginTop: 18, position: 'relative',
-        }}>
-          {tr.heroSub}
-        </motion.p>
+            <motion.p variants={fadeUp} custom={1} style={{
+              fontSize: 16, color: C.mid, fontWeight: 300,
+              lineHeight: 1.75, maxWidth: 400, margin: '0 0 30px',
+            }}>
+              {tr.heroSub}
+            </motion.p>
 
-        <motion.div variants={fadeUp} custom={2} initial="hidden" animate="visible"
-          style={{ display: 'flex', gap: 10, marginTop: 28, flexWrap: 'wrap', justifyContent: 'center', position: 'relative' }}>
-          <a href="#contact" style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            background: C.blue, color: C.white, borderRadius: 100,
-            padding: '11px 26px', fontSize: 13.5, fontWeight: 500, textDecoration: 'none',
-            boxShadow: '0 4px 18px rgba(26,107,255,0.28)', transition: 'background 0.2s',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.background = C.blueDark)}
-            onMouseLeave={e => (e.currentTarget.style.background = C.blue)}>
-            {tr.heroBtn1} <ArrowRight size={14} />
-          </a>
-          <a href="#features" style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            background: 'transparent', color: C.ink, borderRadius: 100,
-            padding: '11px 26px', fontSize: 13.5, fontWeight: 500, textDecoration: 'none',
-            border: `1.5px solid ${C.border}`, transition: 'border-color 0.2s',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = C.blue)}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
-            {tr.heroBtn2}
-          </a>
-        </motion.div>
+            <motion.div variants={fadeUp} custom={2} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 40 }}>
+              <a href="#contact" style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: C.blue, color: C.white, borderRadius: 100,
+                padding: '12px 26px', fontSize: 14, fontWeight: 600, textDecoration: 'none',
+                boxShadow: '0 4px 18px rgba(26,107,255,0.28)', transition: 'all 0.18s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.blueDark; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.blue; e.currentTarget.style.transform = 'none' }}>
+                {tr.heroBtn1} <ArrowRight size={14} />
+              </a>
+              <a href="#features" style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                background: 'transparent', color: C.ink, borderRadius: 100,
+                padding: '12px 26px', fontSize: 14, fontWeight: 500, textDecoration: 'none',
+                border: `1.5px solid ${C.border}`, transition: 'border-color 0.18s',
+              }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = C.blue)}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
+                {tr.heroBtn2}
+              </a>
+            </motion.div>
 
-        {/* mockup with bottom padding so it doesn't sit on section edge */}
-        <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible"
-          style={{ marginTop: 44, width: '100%', maxWidth: 580, position: 'relative', paddingBottom: 0 }}>
-          <ChatMockup />
-        </motion.div>
+            <motion.div variants={fadeUp} custom={3}
+              style={{ height: 1, background: C.border, marginBottom: 26, maxWidth: 360 }} />
+
+            <motion.div variants={fadeUp} custom={4}>
+              <StatsRow lang={lang} />
+            </motion.div>
+          </motion.div>
+
+          {/* RIGHT — mockup */}
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}>
+            <HeroMockup />
+          </motion.div>
+        </div>
       </section>
 
-      {/* ── FEATURES ── */}
+      {/* ── FEATURES ─────────────────────────────────────────────────────── */}
       <Sec id="features" bg={C.bgAlt}>
-        <Blobs seed={1} opacity={0.38} />
-        <div style={{ ...wrap, position: 'relative' }}>
-          <motion.div variants={fadeUp} style={{ textAlign: 'center', marginBottom: 48 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.featuresLabel}</p>
-            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', maxWidth: 540, margin: '0 auto', color: C.ink }}>
+        <div style={{ ...wrap }}>
+          <motion.div variants={fadeUp} style={{ marginBottom: 40 }}>
+            <Eyebrow label={tr.featuresLabel} />
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.7rem, 3vw, 2.2rem)', letterSpacing: '-0.025em', maxWidth: 500, color: C.ink, margin: '0 0 10px', lineHeight: 1.2 }}>
               {tr.featuresTitle}
             </h2>
-            <p style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, maxWidth: 420, margin: '12px auto 0', fontWeight: 300 }}>{tr.featuresSub}</p>
+            <p style={{ color: C.mid, fontSize: 14, lineHeight: 1.75, maxWidth: 400, fontWeight: 300, margin: 0 }}>{tr.featuresSub}</p>
           </motion.div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
             {tr.features.map((f, i) => {
               const Icon = featureIcons[i] ?? MessageSquare
               return (
                 <motion.div key={f.title} variants={fadeUp} custom={i}
-                  whileHover={{ y: -3, transition: { duration: 0.16 } }}
-                  style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px 24px 28px', transition: 'box-shadow 0.2s' }}
-                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = '0 6px 28px rgba(26,107,255,0.09)')}
+                  whileHover={{ y: -3, transition: { duration: 0.15 } }}
+                  style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, padding: '22px 20px 24px' }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = '0 6px 22px rgba(26,107,255,0.08)')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = 'none')}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: C.blueLight, color: C.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                    <Icon size={17} />
+                  <div style={{ width: 38, height: 38, borderRadius: 9, background: C.blueLight, color: C.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 13 }}>
+                    <Icon size={16} />
                   </div>
-                  <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1rem', marginBottom: 7, color: C.ink }}>{f.title}</h3>
-                  <p style={{ color: C.mid, fontSize: 13, lineHeight: 1.65, fontWeight: 300 }}>{f.desc}</p>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: 6, color: C.ink, lineHeight: 1.3 }}>{f.title}</h3>
+                  <p style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, margin: 0 }}>{f.desc}</p>
                 </motion.div>
               )
             })}
@@ -559,130 +706,105 @@ export default function Home() {
         </div>
       </Sec>
 
-      {/* ── HOW IT WORKS ── */}
+      {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
       <Sec id="how" bg={C.bg}>
-        <Blobs seed={2} opacity={0.45} />
-        <div style={{ ...wrap, position: 'relative' }}>
-          <motion.div variants={fadeUp} style={{ textAlign: 'center', marginBottom: 48 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.howLabel}</p>
-            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink, maxWidth: 500, margin: '0 auto' }}>
+        <div style={{ ...wrap }}>
+          <motion.div variants={fadeUp} style={{ marginBottom: 40 }}>
+            <Eyebrow label={tr.howLabel} />
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.7rem, 3vw, 2.2rem)', letterSpacing: '-0.025em', color: C.ink, maxWidth: 460, margin: '0 0 10px', lineHeight: 1.2 }}>
               {tr.howTitle}
             </h2>
-            <p style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, maxWidth: 400, margin: '12px auto 0' }}>{tr.howSub}</p>
+            <p style={{ color: C.mid, fontSize: 14, lineHeight: 1.75, fontWeight: 300, maxWidth: 380, margin: 0 }}>{tr.howSub}</p>
           </motion.div>
 
-          {/* 4-column step cards with connector */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 26, left: '12.5%', right: '12.5%', height: 2, background: C.blueLight, zIndex: 0 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 23, left: '12%', right: '12%', height: 1, background: C.border, zIndex: 0 }} />
             {howSteps.map((s, i) => {
               const Icon = s.icon
               return (
                 <motion.div key={s.n} variants={fadeUp} custom={i} style={{ position: 'relative', zIndex: 1 }}>
                   <div style={{
-                    width: 52, height: 52, borderRadius: '50%',
+                    width: 46, height: 46, borderRadius: '50%',
                     background: i === 0 ? C.blue : C.white,
-                    border: `2px solid ${i === 0 ? C.blue : C.border}`,
+                    border: `1.5px solid ${i === 0 ? C.blue : C.border}`,
                     color: i === 0 ? C.white : C.blue,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 16px',
+                    margin: '0 auto 14px',
                     boxShadow: i === 0 ? '0 4px 14px rgba(26,107,255,0.28)' : 'none',
                   }}>
-                    <Icon size={20} />
+                    <Icon size={17} />
                   </div>
-                  <div style={{
-                    background: C.white, border: `1px solid ${C.border}`,
-                    borderRadius: 12, padding: '16px 15px',
-                    boxShadow: '0 2px 10px rgba(26,107,255,0.05)',
-                  }}>
-                    <h4 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.9rem', color: C.ink, marginBottom: 6 }}>{s.title}</h4>
-                    <p style={{ color: C.mid, fontSize: 12.5, lineHeight: 1.6, fontWeight: 300 }}>{s.desc}</p>
+                  <div style={{ background: C.bgAlt, borderRadius: 11, padding: '14px 13px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: C.blue, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 5px' }}>Étape {s.n}</p>
+                    <h4 style={{ fontSize: '0.88rem', fontWeight: 600, color: C.ink, margin: '0 0 5px', lineHeight: 1.3 }}>{s.title}</h4>
+                    <p style={{ color: C.mid, fontSize: 12.5, lineHeight: 1.65, fontWeight: 300, margin: 0 }}>{s.desc}</p>
                   </div>
                 </motion.div>
               )
             })}
           </div>
 
-          {/* flow pills */}
-          <motion.div variants={fadeUp} style={{ marginTop: 40, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          <motion.div variants={fadeUp} style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
             {[
               { Icon: Zap,          label: lang === 'fr' ? 'Détection IA' : 'AI Detection' },
               { Icon: MessageSquare,label: lang === 'fr' ? 'Réponse instantanée' : 'Instant Reply' },
               { Icon: CalendarCheck,label: lang === 'fr' ? 'Réservation auto' : 'Auto Booking' },
               { Icon: Bell,         label: lang === 'fr' ? 'Rappel envoyé' : 'Reminder Sent' },
               { Icon: CheckCircle,  label: lang === 'fr' ? 'Client satisfait' : 'Happy Client' },
-            ].map(({ Icon, label }, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                background: C.blueFaint, border: `1px solid ${C.blueLight}`,
-                borderRadius: 100, padding: '7px 14px',
-                fontSize: 12.5, color: C.blue, fontWeight: 500,
-              }}>
-                <Icon size={13} />{label}
+            ].map(({ Icon, label }, i, arr) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: C.blueLight, borderRadius: 100, padding: '6px 13px', fontSize: 12.5, color: C.blue, fontWeight: 500 }}>
+                  <Icon size={12} />{label}
+                </div>
+                {i < arr.length - 1 && <span style={{ color: C.border, fontSize: 14, marginLeft: 2 }}>›</span>}
               </div>
             ))}
           </motion.div>
         </div>
       </Sec>
 
-      {/* ── PRICING ── */}
+      {/* ── PRICING ──────────────────────────────────────────────────────── */}
       <Sec id="pricing" bg={C.bgAlt}>
-        <Blobs seed={3} opacity={0.32} />
-        <div style={{ ...wrap, position: 'relative' }}>
-          {/* Header */}
-          <motion.div variants={fadeUp} style={{ textAlign: 'center', marginBottom: 48 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.pricingLabel}</p>
-            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink, marginBottom: 12 }}>
+        <div style={{ ...wrap }}>
+          <motion.div variants={fadeUp} style={{ marginBottom: 40 }}>
+            <Eyebrow label={tr.pricingLabel} />
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.7rem, 3vw, 2.2rem)', letterSpacing: '-0.025em', color: C.ink, margin: '0 0 10px', lineHeight: 1.2 }}>
               {tr.pricingTitle}
             </h2>
-            <p style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, maxWidth: 460, margin: '0 auto' }}>{tr.pricingSub}</p>
+            <p style={{ color: C.mid, fontSize: 14, lineHeight: 1.75, fontWeight: 300, maxWidth: 420, margin: 0 }}>{tr.pricingSub}</p>
           </motion.div>
 
-          {/* 3-column plan cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'start' }}>
             {tr.plans.map((plan, i) => {
               const isPro = i === 1
               return (
                 <motion.div key={plan.name} variants={fadeUp} custom={i} style={{
                   background: C.white,
-                  border: `1px solid ${isPro ? C.blue : C.border}`,
-                  borderRadius: 14,
-                  padding: 28,
-                  position: 'relative',
-                  overflow: 'hidden',
-                  boxShadow: isPro ? '0 4px 28px rgba(26,107,255,0.12)' : 'none',
-                  opacity: isPro ? 1 : 0.92,
-                  display: 'flex',
-                  flexDirection: 'column',
+                  border: `1.5px solid ${isPro ? C.blue : C.border}`,
+                  borderRadius: 14, padding: 26,
+                  position: 'relative', overflow: 'hidden',
+                  boxShadow: isPro ? '0 4px 22px rgba(26,107,255,0.10)' : 'none',
+                  display: 'flex', flexDirection: 'column',
+                  transform: isPro ? 'scale(1.02)' : 'scale(1)',
                 }}>
-                  {/* Blue top border accent for Pro */}
                   {isPro && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.blue }} />}
-
-                  {/* Recommandé badge */}
                   {isPro && (
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center',
-                      background: C.blueLight, color: C.blue,
-                      borderRadius: 100, padding: '3px 10px',
-                      fontSize: 11, fontWeight: 600, letterSpacing: '0.06em',
-                      marginBottom: 14,
-                    }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', background: C.blueLight, color: C.blue, borderRadius: 100, padding: '3px 10px', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', marginBottom: 12, width: 'fit-content' }}>
                       {tr.pricingBadge}
                     </div>
                   )}
 
-                  <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.mid, marginBottom: 10, marginTop: isPro ? 0 : 14 }}>{plan.name}</p>
+                  <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.muted, marginBottom: 10, marginTop: isPro ? 0 : 10 }}>{plan.name}</p>
 
-                  {/* Price */}
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 2 }}>
-                    <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2.2rem', lineHeight: 1, letterSpacing: '-0.04em', color: C.ink }}>{plan.price}</span>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
+                    <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2.1rem', lineHeight: 1, letterSpacing: '-0.04em', color: C.ink }}>{plan.price}</span>
                     <span style={{ fontSize: 13, color: C.mid, fontWeight: 300, marginBottom: 4 }}>{tr.planPer}</span>
                   </div>
-                  <p style={{ fontSize: 12.5, color: C.mid, marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${C.border}` }}>{plan.setup}</p>
+                  <p style={{ fontSize: 12.5, color: C.mid, marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${C.border}` }}>{plan.setup}</p>
 
-                  {/* Features */}
-                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 22px', display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
                     {plan.features.map(f => (
-                      <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: C.ink }}>
+                      <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13.5, color: C.ink, lineHeight: 1.5 }}>
                         <Check size={13} color={C.blue} style={{ flexShrink: 0, marginTop: 2 }} />{f}
                       </li>
                     ))}
@@ -693,12 +815,12 @@ export default function Home() {
                     background: isPro ? C.blue : 'transparent',
                     color: isPro ? C.white : C.blue,
                     border: `1.5px solid ${C.blue}`,
-                    borderRadius: 100,
-                    padding: '11px 0', fontSize: 13.5, fontWeight: 500, textDecoration: 'none', transition: 'background 0.2s, color 0.2s',
+                    borderRadius: 100, padding: '11px 0', fontSize: 14, fontWeight: 600,
+                    textDecoration: 'none', transition: 'all 0.18s',
                   }}
-                    onMouseEnter={e => { e.currentTarget.style.background = C.blue; e.currentTarget.style.color = C.white }}
-                    onMouseLeave={e => { e.currentTarget.style.background = isPro ? C.blue : 'transparent'; e.currentTarget.style.color = isPro ? C.white : C.blue }}>
-                    {tr.planCta} <ArrowRight size={14} />
+                    onMouseEnter={e => { e.currentTarget.style.background = C.blue; e.currentTarget.style.color = C.white; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = isPro ? C.blue : 'transparent'; e.currentTarget.style.color = isPro ? C.white : C.blue; e.currentTarget.style.transform = 'none' }}>
+                    {tr.planCta} <ArrowRight size={13} />
                   </a>
                 </motion.div>
               )
@@ -707,53 +829,75 @@ export default function Home() {
         </div>
       </Sec>
 
-      {/* ── FAQ ── */}
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
       <Sec id="faq" bg={C.bg}>
-        <Blobs seed={4} opacity={0.28} />
-        <div style={{ ...wrap, maxWidth: 740, position: 'relative' }}>
-          <motion.div variants={fadeUp} style={{ textAlign: 'center', marginBottom: 44 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.faqLabel}</p>
-            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink }}>{tr.faqTitle}</h2>
+        <div style={{ ...wrap, maxWidth: 700 }}>
+          <motion.div variants={fadeUp} style={{ marginBottom: 36 }}>
+            <Eyebrow label={tr.faqLabel} />
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.7rem, 3vw, 2.2rem)', letterSpacing: '-0.025em', color: C.ink, lineHeight: 1.2, margin: 0 }}>{tr.faqTitle}</h2>
           </motion.div>
-          <motion.div variants={stagger} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <motion.div variants={stagger} style={{ borderTop: `1px solid ${C.border}` }}>
             {tr.faqs.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
           </motion.div>
         </div>
       </Sec>
 
-      {/* ── CONTACT ── */}
+      {/* ── CONTACT ──────────────────────────────────────────────────────── */}
       <Sec id="contact" bg={C.bgAlt}>
-        <Blobs seed={5} opacity={0.38} />
-        <div style={{ ...wrap, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 72, alignItems: 'start', position: 'relative' }}>
+        <div style={{ ...wrap, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'start' }}>
           <div>
-            <motion.p variants={fadeUp} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.blue, marginBottom: 12 }}>{tr.contactLabel}</motion.p>
-            <motion.h2 variants={fadeUp} style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', letterSpacing: '-0.025em', color: C.ink, marginBottom: 12 }}>
+            <motion.div variants={fadeUp}><Eyebrow label={tr.contactLabel} /></motion.div>
+            <motion.h2 variants={fadeUp} style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(1.7rem, 3vw, 2.2rem)', letterSpacing: '-0.025em', color: C.ink, margin: '0 0 12px', lineHeight: 1.2 }}>
               {tr.contactTitle}
             </motion.h2>
-            <motion.p variants={fadeUp} style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, marginBottom: 28 }}>{tr.contactSub}</motion.p>
+            <motion.p variants={fadeUp} style={{ color: C.mid, fontSize: 14, lineHeight: 1.75, fontWeight: 300, marginBottom: 28 }}>{tr.contactSub}</motion.p>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {([MapPin, Clock, Languages] as const).map((Icon, i) => (
-                <motion.div key={i} variants={fadeUp} custom={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 11, fontSize: 13, color: C.mid }}>
-                  <Icon size={14} color={C.blue} style={{ flexShrink: 0, marginTop: 2 }} />
-                  {tr.contactInfo[i]?.text}
+                <motion.div key={i} variants={fadeUp} custom={i}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 11, fontSize: 14, color: C.mid }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: C.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={14} color={C.blue} />
+                  </div>
+                  <div style={{ paddingTop: 6, lineHeight: 1.5 }}>{tr.contactInfo[i]?.text}</div>
                 </motion.div>
               ))}
             </div>
           </div>
-          <ContactForm tr={tr} />
+
+          <motion.div variants={fadeUp} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: 30, boxShadow: '0 4px 18px rgba(26,107,255,0.06)' }}>
+            <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.2rem', color: C.ink, margin: '0 0 20px' }}>
+              {lang === 'fr' ? "Démarrez dès aujourd'hui" : 'Get started today'}
+            </h3>
+            <ContactForm tr={tr} />
+          </motion.div>
         </div>
       </Sec>
 
-      {/* ── FOOTER ── */}
-      <footer style={{ borderTop: `1px solid ${C.border}`, padding: '28px 48px', background: C.white }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+      {/* ── FOOTER ───────────────────────────────────────────────────────── */}
+      <footer style={{ borderTop: `1px solid ${C.border}`, padding: '20px 40px', background: C.white }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-            <Image src="/logo.png" alt="Répondly" width={22} height={22} style={{ objectFit: 'contain' }} />
-            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1rem', color: C.ink, letterSpacing: '-0.02em' }}>
+            <Image src="/logo.png" alt="Répondly" width={20} height={20} style={{ objectFit: 'contain' }} />
+            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.95rem', color: C.ink, letterSpacing: '-0.02em' }}>
               Répondly<span style={{ color: C.blue }}>.</span>
             </span>
           </a>
-          <p style={{ fontSize: 12, color: C.mid }}>{tr.footerRights}</p>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            {[
+              { label: 'Confidentialité', href: 'https://repondly.com/privacy' },
+              { label: 'CGU', href: 'https://repondly.com/terms' },
+              { label: 'SLA', href: 'https://repondly.com/sla' },
+            ].map(l => (
+              <a key={l.href} href={l.href}
+                style={{ fontSize: 12.5, color: C.muted, textDecoration: 'none', transition: 'color 0.15s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = C.ink)}
+                onMouseLeave={e => (e.currentTarget.style.color = C.muted)}>
+                {l.label}
+              </a>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>{tr.footerRights}</p>
         </div>
       </footer>
     </div>
