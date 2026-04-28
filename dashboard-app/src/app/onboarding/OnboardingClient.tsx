@@ -35,6 +35,7 @@ export default function OnboardingClient() {
   const [errorMsg, setErrorMsg] = useState('')
   const [fbLoaded, setFbLoaded] = useState(false)
 
+  // Load FB SDK
   useEffect(() => {
     if (document.getElementById('fb-sdk')) { setFbLoaded(true); return }
     window.fbAsyncInit = function () {
@@ -53,42 +54,49 @@ export default function OnboardingClient() {
     document.body.appendChild(script)
   }, [])
 
+  // THIS is the key part — listen for Meta sending back the waba_id and phone_number_id
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://www.facebook.com') return
+      try {
+        const data = JSON.parse(event.data)
+        console.log('Meta message event:', data)
+        if (data.type === 'WA_EMBEDDED_SIGNUP') {
+          const { phone_number_id, waba_id } = data.data
+          // send to backend
+          fetch('/api/auth/meta/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phoneNumberId: phone_number_id, wabaId: waba_id }),
+          })
+            .then(r => r.json())
+            .then(d => {
+              if (d.success) setStatus('success')
+              else { setStatus('error'); setErrorMsg(d.error || 'Erreur inconnue.') }
+            })
+            .catch(() => { setStatus('error'); setErrorMsg('Erreur réseau.') })
+        }
+      } catch {}
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
+
   const handleSignup = () => {
     if (!window.FB) return
     setStatus('loading')
-
     window.FB.login((response: any) => {
-      console.log('FB response:', JSON.stringify(response))
-
-      // JS SDK returns accessToken directly (no code exchange needed)
-      const token = response.authResponse?.accessToken
-      if (!token) {
+      console.log('FB login response:', JSON.stringify(response))
+      // if user closed the popup without finishing
+      if (!response.authResponse) {
         setStatus('error')
         setErrorMsg('Signup annulé ou échoué.')
-        return
       }
-
-      fetch('/api/auth/meta/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken: token }),
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            setStatus('success')
-          } else {
-            setStatus('error')
-            setErrorMsg(data.error || 'Erreur inconnue.')
-          }
-        })
-        .catch(() => {
-          setStatus('error')
-          setErrorMsg('Erreur réseau.')
-        })
+      // DO NOT send the token to backend here
+      // the message event listener above will handle it
     }, {
-      config_id: '2009985786561223',
-      response_type: 'token',
+      config_id: '862562813521133',
+      response_type: 'code',
       override_default_response_type: true,
       extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
     })

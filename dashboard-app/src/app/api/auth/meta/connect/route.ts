@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 const CHATWOOT_API_URL = process.env.CHATWOOT_API_URL!
 const CHATWOOT_SUPERADMIN_TOKEN = process.env.CHATWOOT_SUPERADMIN_TOKEN!
-const CHATWOOT_ACCOUNT_ID = 1
+const CHATWOOT_ACCOUNT_ID = 5
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -12,32 +12,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { accessToken } = await req.json()
-  if (!accessToken) return NextResponse.json({ error: 'No token' }, { status: 400 })
+  // Now we receive wabaId and phoneNumberId directly from the frontend
+  // (sent by the Meta message event — no Graph API call needed to find them)
+  const { wabaId, phoneNumberId } = await req.json()
 
-  // Get WABA directly with the user token
-  const whatsappRes = await fetch(
-    `https://graph.facebook.com/v21.0/me/whatsapp_business_accounts?access_token=${accessToken}`
-  )
-  const whatsappData = await whatsappRes.json()
-  console.log('WABA:', JSON.stringify(whatsappData))
+  if (!wabaId || !phoneNumberId) {
+    return NextResponse.json({ error: 'Missing wabaId or phoneNumberId' }, { status: 400 })
+  }
 
-  const waba = whatsappData?.data?.[0]
-  if (!waba) return NextResponse.json({ error: 'No WABA found: ' + JSON.stringify(whatsappData) }, { status: 400 })
-
-  const wabaId = waba.id
-
-  // Get phone number
+  // Get the phone number display string using your System User Token
+  // (this is a permanent token from Meta Business Manager, not the user's OAuth token)
   const phoneRes = await fetch(
-    `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?access_token=${accessToken}`
+    `https://graph.facebook.com/v21.0/${phoneNumberId}?fields=display_phone_number&access_token=${process.env.META_SYSTEM_USER_TOKEN}`
   )
   const phoneData = await phoneRes.json()
-  console.log('Phone:', JSON.stringify(phoneData))
-  const phone = phoneData?.data?.[0]
-  if (!phone) return NextResponse.json({ error: 'No phone: ' + JSON.stringify(phoneData) }, { status: 400 })
+  console.log('Phone data:', JSON.stringify(phoneData))
 
-  const phoneNumberId = phone.id
-  const phoneNumber = phone.display_phone_number
+  if (phoneData.error) {
+    return NextResponse.json({ error: 'Failed to get phone number: ' + JSON.stringify(phoneData.error) }, { status: 400 })
+  }
+
+  const phoneNumber = phoneData.display_phone_number
 
   // Create Chatwoot inbox
   const inboxRes = await fetch(
@@ -68,9 +63,10 @@ export async function POST(req: NextRequest) {
   console.log('Inbox:', JSON.stringify(inboxData))
 
   if (!inboxData.id) {
-    return NextResponse.json({ error: 'Inbox failed: ' + JSON.stringify(inboxData) }, { status: 400 })
+    return NextResponse.json({ error: 'Inbox creation failed: ' + JSON.stringify(inboxData) }, { status: 400 })
   }
 
+  // Save to DB
   await prisma.business.update({
     where: { email: session.user.email },
     data: {

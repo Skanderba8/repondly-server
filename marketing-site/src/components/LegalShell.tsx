@@ -148,7 +148,7 @@ export default function LegalShell({ children }: LegalShellProps) {
         fontSize: 12,
         color: C.mid,
       }}>
-        Propulsé par Répondly — Traitement des données conforme à la Loi tunisienne n° 2004-63.
+        Propulsé par Répondly - Traitement des données conforme à la Loi tunisienne n° 2004-63.
       </footer>
     </div>
   )

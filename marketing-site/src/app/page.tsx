@@ -427,13 +427,13 @@ function HeroMockup() {
 function StatsRow({ lang, isMobile }: { lang: string; isMobile: boolean }) {
   const stats = lang === 'fr'
     ? [
-        { value: '+200', label: 'entreprises actives' },
+        { value: '+50', label: 'entreprises actives' },
         { value: '98%',  label: 'satisfaction client' },
         { value: '24/7', label: 'disponibilité IA' },
         { value: '<2s',  label: 'temps de réponse' },
       ]
     : [
-        { value: '200+', label: 'active businesses' },
+        { value: '50+', label: 'active businesses' },
         { value: '98%',  label: 'client satisfaction' },
         { value: '24/7', label: 'AI availability' },
         { value: '<2s',  label: 'response time' },

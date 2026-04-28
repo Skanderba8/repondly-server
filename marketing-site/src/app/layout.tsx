@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Répondly',
-  description: 'Automate your business messages',
+  description: 'Automatisez vos messages',
   icons: { icon: '/logo.png' },
 }
 
