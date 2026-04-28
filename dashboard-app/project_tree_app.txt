@@ -1,0 +1,71 @@
+.
+├── next-env.d.ts
+├── next.config.ts
+├── package-lock.json
+├── package.json
+├── prisma
+│   └── schema.prisma
+├── prisma.config.ts
+├── project_tree_app.txt
+├── public
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── logo.png
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── src
+│   ├── app
+│   │   ├── api
+│   │   │   ├── auth
+│   │   │   │   ├── [...nextauth]
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── meta
+│   │   │   │       ├── callback
+│   │   │   │       │   └── route.ts
+│   │   │   │       └── connect
+│   │   │   │           └── route.ts
+│   │   │   ├── internal
+│   │   │   │   └── bot-event
+│   │   │   │       └── route.ts
+│   │   │   ├── messagerie
+│   │   │   │   └── route.ts
+│   │   │   └── whatsapp
+│   │   │       ├── disconnect
+│   │   │       │   └── route.ts
+│   │   │       └── status
+│   │   │           └── route.ts
+│   │   ├── auth
+│   │   │   └── signin
+│   │   │       ├── layout.tsx
+│   │   │       ├── metadata.ts
+│   │   │       └── page.tsx
+│   │   ├── dashboard
+│   │   │   ├── DashboardShell.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── layout.tsx
+│   │   ├── messagerie
+│   │   │   └── page.tsx
+│   │   ├── onboarding
+│   │   │   ├── OnboardingClient.tsx
+│   │   │   └── page.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── OnboardingDPACheckbox.tsx
+│   │   ├── Providers.tsx
+│   │   ├── Sidebar.tsx
+│   │   └── Topbar.tsx
+│   ├── lib
+│   │   ├── LangContext.tsx
+│   │   ├── auth.config.ts
+│   │   ├── auth.ts
+│   │   ├── chatwoot.ts
+│   │   ├── i18n.ts
+│   │   └── prisma.ts
+│   ├── middleware.ts
+│   └── types
+│       └── next-auth.d.ts
+└── tsconfig.json
+
+25 directories, 44 files

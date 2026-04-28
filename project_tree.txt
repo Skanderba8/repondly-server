@@ -144,13 +144,23 @@
 │   │   │   │   ├── auth
 │   │   │   │   │   ├── [...nextauth]
 │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── meta
+│   │   │   │   │   │   ├── callback
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── connect
+│   │   │   │   │   │       └── route.ts
 │   │   │   │   │   └── register
 │   │   │   │   │       └── route.ts
 │   │   │   │   ├── internal
 │   │   │   │   │   └── bot-event
 │   │   │   │   │       └── route.ts
-│   │   │   │   └── messagerie
-│   │   │   │       └── route.ts
+│   │   │   │   ├── messagerie
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── whatsapp
+│   │   │   │       ├── disconnect
+│   │   │   │       │   └── route.ts
+│   │   │   │       └── status
+│   │   │   │           └── route.ts
 │   │   │   ├── auth
 │   │   │   │   ├── register
 │   │   │   │   │   ├── layout.tsx
@@ -165,6 +175,9 @@
 │   │   │   │   └── page.tsx
 │   │   │   ├── layout.tsx
 │   │   │   ├── messagerie
+│   │   │   │   └── page.tsx
+│   │   │   ├── onboarding
+│   │   │   │   ├── OnboardingClient.tsx
 │   │   │   │   └── page.tsx
 │   │   │   └── page.tsx
 │   │   ├── components
@@ -199,19 +212,16 @@
 │   │   └── window.svg
 │   ├── src
 │   │   ├── app
+│   │   │   ├── api
+│   │   │   │   └── contact
+│   │   │   │       └── route.ts
 │   │   │   ├── layout.tsx
 │   │   │   ├── page.tsx
 │   │   │   ├── privacy
-│   │   │   │   ├── __tests__
-│   │   │   │   │   └── page.test.ts
 │   │   │   │   └── page.tsx
 │   │   │   ├── sla
-│   │   │   │   ├── __tests__
-│   │   │   │   │   └── page.test.ts
 │   │   │   │   └── page.tsx
 │   │   │   └── terms
-│   │   │       ├── __tests__
-│   │   │       │   └── page.test.ts
 │   │   │       └── page.tsx
 │   │   ├── components
 │   │   │   └── LegalShell.tsx
@@ -225,4 +235,4 @@
 ├── nginx.conf
 └── project_tree.txt
 
-82 directories, 144 files
+88 directories, 148 files

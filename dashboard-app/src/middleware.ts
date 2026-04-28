@@ -13,13 +13,15 @@ export default auth((req) => {
   if (pathname.startsWith('/dashboard') && !isAuthenticated) {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
-  if ((pathname === '/auth/signin' || pathname === '/auth/register') && isAuthenticated) {
+  
+  if (pathname === '/auth/signin' && isAuthenticated) {
     const target = role === 'SUPER_ADMIN' || role === 'ADMIN' ? 'https://admin.repondly.com' : '/dashboard'
     return NextResponse.redirect(new URL(target, req.url))
   }
+  
   return NextResponse.next()
 })
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/auth/signin', '/auth/register'],
+  matcher: ['/dashboard/:path*', '/auth/signin'],
 }
