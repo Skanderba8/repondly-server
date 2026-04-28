@@ -57,27 +57,37 @@ export default function OnboardingClient() {
   // THIS is the key part — listen for Meta sending back the waba_id and phone_number_id
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== 'https://www.facebook.com') return
-      try {
-        const data = JSON.parse(event.data)
-        console.log('Meta message event:', data)
-        if (data.type === 'WA_EMBEDDED_SIGNUP') {
-          const { phone_number_id, waba_id } = data.data
-          // send to backend
-          fetch('/api/auth/meta/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phoneNumberId: phone_number_id, wabaId: waba_id }),
-          })
-            .then(r => r.json())
-            .then(d => {
-              if (d.success) setStatus('success')
-              else { setStatus('error'); setErrorMsg(d.error || 'Erreur inconnue.') }
-            })
-            .catch(() => { setStatus('error'); setErrorMsg('Erreur réseau.') })
-        }
-      } catch {}
+  if (event.origin !== 'https://www.facebook.com') return
+  try {
+    const data = JSON.parse(event.data)
+    if (data.type === 'WA_EMBEDDED_SIGNUP') {
+      // business login flow
+      const { phone_number_id, waba_id } = data.data
+      sendToBackend({ phoneNumberId: phone_number_id, wabaId: waba_id })
     }
+  } catch {
+    // not JSON — check if it's the code flow
+    if (typeof event.data === 'string' && event.data.includes('code=')) {
+      const params = new URLSearchParams(event.data.split('?')[1] || event.data)
+      const code = params.get('code')
+      if (code) sendToBackend({ code })
+    }
+  }
+}
+
+const sendToBackend = (payload: any) => {
+  fetch('/api/auth/meta/connect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) setStatus('success')
+      else { setStatus('error'); setErrorMsg(d.error || 'Erreur inconnue.') }
+    })
+    .catch(() => { setStatus('error'); setErrorMsg('Erreur réseau.') })
+}
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
   }, [])
@@ -95,7 +105,7 @@ export default function OnboardingClient() {
       // DO NOT send the token to backend here
       // the message event listener above will handle it
     }, {
-      config_id: '862562813521133',
+      config_id: '1984471322183154',
       response_type: 'code',
       override_default_response_type: true,
       extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },

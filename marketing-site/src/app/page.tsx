@@ -531,6 +531,31 @@ function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext')
   const [business, setBusiness] = useState('')
   const [autre, setAutre] = useState('')
   const [focused, setFocused] = useState<string | null>(null)
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+
+  const handleSubmit = async () => {
+    if (!name || !phone) return
+    setStatus('loading')
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          phone,
+          business: business === 'Autre' || business === 'Other' ? autre : business,
+          message,
+        }),
+      })
+      if (!res.ok) throw new Error()
+      setStatus('success')
+    } catch {
+      setStatus('error')
+    }
+  }
 
   const inp = (name: string): CSSProperties => ({
     background: C.white, border: `1.5px solid ${focused === name ? C.blue : C.border}`,
@@ -539,18 +564,38 @@ function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext')
     boxSizing: 'border-box',
   })
 
+  if (status === 'success') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 0', textAlign: 'center' }}>
+        <div style={{ width: 48, height: 48, borderRadius: '50%', background: C.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <CheckCircle size={22} color={C.blue} />
+        </div>
+        <p style={{ fontSize: 15, fontWeight: 600, color: C.ink, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
+          Message envoyé !
+        </p>
+        <p style={{ fontSize: 13.5, color: C.mid, fontFamily: 'Inter, sans-serif', margin: 0 }}>
+          On vous contacte très bientôt.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <motion.div variants={fadeUp} style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
       {[
-        { label: tr.formName,  type: 'text', ph: tr.formNamePh,  name: 'name' },
-        { label: tr.formPhone, type: 'tel',  ph: tr.formPhonePh, name: 'phone' },
+        { label: tr.formName,  type: 'text', ph: tr.formNamePh,  name: 'name',  value: name,  setter: setName },
+        { label: tr.formPhone, type: 'tel',  ph: tr.formPhonePh, name: 'phone', value: phone, setter: setPhone },
       ].map(f => (
         <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid, fontFamily: "'DM Sans', sans-serif" }}>
             {f.label}
           </label>
-          <input type={f.type} placeholder={f.ph} style={inp(f.name)}
-            onFocus={() => setFocused(f.name)} onBlur={() => setFocused(null)} />
+          <input
+            type={f.type} placeholder={f.ph} value={f.value}
+            onChange={e => f.setter(e.target.value)}
+            style={inp(f.name)}
+            onFocus={() => setFocused(f.name)} onBlur={() => setFocused(null)}
+          />
         </div>
       ))}
 
@@ -589,19 +634,31 @@ function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext')
         <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid, fontFamily: "'DM Sans', sans-serif" }}>
           {tr.formMessage}
         </label>
-        <textarea rows={3} placeholder={tr.formMessagePh}
+        <textarea rows={3} placeholder={tr.formMessagePh} value={message}
+          onChange={e => setMessage(e.target.value)}
           style={{ ...inp('msg'), resize: 'none' } as CSSProperties}
           onFocus={() => setFocused('msg')} onBlur={() => setFocused(null)} />
       </div>
 
-      <button style={{
-        background: C.blue, color: C.white, border: 'none', borderRadius: 100,
-        padding: '13px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-        fontFamily: "'DM Sans', sans-serif", marginTop: 4, transition: 'all 0.18s', width: '100%',
-      }}
-        onMouseEnter={e => { e.currentTarget.style.background = C.blueDark; e.currentTarget.style.transform = 'translateY(-1px)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = C.blue; e.currentTarget.style.transform = 'none' }}>
-        {tr.formSubmit}
+      {status === 'error' && (
+        <p style={{ fontSize: 13, color: '#e53e3e', margin: 0, fontFamily: 'Inter, sans-serif' }}>
+          Une erreur est survenue. Réessayez ou contactez-nous directement.
+        </p>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={status === 'loading' || !name || !phone}
+        style={{
+          background: status === 'loading' || !name || !phone ? C.muted : C.blue,
+          color: C.white, border: 'none', borderRadius: 100,
+          padding: '13px 0', fontSize: 14, fontWeight: 600,
+          cursor: status === 'loading' || !name || !phone ? 'not-allowed' : 'pointer',
+          fontFamily: "'DM Sans', sans-serif", marginTop: 4, transition: 'all 0.18s', width: '100%',
+        }}
+        onMouseEnter={e => { if (status !== 'loading' && name && phone) { e.currentTarget.style.background = C.blueDark; e.currentTarget.style.transform = 'translateY(-1px)' } }}
+        onMouseLeave={e => { e.currentTarget.style.background = status === 'loading' || !name || !phone ? C.muted : C.blue; e.currentTarget.style.transform = 'none' }}>
+        {status === 'loading' ? '...' : tr.formSubmit}
       </button>
     </motion.div>
   )
@@ -735,6 +792,7 @@ function StickyMobileCta({ label, contactInView }: { label: string; contactInVie
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Home() {
   const { lang, tr, toggle } = useLang()
+  console.log('lang:', lang)
   const { isMobile, isTablet } = useBreakpoint()
   const [scrolled, setScrolled] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -757,30 +815,7 @@ export default function Home() {
     { href: '#faq',      label: tr.navFaq },
     { href: '#contact',  label: tr.navContact },
   ]
-
-  const howSteps = [
-    {
-      n: '1', icon: MessageSquare,
-      title: lang === 'fr' ? 'Connexion de vos canaux' : 'Connect your channels',
-      desc:  lang === 'fr' ? 'WhatsApp, Instagram, Facebook, email — tout centralisé en un seul endroit.' : 'WhatsApp, Instagram, Facebook, email — all in one place.',
-    },
-    {
-      n: '2', icon: Bot,
-      title: lang === 'fr' ? 'Configuration de votre IA' : 'Configure your AI',
-      desc:  lang === 'fr' ? 'On paramètre votre assistant avec votre ton, vos services et vos règles métier.' : 'We set up your assistant with your tone, services and business rules.',
-    },
-    {
-      n: '3', icon: Zap,
-      title: lang === 'fr' ? 'Automatisations actives' : 'Automations live',
-      desc:  lang === 'fr' ? 'Réponses, RDV, rappels, commentaires — tout tourne en automatique.' : 'Replies, bookings, reminders, comments — all running automatically.',
-    },
-    {
-      n: '4', icon: LayoutDashboard,
-      title: lang === 'fr' ? 'Vous gardez le contrôle' : 'You stay in control',
-      desc:  lang === 'fr' ? 'Dashboard centralisé, app mobile, notifications en temps réel.' : 'Centralised dashboard, mobile app, real-time notifications.',
-    },
-  ]
-
+  const howIcons = [MessageSquare, Bot, Zap, LayoutDashboard]
   // ── Computed layout values ─────────────────────────────────────────────────
   const heroPad  = isMobile ? '0 16px' : isTablet ? '0 24px' : '0 48px'
   const heroGrid = isMobile
@@ -849,7 +884,7 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {!isMobile && (
               <>
-                <button onClick={toggle} style={{
+                <button onClick={() => { toggle(); console.log('toggled') }} style={{
                   background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 100,
                   padding: '5px 12px', fontSize: 12, fontWeight: 500, color: C.mid, cursor: 'pointer',
                   fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.15s',
@@ -1065,8 +1100,8 @@ export default function Home() {
             {!isMobile && !isTablet && (
               <div style={{ position: 'absolute', top: 23, left: '12%', right: '12%', height: 1, background: C.border, zIndex: 0 }} />
             )}
-            {howSteps.map((s, i) => {
-              const Icon = s.icon
+            {tr.steps.map((s, i) => {
+              const Icon = howIcons[i]
               return (
                 <motion.div key={s.n} variants={fadeUp} custom={i} style={{ position: 'relative', zIndex: 1 }}>
                   <div style={{
@@ -1082,7 +1117,7 @@ export default function Home() {
                   </div>
                   <div style={{ background: C.bgAlt, borderRadius: 11, padding: '14px 13px' }}>
                     <p style={{ fontSize: 10, fontWeight: 700, color: C.blue, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 5px', fontFamily: "'DM Sans', sans-serif" }}>
-                      Étape {s.n}
+                      {lang === 'fr' ? `Étape ${s.n}` : `Step ${s.n}`}
                     </p>
                     <h4 style={{ fontSize: '0.88rem', fontWeight: 600, color: C.ink, margin: '0 0 5px', lineHeight: 1.3, fontFamily: "'DM Sans', sans-serif" }}>
                       {s.title}

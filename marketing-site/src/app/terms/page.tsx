@@ -128,7 +128,7 @@ export default function TermsPage() {
           <p style={{ ...s.p, margin: '4px 0 0 0' }}>Statut : Auto-entrepreneur enregistré en Tunisie</p>
           <p style={{ ...s.p, margin: '4px 0 0 0' }}>
             Contact :{' '}
-            <a href="mailto:contact@repondly.tn" style={s.link}>contact@repondly.tn</a>
+            <a href="mailto:repondly.tn@gmail.com" style={s.link}>repondly.tn@gmail.com</a>
           </p>
         </div>
         <p style={{ ...s.p, marginTop: 12, marginBottom: 0 }}>
@@ -207,7 +207,7 @@ export default function TermsPage() {
         </p>
         <p style={s.p}>
           Pour exercer ce droit, le client doit adresser une demande explicite à{' '}
-          <a href="mailto:contact@repondly.tn" style={s.link}>contact@repondly.tn</a>{' '}
+          <a href="mailto:repondly.tn@gmail.com" style={s.link}>repondly.tn@gmail.com</a>{' '}
           dans le délai imparti.
         </p>
         <div style={{ ...s.highlight, borderLeft: `3px solid ${C.blue}` }}>
@@ -227,7 +227,7 @@ export default function TermsPage() {
         <p style={s.p}>
           Le client peut résilier son abonnement <strong>à tout moment</strong>, sans pénalité ni frais
           de résiliation, en adressant sa demande à{' '}
-          <a href="mailto:contact@repondly.tn" style={s.link}>contact@repondly.tn</a>.
+          <a href="mailto:repondly.tn@gmail.com" style={s.link}>repondly.tn@gmail.com</a>.
         </p>
         <p style={s.p}>
           La résiliation prend effet à la <strong>fin de la période de facturation en cours</strong>.

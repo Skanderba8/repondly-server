@@ -12,36 +12,76 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Now we receive wabaId and phoneNumberId directly from the frontend
-  // (sent by the Meta message event — no Graph API call needed to find them)
-  const { wabaId, phoneNumberId } = await req.json()
+  const body = await req.json()
 
-  if (!wabaId || !phoneNumberId) {
-    return NextResponse.json({ error: 'Missing wabaId or phoneNumberId' }, { status: 400 })
+  let wabaId: string
+  let phoneNumberId: string
+
+  if (body.code) {
+    // exchange code for token
+    const tokenRes = await fetch(
+  `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${process.env.META_APP_ID}&client_secret=${process.env.META_APP_SECRET}&code=${body.code}&redirect_uri=`
+)
+    const tokenData = await tokenRes.json()
+    console.log('Token exchange:', JSON.stringify(tokenData))
+
+    if (tokenData.error) {
+      return NextResponse.json({ error: 'Token exchange failed: ' + JSON.stringify(tokenData.error) }, { status: 400 })
+    }
+
+    const userToken = tokenData.access_token
+
+    // get WABA from user token
+    const bizRes = await fetch(
+      `https://graph.facebook.com/v21.0/me/businesses?fields=whatsapp_business_accounts{id,name}&access_token=${userToken}`
+    )
+    const bizData = await bizRes.json()
+    console.log('Businesses:', JSON.stringify(bizData))
+
+    const waba = bizData?.data?.[0]?.whatsapp_business_accounts?.data?.[0]
+    if (!waba) {
+      return NextResponse.json({ error: 'No WABA found' }, { status: 400 })
+    }
+    wabaId = waba.id
+
+    // get phone number
+    const phoneRes2 = await fetch(
+      `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?access_token=${userToken}`
+    )
+    const phoneData2 = await phoneRes2.json()
+    console.log('Phones:', JSON.stringify(phoneData2))
+
+    const phone = phoneData2?.data?.[0]
+    if (!phone) {
+      return NextResponse.json({ error: 'No phone number found' }, { status: 400 })
+    }
+    phoneNumberId = phone.id
+
+  } else if (body.wabaId && body.phoneNumberId) {
+    wabaId = body.wabaId
+    phoneNumberId = body.phoneNumberId
+  } else {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  // Get the phone number display string using your System User Token
-  // (this is a permanent token from Meta Business Manager, not the user's OAuth token)
+  // rest of your existing code — get display number, create inbox, save to DB
   const phoneRes = await fetch(
     `https://graph.facebook.com/v21.0/${phoneNumberId}?fields=display_phone_number&access_token=${process.env.META_SYSTEM_USER_TOKEN}`
   )
   const phoneData = await phoneRes.json()
-  console.log('Phone data:', JSON.stringify(phoneData))
-
   if (phoneData.error) {
-    return NextResponse.json({ error: 'Failed to get phone number: ' + JSON.stringify(phoneData.error) }, { status: 400 })
+    return NextResponse.json({ error: 'Failed to get phone number' }, { status: 400 })
   }
-
   const phoneNumber = phoneData.display_phone_number
 
-  // Create Chatwoot inbox
+  // create Chatwoot inbox
   const inboxRes = await fetch(
-    `${CHATWOOT_API_URL}/api/v1/accounts/${CHATWOOT_ACCOUNT_ID}/inboxes`,
+    `${process.env.CHATWOOT_API_URL}/api/v1/accounts/${5}/inboxes`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'api_access_token': CHATWOOT_SUPERADMIN_TOKEN,
+        'api_access_token': process.env.CHATWOOT_SUPERADMIN_TOKEN!,
       },
       body: JSON.stringify({
         channel: {
@@ -66,7 +106,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Inbox creation failed: ' + JSON.stringify(inboxData) }, { status: 400 })
   }
 
-  // Save to DB
   await prisma.business.update({
     where: { email: session.user.email },
     data: {

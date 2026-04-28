@@ -217,7 +217,7 @@ export default function PrivacyPage() {
         </ul>
         <p style={{ ...s.p, marginTop: 12 }}>
           Pour exercer ces droits, adressez votre demande à :{' '}
-          <a href="mailto:contact@repondly.tn" style={s.link}>contact@repondly.tn</a>.
+          <a href="mailto:repondly.tn@gmail.com" style={s.link}>repondly.tn@gmail.com</a>.
           Nous nous engageons à répondre dans un délai de 30 jours.
         </p>
       </div>
@@ -233,7 +233,7 @@ export default function PrivacyPage() {
           <p style={{ ...s.p, margin: 0, fontWeight: 600, color: C.ink }}>Répondly</p>
           <p style={{ ...s.p, margin: '4px 0 0 0' }}>
             E-mail :{' '}
-            <a href="mailto:contact@repondly.tn" style={s.link}>contact@repondly.tn</a>
+            <a href="mailto:repondly.tn@gmail.com" style={s.link}>repondly.tn@gmail.com</a>.
           </p>
           <p style={{ ...s.p, margin: '4px 0 0 0', fontSize: 12 }}>
             Réponse garantie sous 30 jours ouvrés.
