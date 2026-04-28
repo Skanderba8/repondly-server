@@ -27,10 +27,16 @@ model Business {
   businessInfo          Json?
 
   // WhatsApp Embedded Signup
+  // WhatsApp Embedded Signup
   wabaId                String?
   whatsappPhoneNumberId String?
   whatsappInboxId       Int?
-  whatsappConnected     Boolean         @default(false)
+  whatsappConnected     Boolean   @default(false)
+
+  // New Onboarding Milestones
+  hasAcceptedDPA        Boolean   @default(false)
+  hasSetBusinessHours   Boolean   @default(false)
+  hasConfiguredBot      Boolean   @default(false)
 
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
