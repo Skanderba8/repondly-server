@@ -3,11 +3,9 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useLang } from '@/lib/LangContext'
 
 export default function SignIn() {
   const router = useRouter()
-  const { tr, lang, toggle } = useLang()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -20,7 +18,7 @@ export default function SignIn() {
     setError('')
     const res = await signIn('credentials', { email, password, redirect: false })
     setLoading(false)
-    if (res?.error) return setError(tr.signinError)
+    if (res?.error) return setError('Email ou mot de passe incorrect')
 
     const sessionRes = await fetch('/api/auth/session', { cache: 'no-store' })
     const session = await sessionRes.json() as { user?: { role?: 'SUPER_ADMIN' | 'ADMIN' } }
@@ -40,12 +38,10 @@ export default function SignIn() {
           50% { transform: translate(15px, -15px); }
           100% { transform: translate(0, 0); }
         }
-        
-        /* Deep Blue Abstract Background */
         .auth-container { 
           height: 100vh; 
           width: 100vw;
-          background-color: #060b19; /* Ultra deep blue/black */
+          background-color: #060b19;
           display: flex; 
           align-items: center; 
           justify-content: center; 
@@ -70,15 +66,13 @@ export default function SignIn() {
           animation: drift 18s ease-in-out infinite reverse;
           pointer-events: none;
         }
-
-        /* Unified Clean Card */
         .main-card {
           position: relative;
           z-index: 10;
           display: flex;
           width: 100%;
           max-width: 960px;
-          background: rgba(13, 22, 45, 0.6); /* Glassy deep navy */
+          background: rgba(13, 22, 45, 0.6);
           backdrop-filter: blur(24px);
           -webkit-backdrop-filter: blur(24px);
           border: 1px solid rgba(255, 255, 255, 0.08);
@@ -87,8 +81,6 @@ export default function SignIn() {
           overflow: hidden;
           animation: fadeIn 0.5s ease-out;
         }
-
-        /* Panels */
         .panel {
           flex: 1;
           padding: 3.5rem;
@@ -105,8 +97,6 @@ export default function SignIn() {
           background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent);
           display: none;
         }
-        
-        /* Inputs */
         .input-field {
           width: 100%;
           background: rgba(0, 0, 0, 0.2);
@@ -124,8 +114,6 @@ export default function SignIn() {
           background: rgba(0, 0, 0, 0.4);
           box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
         }
-        
-        /* Buttons & Links */
         .submit-btn {
           background: #ffffff;
           color: #000000;
@@ -154,7 +142,6 @@ export default function SignIn() {
         .forgot-pwd-link:hover {
           color: #ffffff;
         }
-
         @media (min-width: 900px) {
           .right-panel { display: flex; }
           .divider { display: block; }
@@ -165,63 +152,54 @@ export default function SignIn() {
       `}} />
 
       <main className="auth-container">
-        {/* Abstract Background Elements */}
         <div className="orb-1" />
         <div className="orb-2" />
 
         <div className="main-card">
-          {/* LEFT SIDE: SIGN IN FORM */}
+          {/* LEFT: SIGN IN FORM */}
           <div className="panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ marginBottom: '2rem' }}>
               <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.5rem', color: '#fff' }}>
                 Répondly<span style={{ color: '#3b82f6' }}>.</span>
               </div>
-              <button 
-                onClick={toggle} 
-                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#cbd5e1', padding: '4px 10px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#cbd5e1'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
-              >
-                {lang === 'fr' ? 'EN' : 'FR'}
-              </button>
             </div>
-            
+
             <h1 style={{ fontSize: '1.75rem', fontWeight: 500, marginBottom: '6px', letterSpacing: '-0.02em', color: '#ffffff' }}>
-              {tr.signinTitle}
+              Bon retour
             </h1>
             <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '28px' }}>
-              {tr.signinSub}
+              Connectez-vous à votre espace Répondly
             </p>
-            
+
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {tr.signinEmail}
+                  Email
                 </label>
                 <input className="input-field" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" required />
               </div>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {tr.signinPassword}
+                    Mot de passe
                   </label>
                   <Link href="#" className="forgot-pwd-link">
-                    {lang === 'fr' ? 'Mot de passe oublié ?' : 'Forgot password?'}
+                    Mot de passe oublié ?
                   </Link>
                 </div>
-                
+
                 <div style={{ position: 'relative' }}>
-                  <input 
-                    className="input-field" 
-                    type={showPassword ? "text" : "password"} 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)} 
-                    placeholder="••••••••" 
-                    required 
+                  <input
+                    className="input-field"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
                     style={{ paddingRight: '48px' }}
                   />
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
@@ -236,11 +214,11 @@ export default function SignIn() {
                   </button>
                 </div>
               </div>
-              
+
               {error && <p style={{ color: '#ef4444', fontSize: '0.85rem', margin: 0 }}>{error}</p>}
-              
+
               <button className="submit-btn" style={{ opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }} type="submit" disabled={loading}>
-                {loading ? tr.signinLoading : tr.signinBtn}
+                {loading ? 'Connexion...' : 'Se connecter'}
               </button>
             </form>
           </div>
@@ -248,37 +226,25 @@ export default function SignIn() {
           {/* DIVIDER */}
           <div className="divider" />
 
-          {/* RIGHT SIDE: CLEAN VALUE PROP */}
+          {/* RIGHT: VALUE PROP */}
           <div className="panel right-panel">
             <div style={{ zIndex: 2 }}>
               <h2 style={{ fontSize: '2.4rem', fontWeight: 500, lineHeight: 1.2, marginBottom: '16px', color: '#ffffff', letterSpacing: '-0.02em' }}>
-                {lang === 'fr' ? (
-                  <>Centralisez.<br/><span style={{ color: '#3b82f6' }}>Automatisez.</span><br/>Évoluez.</>
-                ) : (
-                  <>Centralize.<br/><span style={{ color: '#3b82f6' }}>Automate.</span><br/>Scale.</>
-                )}
+                Centralisez.<br/><span style={{ color: '#3b82f6' }}>Automatisez.</span><br/>Évoluez.
               </h2>
-              
               <p style={{ fontSize: '1rem', color: '#94a3b8', lineHeight: 1.6, marginBottom: '32px', maxWidth: '90%' }}>
-                {lang === 'fr' 
-                  ? "Pilotez toutes vos interactions clients depuis un espace unique. L'intelligence artificielle au service de votre croissance, sur tous vos canaux." 
-                  : "Manage all your customer interactions from a single workspace. Artificial intelligence driving your growth across every channel."}
+                Pilotez toutes vos interactions clients depuis un espace unique. L'intelligence artificielle au service de votre croissance, sur tous vos canaux.
               </p>
-              
               <div style={{ display: 'flex', gap: '28px' }}>
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                   <span style={{ fontSize: '1.2rem', fontWeight: 600, color: '#fff' }}>99.9%</span>
-                   <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                     {lang === 'fr' ? 'Uptime' : 'Uptime'}
-                   </span>
-                 </div>
-                 <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                   <span style={{ fontSize: '1.2rem', fontWeight: 600, color: '#fff' }}>&lt; 3s</span>
-                   <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                     {lang === 'fr' ? 'Temps de réponse' : 'Response Time'}
-                   </span>
-                 </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '1.2rem', fontWeight: 600, color: '#fff' }}>99.9%</span>
+                  <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Uptime</span>
+                </div>
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '1.2rem', fontWeight: 600, color: '#fff' }}>&lt; 3s</span>
+                  <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Temps de réponse</span>
+                </div>
               </div>
             </div>
           </div>

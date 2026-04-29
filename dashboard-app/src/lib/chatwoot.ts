@@ -1,114 +1,184 @@
-import { execFile } from 'child_process'
-import { prisma } from '@/lib/prisma'
+// lib/chatwoot.ts
+const BASE_URL = process.env.CHATWOOT_BASE_URL || 'https://inbox.repondly.com'
+const ACCOUNT  = process.env.CHATWOOT_ACCOUNT_ID || '5'
+const EMAIL    = process.env.CHATWOOT_EMAIL    || ''
+const PASSWORD = process.env.CHATWOOT_PASSWORD || ''
 
-const CHATWOOT_CONTAINER = process.env.CHATWOOT_CONTAINER ?? 'chatwoot-rails-1'
-const CHATWOOT_INTERNAL_URL = process.env.CHATWOOT_INTERNAL_URL ?? 'http://localhost:3000'
-const CHATWOOT_PUBLIC_URL = process.env.CHATWOOT_PUBLIC_URL ?? 'https://inbox.repondly.com'
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
-async function railsRunner(script: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const child = execFile(
-      'docker',
-      ['exec', '-i', CHATWOOT_CONTAINER, 'bundle', 'exec', 'rails', 'runner', '-'],
-      { timeout: 30_000 },
-      (error, stdout, stderr) => {
-        if (error && !stdout) return reject(new Error(stderr || error.message))
-        resolve(stdout.trim())
-      }
-    )
-    child.stdin!.write(script)
-    child.stdin!.end()
-  })
+export type ConversationStatus = 'open' | 'resolved' | 'pending' | 'snoozed'
+
+export interface CWContact {
+  id: number
+  name: string
+  phone_number: string | null
+  email: string | null
+  avatar_url: string | null
 }
 
-export async function provisionChatwootAccount(businessId: string): Promise<{
-  accountId: number
-  apiToken: string
-  password: string
-  email: string
-}> {
-  const business = await prisma.business.findUnique({
-    where: { id: businessId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      chatwootAccountId: true,
-      chatwootApiToken: true,
-      chatwootPassword: true,
-    },
-  })
-  if (!business) throw new Error(`Business ${businessId} not found`)
-
-  if (business.chatwootAccountId && business.chatwootApiToken && business.chatwootPassword) {
-    return {
-      accountId: business.chatwootAccountId,
-      apiToken: business.chatwootApiToken,
-      password: business.chatwootPassword,
-      email: business.email,
-    }
-  }
-
-  // Generate a stable password: Rp! + first 8 chars of businessId + Xx1
-  // Deterministic so we can re-derive it if needed, meets Chatwoot policy
-  const password = 'RpX' + businessId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) + '@1'
-  const name = business.name.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-  const email = business.email
-
-  const ruby = `
-pwd = "${password}"
-acc = Account.create!(name: "${name}")
-user = User.find_by(email: "${email}") || User.create!(
-  name: "${name}",
-  email: "${email}",
-  password: pwd,
-  password_confirmation: pwd,
-  confirmed_at: Time.now
-)
-if user.persisted? && !user.valid_password?(pwd)
-  user.update!(password: pwd, password_confirmation: pwd)
-end
-AccountUser.find_or_create_by!(account_id: acc.id, user_id: user.id) do |au|
-  au.role = :administrator
-end
-puts "#{acc.id}|||#{user.access_token.token}"
-`
-
-  const output = await railsRunner(ruby)
-  const lastLine = output.split('\n').filter(l => l.includes('|||')).pop() ?? ''
-  const parts = lastLine.split('|||')
-  if (parts.length !== 2) throw new Error(`Unexpected output: ${output}`)
-
-  const accountId = parseInt(parts[0], 10)
-  const apiToken = parts[1].trim()
-
-  if (isNaN(accountId) || !apiToken) {
-    throw new Error(`Invalid output: ${output}`)
-  }
-
-  await prisma.business.update({
-    where: { id: businessId },
-    data: { chatwootAccountId: accountId, chatwootApiToken: apiToken, chatwootPassword: password },
-  })
-
-  return { accountId, apiToken, password, email }
+export interface CWInbox {
+  id: number
+  name: string
+  channel_type: string
 }
 
-export async function getChatwootSessionCookies(email: string, password: string): Promise<string | null> {
-  try {
-    const res = await fetch(`${CHATWOOT_INTERNAL_URL}/auth/sign_in`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-      redirect: 'manual',
-    })
-    const setCookie = res.headers.get('set-cookie')
-    return setCookie
-  } catch {
-    return null
+export interface CWConversation {
+  id: number
+  status: ConversationStatus
+  unread_count: number
+  timestamp: number
+  last_activity_at: number
+  inbox_id: number
+  inbox: CWInbox
+  meta: { sender: CWContact; channel: string }
+  last_non_activity_message?: {
+    content: string
+    created_at: number
+    message_type: number
   }
 }
 
-export function getChatwootDashboardUrl(accountId: number): string {
-  return `${CHATWOOT_PUBLIC_URL}/app/accounts/${accountId}/dashboard`
+export interface CWMessage {
+  id: number
+  content: string
+  content_type: string
+  created_at: number
+  message_type: number
+  status: string
+  sender?: { id: number; name: string; type: string; avatar_url?: string }
+  attachments?: Array<{ id: number; file_type: string; data_url: string; thumb_url: string }>
+}
+
+export interface CWConversationListResponse {
+  data: {
+    meta: { all_count: number; unassigned_count: number; assigned_count: number; resolved_count: number }
+    payload: CWConversation[]
+  }
+}
+
+export interface CWMessagesResponse {
+  payload: CWMessage[]
+}
+
+// ─── Session Cache ──────────────────────────────────────────────────────────────
+// Cached in module scope — persists for the lifetime of the Next.js server process.
+// Re-authenticates automatically on 401.
+
+let sessionHeaders: Record<string, string> | null = null
+
+async function getSessionHeaders(): Promise<Record<string, string>> {
+  if (sessionHeaders) return sessionHeaders
+
+  const res = await fetch(`${BASE_URL}/auth/sign_in`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Chatwoot sign_in failed ${res.status}: ${text}`)
+  }
+
+  const accessToken  = res.headers.get('access-token')
+  const client       = res.headers.get('client')
+  const uid          = res.headers.get('uid')
+  const tokenType    = res.headers.get('token-type') || 'Bearer'
+
+  if (!accessToken || !client || !uid) {
+    throw new Error('Chatwoot sign_in: missing auth headers in response')
+  }
+
+  sessionHeaders = {
+    'Content-Type':  'application/json',
+    'access-token':  accessToken,
+    'client':        client,
+    'uid':           uid,
+    'token-type':    tokenType,
+  }
+
+  return sessionHeaders
+}
+
+// ─── API Helper ────────────────────────────────────────────────────────────────
+
+async function cw<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
+  const headers = await getSessionHeaders()
+  const url     = `${BASE_URL}/api/v1/accounts/${ACCOUNT}${path}`
+  console.log('>>> CALLING CHATWOOT URL:', url)
+
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...headers, ...(options.headers || {}) },
+    cache: 'no-store',
+  })
+
+  // On 401, clear cache and retry once with a fresh session
+  if (res.status === 401 && retry) {
+    sessionHeaders = null
+    return cw<T>(path, options, false)
+  }
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Chatwoot API ${res.status}: ${text}`)
+  }
+
+  return res.json() as Promise<T>
+}
+
+// ─── Inboxes ───────────────────────────────────────────────────────────────────
+
+export interface CWInboxFull {
+  id: number
+  name: string
+  channel_type: string        // 'Channel::Whatsapp' | 'Channel::FacebookPage' etc.
+  phone_number: string | null // WhatsApp number e.g. "+21650000000"
+  enable_auto_assignment: boolean
+  working_hours_enabled: boolean
+}
+
+export interface CWInboxesResponse {
+  payload: CWInboxFull[]
+}
+
+export async function getInboxes(): Promise<CWInboxesResponse> {
+  return cw<CWInboxesResponse>('/inboxes')
+}
+
+// ─── Conversations ──────────────────────────────────────────────────────────────
+
+export async function getConversations(params?: {
+  status?: ConversationStatus
+  page?: number
+}): Promise<CWConversationListResponse> {
+  const status = params?.status || 'open'
+  const page   = params?.page   || 1
+  return cw<CWConversationListResponse>(`/conversations?status=${status}&page=${page}`)
+}
+
+// ─── Messages ──────────────────────────────────────────────────────────────────
+
+export async function getMessages(conversationId: number): Promise<CWMessagesResponse> {
+  return cw<CWMessagesResponse>(`/conversations/${conversationId}/messages`)
+}
+
+export async function sendMessage(conversationId: number, content: string): Promise<CWMessage> {
+  return cw<CWMessage>(`/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content, message_type: 'outgoing', private: false }),
+  })
+}
+
+// ─── Status ────────────────────────────────────────────────────────────────────
+
+export async function updateConversationStatus(
+  conversationId: number,
+  status: 'open' | 'resolved'
+): Promise<CWConversation> {
+  return cw<CWConversation>(`/conversations/${conversationId}/toggle_status`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  })
 }

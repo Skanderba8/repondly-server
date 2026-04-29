@@ -114,7 +114,7 @@ plans: [
       { q: "Que se passe-t-il si un client pose une question que le bot ne connaît pas ?", a: "Le bot informera poliment le client qu'il le transfère à un agent humain. Vous serez notifié immédiatement et pourrez reprendre la conversation depuis votre téléphone." },
       { q: 'Comment fonctionne exactement la prise de rendez-vous ?', a: "Le bot demande l'heure souhaitée par le client, confirme la réservation dans le chat et crée un événement dans le calendrier. Vous recevez une notification et le client reçoit un rappel avant le RDV." },
       { q: 'Mes données sont-elles sécurisées ?', a: "Oui. Toutes les données sont stockées sur des serveurs privés et nous ne vendons ni ne partageons jamais vos informations professionnelles ou celles de vos clients." },
-      { q: 'Puis-je annuler à tout moment ?', a: "Oui, il n'y a pas de contrat à long terme. Vous pouvez résilier votre abonnement à tout moment sans pénalités. Les 29 DT de frais de mise en place sont uniques et non remboursables." },
+      { q: 'Puis-je annuler à tout moment ?', a: "Oui, il n'y a pas de contrat à long terme. Vous pouvez résilier votre abonnement à tout moment sans pénalités. Les de frais de mise en place sont uniques et non remboursables." },
     ],
 
     // Contact
@@ -290,7 +290,7 @@ plans: [
       { q: "What if a client asks something the bot doesn't know?", a: "The bot will gracefully let the client know it's transferring them to a human agent. You get notified immediately and can take over the conversation from your phone." },
       { q: 'How does appointment booking work exactly?', a: "The bot asks for the client's preferred time, confirms their booking in the chat, and creates a calendar event. You receive a push notification and the client gets a reminder before the appointment." },
       { q: 'Is my data secure?', a: 'Yes. All data is stored on private servers and we never sell or share your business or client information. Conversations are only accessible to you and your team.' },
-      { q: 'Can I cancel at any time?', a: 'Yes, there are no long-term contracts. You can cancel your subscription at any time with no penalties. The 29 DT setup fee is one-time and non-refundable.' },
+      { q: 'Can I cancel at any time?', a: 'Yes, there are no long-term contracts. You can cancel your subscription at any time with no penalties. The setup fee is one-time and non-refundable.' },
     ],
 
     contactLabel: 'Book a demo',
