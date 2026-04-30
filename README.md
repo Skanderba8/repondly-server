@@ -446,6 +446,9 @@ docker compose logs -f   # follow logs
 # PM2 status
 pm2 list
 pm2 monit
+
+# Tree generation
+tree -I "node_modules|.next|.git|dist" > project_tree.txt
 ```
 
 ---
