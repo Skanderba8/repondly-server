@@ -10,7 +10,7 @@ import {
   PauseCircle, PlayCircle, ExternalLink, LogOut, User,
   ChevronDown, X, Circle, Clock, TrendingUp,
   Wifi, WifiOff, FlaskConical, TriangleAlert,
-  Menu, SlidersHorizontal
+  Menu, SlidersHorizontal, Sparkles
 } from 'lucide-react'
 
 const IgIcon = ({ size = 11 }: { size?: number }) => (
@@ -28,39 +28,36 @@ const FbIcon = ({ size = 11 }: { size?: number }) => (
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
 const C = {
   // Backgrounds
-  sidebarBg:    'rgba(10, 22, 48, 0.97)',       // deep navy
-  mainBg:       '#f0f4fb',                       // light blue-grey
-  cardBg:       'rgba(255,255,255,0.82)',         // glassy white
+  sidebarBg:    'rgba(15, 23, 42, 0.97)',
+  mainBg:       '#f8fafc',
+  cardBg:       'rgba(255,255,255,0.9)',
   cardBgSolid:  '#ffffff',
-  topbarBg:     'rgba(255,255,255,0.75)',
+  topbarBg:     'rgba(255,255,255,0.85)',
 
-  // Blues
-  blue:         '#1a6bff',
-  blueDark:     '#0f4fd4',
-  blueLight:    '#ddeaff',
-  skyBlue:      '#4db8ff',
-  skyBlueDim:   'rgba(77,184,255,0.12)',
+  // Primary Palette
+  primary:      '#6366f1',
+  primaryDark:  '#4f46e5',
+  primaryLight: '#e0e7ff',
+  secondary:    '#8b5cf6',
+  accent:       '#06b6d4',
 
   // Text
-  ink:          '#0d1b2e',
-  inkSoft:      '#1e3557',
-  mid:          '#5a6a80',
-  muted:        '#8899aa',
+  ink:          '#0f172a',
+  inkSoft:      '#1e293b',
+  mid:          '#64748b',
+  muted:        '#94a3b8',
   sideText:     'rgba(255,255,255,0.55)',
   sideTextActive:'#ffffff',
 
-  // Status
-  green:        '#00c853',
-  greenBg:      'rgba(0,200,83,0.1)',
-  amber:        '#f59e0b',
-  amberBg:      'rgba(245,158,11,0.1)',
-  red:          '#ef4444',
-  redBg:        'rgba(239,68,68,0.1)',
+  // Status (subtle, consistent)
+  statusActive:   '#10b981',
+  statusInactive: '#94a3b8',
+  statusPaused:   '#f59e0b',
 
   // Borders
-  border:       'rgba(26,107,255,0.1)',
+  border:       'rgba(99,102,241,0.1)',
   borderLight:  'rgba(0,0,0,0.06)',
-  sideBorder:   'rgba(255,255,255,0.07)',
+  sideBorder:   'rgba(255,255,255,0.08)',
 }
 
 // ─── WhatsApp Icon ─────────────────────────────────────────────────────────────
@@ -76,7 +73,7 @@ type NavItem = { id: string; label: string; icon: React.ReactNode; badge?: numbe
 
 const NAV: NavItem[] = [
   { id: 'home',        label: 'Accueil',         icon: <LayoutDashboard size={17} /> },
-  { id: 'inbox',       label: 'Messagerie',       icon: <Inbox size={17} />,           badge: 3 },
+  { id: 'inbox',       label: 'Messagerie',       icon: <Inbox size={17} /> },
   { id: 'automations', label: 'Automatisations',  icon: <Zap size={17} /> },
   { id: 'bot',         label: 'Config. Bot',      icon: <Bot size={17} /> },
   { id: 'settings',    label: 'Paramètres',       icon: <Settings size={17} /> },
@@ -86,12 +83,12 @@ const NAV: NavItem[] = [
 function PlaceholderPage({ title, icon, description }: { title: string; icon: React.ReactNode; description: string }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '40px' }}>
-      <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: C.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.blue }}>
+      <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: C.primaryLight, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.primary }}>
         {icon}
       </div>
       <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: C.ink, letterSpacing: '-0.02em' }}>{title}</h2>
       <p style={{ margin: 0, fontSize: '14px', color: C.mid, textAlign: 'center', maxWidth: '320px', lineHeight: 1.6 }}>{description}</p>
-      <div style={{ marginTop: '8px', padding: '8px 20px', background: C.blueLight, color: C.blue, borderRadius: '100px', fontSize: '12px', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+      <div style={{ marginTop: '8px', padding: '8px 20px', background: C.primaryLight, color: C.primary, borderRadius: '100px', fontSize: '12px', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
         Bientôt disponible
       </div>
     </div>
@@ -99,51 +96,18 @@ function PlaceholderPage({ title, icon, description }: { title: string; icon: Re
 }
 
 // ─── Status Badge ──────────────────────────────────────────────────────────────
-function StatusBadge({ status, label }: { status: 'active' | 'paused' | 'error' | 'disconnected'; label: string }) {
+function StatusBadge({ status, label }: { status: 'active' | 'paused' | 'disconnected'; label: string }) {
   const map = {
-    active:       { bg: C.greenBg,  color: C.green,   dot: C.green  },
-    paused:       { bg: C.amberBg,  color: C.amber,   dot: C.amber  },
-    error:        { bg: C.redBg,    color: C.red,      dot: C.red    },
-    disconnected: { bg: 'rgba(88,99,115,0.1)', color: C.muted, dot: C.muted },
+    active:       { bg: 'rgba(16,185,129,0.1)',  color: C.statusActive },
+    paused:       { bg: 'rgba(245,158,11,0.1)',  color: C.statusPaused },
+    disconnected: { bg: 'rgba(148,163,184,0.1)', color: C.statusInactive },
   }
   const s = map[status]
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px 3px 7px', borderRadius: '100px', background: s.bg, fontSize: '11.5px', fontWeight: 600, color: s.color }}>
-      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: s.dot, display: 'inline-block', ...(status === 'active' ? { boxShadow: `0 0 0 2px ${s.bg}`, animation: 'pulse 2s infinite' } : {}) }} />
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '2px 8px', borderRadius: '100px', background: s.bg, fontSize: '11px', fontWeight: 600, color: s.color }}>
+      <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: s.color, display: 'inline-block' }} />
       {label}
     </span>
-  )
-}
-
-// ─── Stat Card ─────────────────────────────────────────────────────────────────
-function StatCard({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent?: string }) {
-  return (
-    <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '16px', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '4px', boxShadow: '0 2px 12px rgba(13,27,46,0.05)' }}>
-      <div style={{ fontSize: '12px', fontWeight: 600, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
-      <div style={{ fontSize: '30px', fontWeight: 800, color: accent || C.ink, letterSpacing: '-0.03em', lineHeight: 1.1 }}>{value}</div>
-      {sub && <div style={{ fontSize: '12px', color: C.muted, marginTop: '2px' }}>{sub}</div>}
-    </div>
-  )
-}
-
-// ─── Alert Banner ─────────────────────────────────────────────────────────────
-function AlertBanner({ type, message, action, onAction }: { type: 'warning' | 'error' | 'info'; message: string; action?: string; onAction?: () => void }) {
-  const styles = {
-    warning: { bg: C.amberBg, border: `1px solid rgba(245,158,11,0.25)`, color: '#92400e', icon: <TriangleAlert size={15} color={C.amber} /> },
-    error:   { bg: C.redBg,   border: `1px solid rgba(239,68,68,0.2)`,   color: C.red,     icon: <AlertCircle size={15} color={C.red} /> },
-    info:    { bg: C.blueLight, border: `1px solid ${C.border}`,          color: C.blueDark, icon: <Activity size={15} color={C.blue} /> },
-  }
-  const s = styles[type]
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', background: s.bg, border: s.border }}>
-      {s.icon}
-      <span style={{ fontSize: '13px', color: s.color, fontWeight: 500, flex: 1 }}>{message}</span>
-      {action && onAction && (
-        <button onClick={onAction} style={{ fontSize: '12px', fontWeight: 700, color: s.color, background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
-          {action} →
-        </button>
-      )}
-    </div>
   )
 }
 
@@ -154,14 +118,14 @@ export default function DashboardShell() {
   // Navigation
   const [activePage, setActivePage] = useState<string>('home')
 
-  // WhatsApp / bot state
+  // WhatsApp / bot state (from real API)
   const [waConnected, setWaConnected]           = useState(false)
-  const [waPhoneNumber, setWaPhoneNumber]       = useState<string | null>(null) // <-- Add this line
+  const [waPhoneNumber, setWaPhoneNumber]       = useState<string | null>(null)
   const [botStatus, setBotStatus]               = useState<'active' | 'paused'>('paused')
   const [fbLoaded, setFbLoaded]                 = useState(false)
   const [waLoading, setWaLoading]               = useState(false)
 
-  // Onboarding
+  // Onboarding state
   const [hasAcceptedDPA, setHasAcceptedDPA]     = useState(false)
   const [hasConfiguredBot, setHasConfiguredBot] = useState(false)
   const [showDPAModal, setShowDPAModal]         = useState(false)
@@ -174,36 +138,6 @@ export default function DashboardShell() {
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
 
-  // Mock data
-  const alertsList = [
-    ...(!waConnected ? [{ type: 'error' as const, message: 'WhatsApp non connecté — vos clients ne reçoivent aucune réponse.', action: 'Connecter', onAction: () => {} }] : []),
-    ...(!hasAcceptedDPA ? [{ type: 'warning' as const, message: 'Données & conformité non validées (DPA manquant).', action: 'Compléter', onAction: () => setShowDPAModal(true) }] : []),
-    ...(!hasConfiguredBot ? [{ type: 'warning' as const, message: 'FAQ non configurée — le bot répond sans base de connaissance.', action: 'Configurer', onAction: () => setShowPersonaModal(true) }] : []),
-  ]
-
-  const waitingConversations = [
-    { id: 1, contact: 'Sonia B.', preview: 'Bonjour, est-ce que vous avez de la place pour demain ?', time: '3 min', channel: 'wa' },
-    { id: 2, contact: 'Med Ali K.', preview: 'Je voudrais annuler mon rendez-vous de jeudi', time: '11 min', channel: 'wa' },
-    { id: 3, contact: 'Fatma C.', preview: 'Quel est le prix pour une séance complète ?', time: '25 min', channel: 'wa' },
-  ]
-
-  const failedAutomations: { id: number; name: string; error: string; time: string }[] = []
-
-  const progress = useMemo(() => {
-    let p = 0
-    if (waConnected) p += 34
-    if (hasAcceptedDPA) p += 33
-    if (hasConfiguredBot) p += 33
-    return p
-  }, [waConnected, hasAcceptedDPA, hasConfiguredBot])
-
-  const activeStep = useMemo(() => {
-    if (!waConnected) return 1
-    if (!hasAcceptedDPA) return 2
-    if (!hasConfiguredBot) return 3
-    return 4
-  }, [waConnected, hasAcceptedDPA, hasConfiguredBot])
-
   // FB SDK + WA status
   useEffect(() => {
     if (document.getElementById('fb-sdk')) { setFbLoaded(true); return }
@@ -215,11 +149,11 @@ export default function DashboardShell() {
     script.id = 'fb-sdk'; script.src = 'https://connect.facebook.net/en_US/sdk.js'; script.async = true
     document.body.appendChild(script)
     fetch('/api/whatsapp/status').then(r => r.json()).then(d => { 
-  if (d.whatsappConnected) {
-    setWaConnected(true)
-    if (d.phoneNumber) setWaPhoneNumber(d.phoneNumber)
-  } 
-}).catch(() => {})
+      if (d.whatsappConnected) {
+        setWaConnected(true)
+        if (d.phoneNumber) setWaPhoneNumber(d.phoneNumber)
+      } 
+    }).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -247,7 +181,8 @@ export default function DashboardShell() {
     if (!(window as any).FB) return
     setWaLoading(true)
     ;(window as any).FB.login((resp: any) => { if (!resp.authResponse) setWaLoading(false) }, {
-      config_id: '1984471322183154', response_type: 'code', override_default_response_type: true,
+      config_id: process.env.NEXT_PUBLIC_META_CONFIG_ID,
+      response_type: 'code', override_default_response_type: true,
       extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
     })
   }
@@ -267,198 +202,131 @@ export default function DashboardShell() {
   const HomeContent = () => (
     <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '100%' }}>
 
-      {/* ── SECTION 1 — Status + Quick Actions ── */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Welcome Message */}
+      <div style={{ marginBottom: '4px' }}>
+        <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: C.ink, letterSpacing: '-0.02em' }}>
+          Bienvenue, {userName.split(' ')[0]} <Sparkles size={20} style={{ display: 'inline', color: C.primary }} />
+        </h2>
+        <p style={{ margin: '2px 0 0', fontSize: '13px', color: C.muted }}>
+          Votre tableau de bord Répondly —{' '}
+          {waConnected ? (botStatus === 'active' ? 'tout est opérationnel' : 'bot en pause') : 'connectez un canal pour démarrer'}
+        </p>
+      </div>
 
-        {/* Alert banners */}
-        {alertsList.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {alertsList.map((a, i) => <AlertBanner key={i} {...a} />)}
-          </div>
-        )}
-
-        {/* Channel status cards + quick actions */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-
-          {/* WhatsApp */}
-          <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '16px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 2px 12px rgba(13,27,46,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <WaIcon size={18} />
-                <span style={{ fontSize: '13px', fontWeight: 600, color: C.ink }}>WhatsApp</span>
-              </div>
-              <StatusBadge 
-  status={waConnected ? 'active' : 'disconnected'} 
-  label={waConnected ? (waPhoneNumber || 'Connecté') : 'Non connecté'} 
-/>
+      {/* Channel Status Cards - Compact Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+        {/* WhatsApp */}
+        <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <WaIcon size={15} />
             </div>
-            {!waConnected && (
-              <button onClick={handleSignup} disabled={!fbLoaded || waLoading} style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: '8px', padding: '7px 12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start' }}>
-                <Wifi size={13} /> {waLoading ? 'Connexion...' : 'Connecter'}
-              </button>
-            )}
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: C.ink, display: 'block' }}>WhatsApp</span>
+              <StatusBadge status={waConnected ? 'active' : 'disconnected'} label={waConnected ? (waPhoneNumber || 'Connecté') : 'Déconnecté'} />
+            </div>
           </div>
+          {!waConnected && (
+            <button onClick={handleSignup} disabled={!fbLoaded || waLoading}
+              style={{ background: C.primary, color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Wifi size={12} /> {waLoading ? '...' : 'Connecter'}
+            </button>
+          )}
+        </div>
 
-          {/* Instagram */}
-          <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '16px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 2px 12px rgba(13,27,46,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '18px', height: '18px', borderRadius: '5px', background: 'linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <IgIcon size={11} />
-                </div>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: C.ink }}>Instagram</span>
-              </div>
+        {/* Instagram */}
+        <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <IgIcon size={13} />
+            </div>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: C.ink, display: 'block' }}>Instagram</span>
               <StatusBadge status="disconnected" label="Bientôt" />
             </div>
           </div>
+        </div>
 
-          {/* Facebook */}
-          <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '16px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 2px 12px rgba(13,27,46,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '18px', height: '18px', borderRadius: '5px', background: '#1877f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FbIcon size={11} />
-                </div>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: C.ink }}>Facebook</span>
-              </div>
+        {/* Facebook */}
+        <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FbIcon size={13} />
+            </div>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: C.ink, display: 'block' }}>Facebook</span>
               <StatusBadge status="disconnected" label="Bientôt" />
             </div>
           </div>
+        </div>
 
-          {/* Bot Status */}
-          <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '16px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 2px 12px rgba(13,27,46,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Bot size={18} color={C.blue} />
-                <span style={{ fontSize: '13px', fontWeight: 600, color: C.ink }}>Agent IA</span>
-              </div>
+        {/* Bot */}
+        <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: C.primaryLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Bot size={17} color={C.primary} />
+            </div>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: C.ink, display: 'block' }}>Agent IA</span>
               <StatusBadge status={botStatus} label={botStatus === 'active' ? 'Actif' : 'En pause'} />
             </div>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <button onClick={() => setBotStatus('active')} disabled={botStatus === 'active'} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '6px', borderRadius: '7px', border: 'none', background: botStatus === 'active' ? C.greenBg : C.blueLight, color: botStatus === 'active' ? C.green : C.blue, fontSize: '11.5px', fontWeight: 600, cursor: botStatus === 'active' ? 'default' : 'pointer' }}>
-                <PlayCircle size={13} /> Activer
-              </button>
-              <button onClick={() => setBotStatus('paused')} disabled={botStatus === 'paused'} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '6px', borderRadius: '7px', border: 'none', background: botStatus === 'paused' ? C.amberBg : '#f5f7fa', color: botStatus === 'paused' ? C.amber : C.mid, fontSize: '11.5px', fontWeight: 600, cursor: botStatus === 'paused' ? 'default' : 'pointer' }}>
-                <PauseCircle size={13} /> Pause
-              </button>
-            </div>
           </div>
-        </div>
-
-        {/* Quick Actions Row */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button onClick={() => setActivePage('inbox')} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '10px', background: C.blue, color: '#fff', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 3px 12px rgba(26,107,255,0.25)' }}>
-            <Inbox size={15} /> Ouvrir la messagerie
-          </button>
-          <button onClick={() => {}} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '10px', background: C.cardBgSolid, color: C.ink, border: `1px solid ${C.borderLight}`, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-            <FlaskConical size={15} /> Tester le bot
-          </button>
-          <button onClick={() => setBotStatus(botStatus === 'active' ? 'paused' : 'active')} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '10px', background: C.cardBgSolid, color: botStatus === 'active' ? C.amber : C.green, border: `1px solid ${C.borderLight}`, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-            {botStatus === 'active' ? <><PauseCircle size={15} /> Pause bot</> : <><PlayCircle size={15} /> Activer bot</>}
+          <button
+            onClick={() => setBotStatus(botStatus === 'active' ? 'paused' : 'active')}
+            style={{
+              width: '28px', height: '28px', borderRadius: '7px', border: 'none',
+              background: botStatus === 'active' ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)',
+              color: botStatus === 'active' ? C.statusPaused : C.statusActive,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+            {botStatus === 'active' ? <PauseCircle size={15} /> : <PlayCircle size={15} />}
           </button>
         </div>
-      </section>
+      </div>
 
-      {/* ── SECTION 2 — Conversations needing attention ── */}
-      <section style={{ display: 'grid', gridTemplateColumns: failedAutomations.length > 0 ? '1fr 1fr' : '1fr', gap: '16px' }}>
+      {/* Quick Actions */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <button onClick={() => setActivePage('inbox')}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', background: C.primary, color: '#fff', border: 'none', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 10px rgba(99,102,241,0.3)' }}>
+          <Inbox size={14} /> Messagerie
+        </button>
+        <button onClick={() => {}}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', background: C.cardBgSolid, color: C.ink, border: `1px solid ${C.borderLight}`, fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>
+          <FlaskConical size={14} /> Tester le bot
+        </button>
+        <button onClick={() => setActivePage('bot')}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', background: C.cardBgSolid, color: C.ink, border: `1px solid ${C.borderLight}`, fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>
+          <Bot size={14} /> Configurer le bot
+        </button>
+      </div>
 
-        {/* Waiting conversations */}
-        <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(13,27,46,0.05)' }}>
-          <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={15} color={C.amber} />
-              <span style={{ fontSize: '13.5px', fontWeight: 700, color: C.ink }}>En attente de réponse</span>
-              {waitingConversations.length > 0 && (
-                <span style={{ background: C.amberBg, color: C.amber, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px' }}>{waitingConversations.length}</span>
-              )}
-            </div>
-            <button onClick={() => setActivePage('inbox')} style={{ fontSize: '12px', color: C.blue, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Voir tout →</button>
-          </div>
-          <div>
-            {waitingConversations.length === 0 ? (
-              <div style={{ padding: '28px', textAlign: 'center', color: C.muted, fontSize: '13px' }}>
-                <CheckCircle2 size={24} color={C.green} style={{ marginBottom: '8px', display: 'block', margin: '0 auto 8px' }} />
-                Tout est traité ✓
-              </div>
-            ) : (
-              waitingConversations.map((c, i) => (
-                <div key={c.id} onClick={() => setActivePage('inbox')} style={{ padding: '12px 18px', borderBottom: i < waitingConversations.length - 1 ? `1px solid ${C.borderLight}` : 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'background 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f7f9ff'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                >
-                  <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: C.blueLight, color: C.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0 }}>
-                    {c.contact.charAt(0)}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: C.ink }}>{c.contact}</span>
-                      <span style={{ fontSize: '11px', color: C.muted }}>{c.time}</span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: C.mid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.preview}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Failed automations — only shown if any */}
-        {failedAutomations.length > 0 && (
-          <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid rgba(239,68,68,0.15)`, borderRadius: '16px', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.borderLight}`, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle size={15} color={C.red} />
-              <span style={{ fontSize: '13.5px', fontWeight: 700, color: C.ink }}>Automatisations échouées</span>
-              <span style={{ background: C.redBg, color: C.red, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px' }}>{failedAutomations.length}</span>
-            </div>
-            {failedAutomations.map((f, i) => (
-              <div key={f.id} style={{ padding: '12px 18px', borderBottom: i < failedAutomations.length - 1 ? `1px solid ${C.borderLight}` : 'none' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: C.ink }}>{f.name}</div>
-                <div style={{ fontSize: '12px', color: C.red }}>{f.error}</div>
-                <div style={{ fontSize: '11px', color: C.muted, marginTop: '2px' }}>{f.time}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── SECTION 3 — Stats Today ── */}
-      <section>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-          <StatCard label="Messages aujourd'hui" value={waConnected ? 24 : 0} sub={waConnected ? '+12% vs hier' : 'WhatsApp non connecté'} />
-          <StatCard label="Conversations traitées" value={waConnected ? 18 : 0} sub={waConnected ? 'par le bot IA' : '—'} accent={C.blue} />
-          <StatCard label="Taux de succès" value={waConnected ? '94%' : '—'} sub={waConnected ? '1 échec ce matin' : '—'} accent={C.green} />
-          <StatCard label="Temps moy. de réponse" value={waConnected ? '< 1s' : '—'} sub={waConnected ? 'réponse automatique' : '—'} />
-        </div>
-      </section>
-
-      {/* ── SETUP PROGRESS (if not done) ── */}
+      {/* Setup Progress (only if not complete) */}
       <AnimatePresence>
-        {progress < 100 && (
+        {(waConnected && hasAcceptedDPA && hasConfiguredBot) ? null : (
           <motion.section
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '16px', padding: '18px 20px', boxShadow: '0 2px 12px rgba(13,27,46,0.05)' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div>
-                <div style={{ fontSize: '13.5px', fontWeight: 700, color: C.ink }}>Configuration ({progress}%)</div>
-                <div style={{ fontSize: '12px', color: C.muted, marginTop: '2px' }}>Finalisez ces étapes pour activer pleinement votre agent.</div>
-              </div>
-              <div style={{ width: '120px', height: '5px', background: C.borderLight, borderRadius: '3px', overflow: 'hidden' }}>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.6 }} style={{ height: '100%', background: `linear-gradient(90deg, ${C.blue}, ${C.skyBlue})`, borderRadius: '3px' }} />
-              </div>
+            style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '16px', padding: '18px 20px', boxShadow: '0 1px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: C.ink }}>Configuration de votre compte</div>
+              <div style={{ fontSize: '12px', color: C.muted, marginTop: '2px' }}>Suivez ces étapes pour activer votre agent IA.</div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
               {[
-                { done: waConnected, label: 'Connecter WhatsApp', action: 'Connecter', onClick: handleSignup, color: '#25D366' },
-                { done: hasAcceptedDPA, label: 'Valider le DPA', action: 'Compléter', onClick: () => setShowDPAModal(true), color: C.blue },
-                { done: hasConfiguredBot, label: 'Configurer le bot', action: 'Configurer', onClick: () => setShowPersonaModal(true), color: C.blue },
+                { done: waConnected, label: 'Connecter WhatsApp', onClick: handleSignup },
+                { done: hasAcceptedDPA, label: 'Valider le DPA (conformité)', onClick: () => setShowDPAModal(true) },
+                { done: hasConfiguredBot, label: 'Configurer l\'agent IA', onClick: () => setShowPersonaModal(true) },
               ].map((step, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', background: step.done ? 'rgba(0,200,83,0.07)' : '#f8f9fb', border: `1px solid ${step.done ? 'rgba(0,200,83,0.2)' : C.borderLight}` }}>
-                  {step.done ? <CheckCircle2 size={16} color={C.green} /> : <Circle size={16} color={C.muted} />}
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px',
+                  background: step.done ? 'rgba(16,185,129,0.06)' : '#f8fafc',
+                  border: `1px solid ${step.done ? 'rgba(16,185,129,0.15)' : C.borderLight}`
+                }}>
+                  {step.done ? <CheckCircle2 size={15} color={C.statusActive} /> : <Circle size={15} color={C.muted} />}
                   <span style={{ flex: 1, fontSize: '12.5px', fontWeight: 500, color: step.done ? C.mid : C.ink }}>{step.label}</span>
-                  {!step.done && activeStep === i + 1 && (
-                    <button onClick={step.onClick} style={{ fontSize: '11.5px', fontWeight: 700, color: step.color, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
-                      {step.action} →
+                  {!step.done && (
+                    <button onClick={step.onClick}
+                      style={{ fontSize: '11px', fontWeight: 700, color: C.primary, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      {i === 0 ? 'Connecter' : 'Compléter'} →
                     </button>
                   )}
                 </div>
@@ -468,7 +336,25 @@ export default function DashboardShell() {
         )}
       </AnimatePresence>
 
-      {/* bottom spacer */}
+      {/* Link to Messagerie */}
+      <div style={{ background: C.cardBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.borderLight}`, borderRadius: '16px', padding: '18px 20px', boxShadow: '0 1px 8px rgba(0,0,0,0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: C.ink, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MessageSquare size={16} color={C.primary} />
+              Messagerie unifiée
+            </div>
+            <div style={{ fontSize: '12px', color: C.muted, marginTop: '4px' }}>
+              {waConnected ? 'Gérez toutes vos conversations depuis un seul endroit.' : 'Connectez WhatsApp pour commencer à recevoir des messages.'}
+            </div>
+          </div>
+          <button onClick={() => setActivePage('inbox')}
+            style={{ padding: '8px 16px', borderRadius: '10px', background: C.primary, color: '#fff', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(99,102,241,0.2)' }}>
+            <ExternalLink size={13} /> Ouvrir
+          </button>
+        </div>
+      </div>
+
       <div style={{ height: '4px', flexShrink: 0 }} />
     </div>
   )
@@ -477,37 +363,43 @@ export default function DashboardShell() {
   return (
     <>
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
         * { box-sizing: border-box; }
+        body { margin: 0; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(26,107,255,0.18); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.15); border-radius: 10px; }
+        
+        /* Background texture */
+        .dashboard-bg {
+          background-color: ${C.mainBg};
+          background-image: 
+            radial-gradient(circle at 20% 50%, rgba(99,102,241,0.03) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(139,92,246,0.03) 0%, transparent 50%),
+            radial-gradient(circle at 50% 80%, rgba(6,182,212,0.02) 0%, transparent 50%);
+        }
       `}</style>
 
-      <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', fontFamily: "'Inter', -apple-system, sans-serif", background: C.mainBg }}>
+      <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', fontFamily: "'Inter', -apple-system, sans-serif" }}>
 
         {/* ═══ SIDEBAR ═════════════════════════════════════════════════════════ */}
         <aside style={{
-          width: '224px', flexShrink: 0,
+          width: '220px', flexShrink: 0,
           background: C.sidebarBg,
           display: 'flex', flexDirection: 'column',
           borderRight: `1px solid ${C.sideBorder}`,
           position: 'relative', zIndex: 20,
-          boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
         }}>
-          {/* Logo */}
           <div style={{ height: '64px', display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: `1px solid ${C.sideBorder}`, flexShrink: 0 }}>
-            <img src="/logo.png" alt="" style={{ width: '26px', height: '26px', objectFit: 'contain', marginRight: '10px' }} />
-            <span style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>
-              Répondly<span style={{ color: C.skyBlue }}>.</span>
+            <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px' }}>
+              <Sparkles size={16} color="#fff" />
+            </div>
+            <span style={{ fontSize: '17px', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>
+              Répondly<span style={{ color: C.accent }}>.</span>
             </span>
           </div>
 
-          {/* Nav */}
-          <nav style={{ flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '3px', overflowY: 'auto' }}>
+          <nav style={{ flex: 1, padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto' }}>
             <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', paddingLeft: '10px', marginBottom: '8px' }}>Principal</div>
             {NAV.map(item => {
               const isActive = activePage === item.id
@@ -518,77 +410,63 @@ export default function DashboardShell() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '9px 12px', borderRadius: '10px', border: 'none',
-                    background: isActive ? 'rgba(77,184,255,0.14)' : 'transparent',
+                    background: isActive ? 'rgba(99,102,241,0.15)' : 'transparent',
                     color: isActive ? '#fff' : C.sideText,
                     fontSize: '13.5px', fontWeight: isActive ? 600 : 400,
                     cursor: 'pointer', width: '100%', textAlign: 'left',
                     transition: 'all 0.15s',
-                    borderLeft: isActive ? `2px solid ${C.skyBlue}` : '2px solid transparent',
                   }}
-                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}
+                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
                   onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                 >
-                  <span style={{ opacity: isActive ? 1 : 0.7 }}>{item.icon}</span>
+                  <span style={{ opacity: isActive ? 1 : 0.65 }}>{item.icon}</span>
                   <span style={{ flex: 1 }}>{item.label}</span>
                   {item.badge && (
-                    <span style={{ background: C.blue, color: '#fff', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '100px', minWidth: '18px', textAlign: 'center' }}>{item.badge}</span>
+                    <span style={{ background: C.primary, color: '#fff', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '100px', minWidth: '18px', textAlign: 'center' }}>{item.badge}</span>
                   )}
                 </button>
               )
             })}
           </nav>
 
-          {/* Bottom user info */}
-          <div style={{ padding: '16px 12px', borderTop: `1px solid ${C.sideBorder}`, flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: `linear-gradient(135deg, ${C.blue}, ${C.skyBlue})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+          <div style={{ padding: '14px 10px', borderTop: `1px solid ${C.sideBorder}`, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)' }}>
+              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
                 {userInitial}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
-                <div style={{ fontSize: '11px', color: C.sideText }}>Administrateur</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
+                <div style={{ fontSize: '10.5px', color: C.sideText }}>Administrateur</div>
               </div>
             </div>
           </div>
         </aside>
 
         {/* ═══ MAIN AREA ═══════════════════════════════════════════════════════ */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+        <div className="dashboard-bg" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
 
           {/* TOPBAR */}
           <header style={{
-            height: '64px', flexShrink: 0,
+            height: '60px', flexShrink: 0,
             background: C.topbarBg,
             backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
             borderBottom: `1px solid ${C.borderLight}`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '0 24px', zIndex: 10,
           }}>
-            {/* Page title */}
             <div>
-              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: C.ink, letterSpacing: '-0.02em' }}>
+              <h1 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: C.ink, letterSpacing: '-0.02em' }}>
                 {NAV.find(n => n.id === activePage)?.label || 'Tableau de bord'}
               </h1>
-              {activePage === 'home' && (
-                <p style={{ margin: 0, fontSize: '12px', color: C.muted }}>
-                  {waConnected && botStatus === 'active' ? '✓ Tout fonctionne' : 'Action requise'}
-                </p>
-              )}
             </div>
 
             {/* Right actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <a href="https://inbox.repondly.com" target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '9px', background: C.blue, color: '#fff', fontSize: '13px', fontWeight: 600, textDecoration: 'none', boxShadow: '0 2px 10px rgba(26,107,255,0.3)' }}>
-                <MessageSquare size={14} /> Messagerie <ExternalLink size={12} style={{ opacity: 0.7 }} />
-              </a>
-
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {/* Profile */}
               <div ref={profileRef} style={{ position: 'relative' }}>
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  style={{ width: '36px', height: '36px', borderRadius: '50%', background: `linear-gradient(135deg, ${C.blue}, ${C.skyBlue})`, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700, color: '#fff', boxShadow: '0 2px 8px rgba(26,107,255,0.3)' }}
-                >
+                  style={{ width: '34px', height: '34px', borderRadius: '50%', background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff', boxShadow: '0 2px 8px rgba(99,102,241,0.2)' }}>
                   {userInitial}
                 </button>
                 <AnimatePresence>
@@ -596,8 +474,7 @@ export default function DashboardShell() {
                     <motion.div
                       initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
                       transition={{ duration: 0.13 }}
-                      style={{ position: 'absolute', top: '44px', right: 0, width: '210px', background: '#fff', border: `1px solid ${C.borderLight}`, borderRadius: '14px', padding: '8px', boxShadow: '0 12px 36px rgba(13,27,46,0.12)', zIndex: 100 }}
-                    >
+                      style={{ position: 'absolute', top: '42px', right: 0, width: '210px', background: '#fff', border: `1px solid ${C.borderLight}`, borderRadius: '14px', padding: '8px', boxShadow: '0 12px 36px rgba(0,0,0,0.1)', zIndex: 100 }}>
                       <div style={{ padding: '8px 12px 10px', borderBottom: `1px solid ${C.borderLight}`, marginBottom: '4px' }}>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: C.ink }}>{userName}</div>
                         <div style={{ fontSize: '11.5px', color: C.muted }}>{session.user?.email}</div>
@@ -606,18 +483,18 @@ export default function DashboardShell() {
                         { icon: <User size={14} />, label: 'Profil', onClick: () => {} },
                         { icon: <SlidersHorizontal size={14} />, label: 'Préférences', onClick: () => setActivePage('settings') },
                       ].map((item, i) => (
-                        <button key={i} onClick={() => { item.onClick(); setProfileOpen(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 12px', borderRadius: '8px', background: 'none', border: 'none', fontSize: '13px', color: C.ink, cursor: 'pointer', textAlign: 'left', fontWeight: 500, transition: 'background 0.12s' }}
-                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.mainBg}
-                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                        >
+                        <button key={i} onClick={() => { item.onClick(); setProfileOpen(false) }}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 12px', borderRadius: '8px', background: 'none', border: 'none', fontSize: '13px', color: C.ink, cursor: 'pointer', textAlign: 'left', fontWeight: 500, transition: 'background 0.12s' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f1f5f9'}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                           <span style={{ color: C.muted }}>{item.icon}</span>{item.label}
                         </button>
                       ))}
                       <div style={{ height: '1px', background: C.borderLight, margin: '4px 0' }} />
-                      <button onClick={() => signOut({ callbackUrl: '/auth/signin' })} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 12px', borderRadius: '8px', background: 'none', border: 'none', fontSize: '13px', color: C.red, cursor: 'pointer', textAlign: 'left', fontWeight: 500, transition: 'background 0.12s' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fff5f5'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                      >
+                      <button onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 12px', borderRadius: '8px', background: 'none', border: 'none', fontSize: '13px', color: '#ef4444', cursor: 'pointer', textAlign: 'left', fontWeight: 500, transition: 'background 0.12s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fef2f2'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                         <LogOut size={14} /> Déconnexion
                       </button>
                     </motion.div>
@@ -660,10 +537,9 @@ export default function DashboardShell() {
       <AnimatePresence>
         {showDPAModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDPAModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(10,22,48,0.5)', backdropFilter: 'blur(6px)' }} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDPAModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(6px)' }} />
             <motion.div initial={{ opacity: 0, y: 20, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              style={{ position: 'relative', width: '100%', maxWidth: '560px', background: '#fff', borderRadius: '20px', border: `1px solid ${C.borderLight}`, boxShadow: '0 30px 60px rgba(0,0,0,0.2)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85dvh' }}
-            >
+              style={{ position: 'relative', width: '100%', maxWidth: '560px', background: '#fff', borderRadius: '20px', border: `1px solid ${C.borderLight}`, boxShadow: '0 30px 60px rgba(0,0,0,0.15)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85dvh' }}>
               <div style={{ padding: '20px 28px', borderBottom: `1px solid ${C.borderLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: C.ink }}>Données & Conformité</h2>
@@ -672,18 +548,9 @@ export default function DashboardShell() {
                 <button onClick={() => setShowDPAModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: '4px' }}><X size={18} /></button>
               </div>
               <div style={{ padding: '24px 28px', overflowY: 'auto', flex: 1 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
-                  {['Ouverture', 'Fermeture'].map((lbl, i) => (
-                    <div key={lbl}>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: C.mid, marginBottom: '5px' }}>{lbl}</label>
-                      <input type="time" defaultValue={i === 0 ? '09:00' : '18:00'} style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: `1px solid ${C.borderLight}`, background: C.mainBg, color: C.ink, fontSize: '14px', outline: 'none' }} />
-                    </div>
-                  ))}
-                </div>
                 <div
                   onScroll={e => { const t = e.target as HTMLDivElement; if (t.scrollHeight - t.scrollTop <= t.clientHeight + 10) setDpaScrolled(true) }}
-                  style={{ height: '180px', overflowY: 'auto', background: C.mainBg, border: `1px solid ${C.borderLight}`, borderRadius: '10px', padding: '14px 16px', fontSize: '12.5px', color: C.mid, lineHeight: 1.7 }}
-                >
+                  style={{ height: '220px', overflowY: 'auto', background: '#f8fafc', border: `1px solid ${C.borderLight}`, borderRadius: '10px', padding: '14px 16px', fontSize: '12.5px', color: C.mid, lineHeight: 1.7 }}>
                   <strong style={{ color: C.ink }}>Accord de Traitement des Données (Loi n° 2004-63)</strong><br /><br />
                   Cet accord fait partie intégrante du contrat entre votre entreprise et Répondly.<br /><br />
                   <strong>1. Nature :</strong> Répondly traite les messages entrants via WhatsApp et réseaux sociaux dans le seul but d'automatiser le service client.<br /><br />
@@ -693,10 +560,9 @@ export default function DashboardShell() {
                   <em style={{ color: C.muted }}>(Faites défiler pour accepter)</em><br /><br /><br />--- Fin du document ---
                 </div>
               </div>
-              <div style={{ padding: '16px 28px', borderTop: `1px solid ${C.borderLight}`, background: C.mainBg, display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '16px 28px', borderTop: `1px solid ${C.borderLight}`, background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
                 <button onClick={() => { setSavingDPA(true); setTimeout(() => { setSavingDPA(false); setShowDPAModal(false); setHasAcceptedDPA(true) }, 1200) }} disabled={!dpaScrolled || savingDPA}
-                  style={{ background: dpaScrolled ? C.blue : C.borderLight, color: dpaScrolled ? '#fff' : C.muted, border: 'none', borderRadius: '10px', padding: '10px 22px', fontSize: '13px', fontWeight: 600, cursor: dpaScrolled ? 'pointer' : 'not-allowed', transition: 'all 0.2s', boxShadow: dpaScrolled ? '0 3px 12px rgba(26,107,255,0.3)' : 'none' }}
-                >
+                  style={{ background: dpaScrolled ? C.primary : C.borderLight, color: dpaScrolled ? '#fff' : C.muted, border: 'none', borderRadius: '10px', padding: '10px 22px', fontSize: '13px', fontWeight: 600, cursor: dpaScrolled ? 'pointer' : 'not-allowed', transition: 'all 0.2s', boxShadow: dpaScrolled ? '0 3px 12px rgba(99,102,241,0.3)' : 'none' }}>
                   {savingDPA ? 'Signature...' : 'J\'accepte et je signe'}
                 </button>
               </div>
@@ -709,10 +575,9 @@ export default function DashboardShell() {
       <AnimatePresence>
         {showPersonaModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPersonaModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(10,22,48,0.5)', backdropFilter: 'blur(6px)' }} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPersonaModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(6px)' }} />
             <motion.div initial={{ opacity: 0, y: 20, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              style={{ position: 'relative', width: '100%', maxWidth: '460px', background: '#fff', borderRadius: '20px', border: `1px solid ${C.borderLight}`, boxShadow: '0 30px 60px rgba(0,0,0,0.2)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-            >
+              style={{ position: 'relative', width: '100%', maxWidth: '460px', background: '#fff', borderRadius: '20px', border: `1px solid ${C.borderLight}`, boxShadow: '0 30px 60px rgba(0,0,0,0.15)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '20px 28px', borderBottom: `1px solid ${C.borderLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: C.ink }}>Configuration de l'IA</h2>
@@ -727,16 +592,15 @@ export default function DashboardShell() {
                 ].map(field => (
                   <div key={field.label}>
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: C.mid, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{field.label}</label>
-                    <select style={{ width: '100%', padding: '10px 13px', borderRadius: '9px', border: `1px solid ${C.borderLight}`, background: C.mainBg, color: C.ink, fontSize: '13.5px', outline: 'none' }}>
+                    <select style={{ width: '100%', padding: '10px 13px', borderRadius: '9px', border: `1px solid ${C.borderLight}`, background: '#f8fafc', color: C.ink, fontSize: '13.5px', outline: 'none' }}>
                       {field.options.map(o => <option key={o}>{o}</option>)}
                     </select>
                   </div>
                 ))}
               </div>
-              <div style={{ padding: '16px 28px', borderTop: `1px solid ${C.borderLight}`, background: C.mainBg, display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '16px 28px', borderTop: `1px solid ${C.borderLight}`, background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
                 <button onClick={() => { setSavingPersona(true); setTimeout(() => { setSavingPersona(false); setShowPersonaModal(false); setHasConfiguredBot(true); setBotStatus('active') }, 1200) }}
-                  style={{ background: C.blue, color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 22px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 3px 12px rgba(26,107,255,0.3)' }}
-                >
+                  style={{ background: C.primary, color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 22px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 3px 12px rgba(99,102,241,0.3)' }}>
                   {savingPersona ? 'Activation...' : 'Activer le Bot'}
                 </button>
               </div>
