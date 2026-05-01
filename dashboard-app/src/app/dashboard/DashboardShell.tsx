@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Messagerie from './messagerie/page'
+import Messagerie from './messagerie/MessagerieView'
 import {
   LayoutDashboard, Inbox, Zap, Bot, Settings,
   MessageSquare, Activity, AlertCircle, CheckCircle2,

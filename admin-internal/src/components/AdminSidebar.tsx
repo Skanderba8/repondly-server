@@ -19,7 +19,9 @@ import {
   Workflow,
   MessageSquare,
   Database,
+  Globe,
 } from 'lucide-react'
+import { useLanguage } from './LanguageContext'
 
 const C = {
   bg: '#ffffff',

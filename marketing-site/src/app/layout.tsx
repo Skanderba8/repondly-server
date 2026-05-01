@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { LangProvider } from '@/lib/LangContext'
 
 export const metadata: Metadata = {
   title: 'Répondly',
@@ -71,7 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 12px); }
         `}</style>
       </head>
-      <body>{children}</body>
+      <body><LangProvider>{children}</LangProvider></body>
     </html>
   )
 }
