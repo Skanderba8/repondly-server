@@ -71,18 +71,30 @@ export async function POST(req: NextRequest) {
               'Content-Type': 'application/json',
               'api_access_token': CHATWOOT_ADMIN_TOKEN,
             },
-            body: JSON.stringify({
-              name: `FB - ${pageName}`,
-              channel: {
-                type: 'facebook',
-                page_id: pageId,
-                user_access_token: fbToken,
-                page_access_token: pageToken,
-              },
-            }),
+            // Facebook inbox
+body: JSON.stringify({
+  name: `FB - ${pageName}`,
+  channel: {
+    type: 'facebook',
+    page_id: pageId,
+    user_access_token: fbToken,
+    page_access_token: pageToken,
+  },
+}),
           }
         );
         const fbInboxData = await fbInboxRes.json();
+        console.log('FB inbox creation response:', JSON.stringify(fbInboxData))  // ADD THIS
+        console.log('FB inbox payload:', JSON.stringify({
+            name: `FB - ${pageName}`,
+            channel: {
+              type: 'facebook',
+              page_id: pageId,
+              user_access_token: fbToken,
+              page_access_token: pageToken,
+            },
+          }))
+
 
         if (fbInboxData?.id) {
           fbInboxId = fbInboxData.id;
@@ -121,15 +133,15 @@ export async function POST(req: NextRequest) {
                 'Content-Type': 'application/json',
                 'api_access_token': CHATWOOT_ADMIN_TOKEN,
               },
-              body: JSON.stringify({
-                name: `IG - ${pageName}`,
-                channel: {
-                  type: 'instagram',
-                  page_id: pageId,
-                  user_access_token: fbToken,
-                  page_access_token: pageToken,
-                },
-              }),
+              // Instagram inbox
+body: JSON.stringify({
+  name: `IG - ${pageName}`,
+  channel: {
+    type: 'instagram',
+    instagram_id: igAccountId,
+    access_token: pageToken,
+  },
+}),
             }
           );
           const igInboxData = await igInboxRes.json();

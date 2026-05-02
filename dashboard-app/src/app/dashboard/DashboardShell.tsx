@@ -242,35 +242,40 @@ export default function DashboardShell() {
   }, [])
 
   // ── Boot ───────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    // Load Meta JS SDK
+// ── Boot ───────────────────────────────────────────────────────────────────
+useEffect(() => {
+  function initFB() {
+    ;(window as any).FB.init({
+      appId: process.env.NEXT_PUBLIC_META_APP_ID,
+      cookie: true, xfbml: false, version: 'v21.0',
+    })
+    setFbLoaded(true)
+  }
+
+  if ((window as any).FB) {
+    // SDK already present (hot reload / page revisit)
+    initFB()
+  } else {
+    ;(window as any).fbAsyncInit = initFB
     if (!document.getElementById('fb-sdk')) {
-      ;(window as any).fbAsyncInit = () => {
-        ;(window as any).FB.init({
-          appId: process.env.NEXT_PUBLIC_META_APP_ID,
-          cookie: true, xfbml: false, version: 'v21.0',
-        })
-        setFbLoaded(true)
-      }
       const s = document.createElement('script')
       s.id = 'fb-sdk'
       s.src = 'https://connect.facebook.net/en_US/sdk.js'
       s.async = true
       document.body.appendChild(s)
-    } else {
-      setFbLoaded(true)
     }
+  }
 
-    // WA status
-    fetch('/api/whatsapp/status')
-      .then(r => r.json())
-      .then(d => {
-        if (d.whatsappConnected) { setWaConnected(true); if (d.phoneNumber) setWaPhone(d.phoneNumber) }
-      }).catch(() => {})
+  // WA status
+  fetch('/api/whatsapp/status')
+    .then(r => r.json())
+    .then(d => {
+      if (d.whatsappConnected) { setWaConnected(true); if (d.phoneNumber) setWaPhone(d.phoneNumber) }
+    }).catch(() => {})
 
-    // FB/IG pages
-    fetchFbPages()
-  }, [fetchFbPages])
+  // FB/IG pages
+  fetchFbPages()
+}, [fetchFbPages])
 
   // ── WA embedded signup message listener ───────────────────────────────────
   useEffect(() => {
@@ -322,26 +327,24 @@ export default function DashboardShell() {
     )
   }
 
-  const handleFbConnect = () => {
-    if (!(window as any).FB) return
-    setFbConnecting(true)
-    ;(window as any).FB.login(async (resp: any) => {
-      if (!resp.authResponse?.accessToken) { setFbConnecting(false); return }
-      try {
-        const res = await fetch('/api/auth/meta/connect', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fbAccessToken: resp.authResponse.accessToken }),
-        })
-        const data = await res.json()
-        if (data.success) await fetchFbPages()
-      } finally {
-        setFbConnecting(false)
-      }
-    }, {
-      scope: 'pages_show_list,pages_messaging,pages_read_engagement,instagram_basic,instagram_manage_messages',
-      return_scopes: true, auth_type: 'rerequest',
+const handleFbConnect = () => {
+  if (!(window as any).FB) return
+  setFbConnecting(true)
+  ;(window as any).FB.login((resp: any) => {
+    if (!resp.authResponse?.accessToken) { setFbConnecting(false); return }
+    fetch('/api/auth/meta/connect', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fbAccessToken: resp.authResponse.accessToken }),
     })
-  }
+      .then(r => r.json())
+      .then(data => { if (data.success) return fetchFbPages() })
+      .catch(() => {})
+      .finally(() => setFbConnecting(false))
+  }, {
+    scope: 'pages_show_list,pages_messaging,pages_read_engagement,instagram_basic,instagram_manage_messages',
+    return_scopes: true, auth_type: 'rerequest',
+  })
+}
 
   if (status === 'loading' || !session) return null
 
