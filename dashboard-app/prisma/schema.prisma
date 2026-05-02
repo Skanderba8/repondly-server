@@ -33,6 +33,17 @@ model Business {
   whatsappInboxId       Int?
   whatsappConnected     Boolean   @default(false)
 
+    // Facebook
+  facebookPageId        String?
+  facebookPageToken     String?
+  facebookInboxId       Int?
+  facebookConnected     Boolean   @default(false)
+
+  // Instagram
+  instagramAccountId    String?
+  instagramInboxId      Int?
+  instagramConnected    Boolean   @default(false)
+
   // New Onboarding Milestones
   hasAcceptedDPA        Boolean   @default(false)
   hasSetBusinessHours   Boolean   @default(false)

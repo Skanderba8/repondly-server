@@ -1,4 +1,3 @@
-// src/app/api/whatsapp/status/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -11,53 +10,48 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('--- FETCHING INBOXES FROM CHATWOOT ---')
-    // 1. Fetch live inboxes from Chatwoot
     const inboxesRes = await getInboxes()
-    
-    // LOG WHAT CHATWOOT ACTUALLY RETURNS
-    console.log('CHATWOOT PAYLOAD:', JSON.stringify(inboxesRes.payload, null, 2))
+    const inboxes = inboxesRes.payload
 
-    // 2. Check if a WhatsApp channel exists
-    // Note: I added toLowerCase() to make this check bulletproof against casing issues
-    const waInbox = inboxesRes.payload.find(i => 
-      i.channel_type.toLowerCase() === 'channel::whatsapp'
-    )
-    
-    const isConnected = !!waInbox
-    const phoneNumber = waInbox?.phone_number || null
+    const waInbox = inboxes.find(i => i.channel_type.toLowerCase() === 'channel::whatsapp')
+    const fbInbox = inboxes.find(i => i.channel_type.toLowerCase() === 'channel::facebookpage')
+    const igInbox = inboxes.find(i => i.channel_type.toLowerCase() === 'channel::instagram')
 
-    console.log('IS CONNECTED?', isConnected, 'PHONE:', phoneNumber)
-
-    // 3. Keep Prisma synced
     const business = await prisma.business.update({
       where: { email: session.user.email },
       data: {
-        whatsappConnected: isConnected,
-        ...(waInbox ? { whatsappInboxId: waInbox.id } : {})
+        whatsappConnected: !!waInbox,
+        facebookConnected: !!fbInbox,
+        instagramConnected: !!igInbox,
+        ...(waInbox ? { whatsappInboxId: waInbox.id } : {}),
+        ...(fbInbox ? { facebookInboxId: fbInbox.id } : {}),
+        ...(igInbox ? { instagramInboxId: igInbox.id } : {}),
       },
       select: {
         whatsappConnected: true,
         whatsappPhoneNumberId: true,
-        wabaId: true,
-        whatsappInboxId: true,
+        facebookConnected: true,
+        facebookPageId: true,
+        instagramConnected: true,
+        instagramAccountId: true,
       },
     })
 
     return NextResponse.json({
-      ...business,
-      whatsappConnected: isConnected,
-      phoneNumber: phoneNumber
+      whatsappConnected: !!waInbox,
+      phoneNumber: waInbox?.phone_number || null,
+      facebookConnected: !!fbInbox,
+      facebookPageName: fbInbox?.name || null,
+      instagramConnected: !!igInbox,
+      instagramName: igInbox?.name || null,
     })
 
   } catch (error) {
-    // IF IT FAILS, THIS WILL TELL US WHY
-    console.error('[WhatsApp Status API] CRITICAL ERROR:', error)
-
+    console.error('[channel status]', error)
     const business = await prisma.business.findUnique({
       where: { email: session.user.email },
-      select: { whatsappConnected: true }
+      select: { whatsappConnected: true, facebookConnected: true, instagramConnected: true },
     })
-    return NextResponse.json(business ?? { whatsappConnected: false })
+    return NextResponse.json(business ?? { whatsappConnected: false, facebookConnected: false, instagramConnected: false })
   }
 }
