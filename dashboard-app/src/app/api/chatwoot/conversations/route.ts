@@ -11,23 +11,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. Get their specific Chatwoot Account ID from your database
+    // 2. Get BOTH their Chatwoot Account ID and API Token from your database
     const business = await prisma.business.findUnique({
       where: { email: session.user.email },
-      select: { chatwootAccountId: true }
+      select: { 
+        chatwootAccountId: true,
+        chatwootApiToken: true // <-- ADDED THIS
+      }
     })
 
-    if (!business?.chatwootAccountId) {
-      return NextResponse.json({ error: 'No Chatwoot account linked' }, { status: 400 })
+    // 3. Verify they have both credentials
+    if (!business?.chatwootAccountId || !business?.chatwootApiToken) {
+      return NextResponse.json({ error: 'Chatwoot not connected for this business.' }, { status: 403 })
     }
 
-    // 3. Parse query params
+    // 4. Parse query params
     const { searchParams } = new URL(request.url)
     const status = (searchParams.get('status') || 'open') as any
     const page   = parseInt(searchParams.get('page') || '1')
 
-    // 4. Call Chatwoot using the dynamic Account ID!
-    const data = await getConversations(business.chatwootAccountId, { status, page })
+    // 5. Call Chatwoot using BOTH the Account ID and API Token!
+    const data = await getConversations(
+      business.chatwootAccountId, 
+      business.chatwootApiToken, // <-- ADDED THIS
+      { status, page }
+    )
 
     return NextResponse.json(data)
   } catch (err: any) {

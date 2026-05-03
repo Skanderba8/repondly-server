@@ -16,7 +16,6 @@ model Business {
   phone                 String?
   chatwootAccountId     Int?            @unique
   chatwootApiToken      String?
-  chatwootPassword      String?
   plan                  Plan            @default(FREE)
   status                String          @default("TRIAL")
   trialEndsAt           DateTime?

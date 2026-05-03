@@ -1,3 +1,4 @@
+// admin-internal/src/app/clients/[id]/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -64,10 +65,27 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     fetch(`/api/admin/clients/${id}`)
-      .then(r => r.json())
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`API Error: ${r.status}`)
+        return r.json()
+      })
       .then((data: Business) => {
-        setBusiness(data); setForm(data)
-        setNotes(data.adminNotes ?? []); setRules(data.autoRules ?? [])
+        // Prevent array mapping crashes by falling back to empty arrays
+        const safeData = {
+          ...data,
+          autoRules: data.autoRules || [],
+          activityLogs: data.activityLogs || [],
+          adminNotes: data.adminNotes || [],
+        }
+        setBusiness(safeData); setForm(safeData)
+        setNotes(safeData.adminNotes); setRules(safeData.autoRules)
+      })
+      .catch((err) => {
+        console.error(">>> FAILED TO LOAD CLIENT:", err)
+        // Ensure business stays null to show the error state instead of spinning
+      })
+      .finally(() => {
+        // ALWAYS stop the loading spinner, even if it crashes!
         setLoading(false)
       })
   }, [id])
@@ -153,7 +171,7 @@ export default function ClientDetailPage() {
   if (!business) {
     return (
       <div style={{ padding: 40, color: C.mid, textAlign: 'center' }}>
-        Client introuvable. <Link href="/admin/clients" style={{ color: C.blue }}>Retour</Link>
+        Client introuvable ou erreur de chargement. Vérifiez les logs. <Link href="/admin/clients" style={{ color: C.blue }}>Retour</Link>
       </div>
     )
   }
