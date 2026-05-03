@@ -72,11 +72,11 @@ async function fetchPrismaDbStats(): Promise<DatabaseStats['prismaDb']> {
           size_bytes: string
         }>(
           `SELECT
-            tablename,
-            n_live_tup AS row_count,
-            pg_total_relation_size(quote_ident(tablename)) AS size_bytes
-          FROM pg_stat_user_tables
-          ORDER BY tablename`
+  relname AS tablename,
+  n_live_tup AS row_count,
+  pg_total_relation_size(relid) AS size_bytes
+FROM pg_stat_user_tables
+ORDER BY relname`
         ),
         client.query<{ size: string }>(
           `SELECT pg_database_size(current_database()) AS size`
