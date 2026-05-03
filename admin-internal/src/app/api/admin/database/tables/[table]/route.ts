@@ -4,7 +4,7 @@ import { Pool } from 'pg'
 
 const ALLOWED_TABLES = [
   'ActivityLog', 'AdminNote', 'AdminUser', 'AutoRule', 'Booking',
-  'BotEvent', 'Business', 'Client', 'ConnectedPage', 'OnboardingStage',
+  'BotEvent', 'Business', 'Client', 'OnboardingStage',
   'Reminder', '_prisma_migrations',
 ]
 
