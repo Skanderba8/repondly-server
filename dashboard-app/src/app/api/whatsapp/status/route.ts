@@ -1,57 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getInboxes } from '@/lib/chatwoot'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getInboxes } from '@/lib/chatwoot'
 
-export async function GET(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export async function GET(request: NextRequest) {
   try {
-    const inboxesRes = await getInboxes()
-    const inboxes = inboxesRes.payload
+    // 1. Authenticate the user
+    const session = await auth()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const waInbox = inboxes.find(i => i.channel_type.toLowerCase() === 'channel::whatsapp')
-    const fbInbox = inboxes.find(i => i.channel_type.toLowerCase() === 'channel::facebookpage')
-    const igInbox = inboxes.find(i => i.channel_type.toLowerCase() === 'channel::instagram')
-
-    const business = await prisma.business.update({
-      where: { email: session.user.email },
-      data: {
-        whatsappConnected: !!waInbox,
-        facebookConnected: !!fbInbox,
-        instagramConnected: !!igInbox,
-        ...(waInbox ? { whatsappInboxId: waInbox.id } : {}),
-        ...(fbInbox ? { facebookInboxId: fbInbox.id } : {}),
-        ...(igInbox ? { instagramInboxId: igInbox.id } : {}),
-      },
-      select: {
-        whatsappConnected: true,
-        whatsappPhoneNumberId: true,
-        facebookConnected: true,
-        facebookPageId: true,
-        instagramConnected: true,
-        instagramAccountId: true,
-      },
-    })
-
-    return NextResponse.json({
-      whatsappConnected: !!waInbox,
-      phoneNumber: waInbox?.phone_number || null,
-      facebookConnected: !!fbInbox,
-      facebookPageName: fbInbox?.name || null,
-      instagramConnected: !!igInbox,
-      instagramName: igInbox?.name || null,
-    })
-
-  } catch (error) {
-    console.error('[channel status]', error)
+    // 2. Get their specific Chatwoot Account ID from PostgreSQL
     const business = await prisma.business.findUnique({
       where: { email: session.user.email },
-      select: { whatsappConnected: true, facebookConnected: true, instagramConnected: true },
+      select: { chatwootAccountId: true }
     })
-    return NextResponse.json(business ?? { whatsappConnected: false, facebookConnected: false, instagramConnected: false })
+
+    if (!business?.chatwootAccountId) {
+      return NextResponse.json({ error: 'No Chatwoot account linked' }, { status: 400 })
+    }
+
+    // 3. Fetch inboxes using the dynamic Account ID!
+    const inboxesRes = await getInboxes(business.chatwootAccountId)
+    const inboxes = inboxesRes.payload
+
+    // 4. Look for the WhatsApp inbox
+    const waInbox = inboxes.find(i => i.channel_type.toLowerCase() === 'channel::whatsapp')
+
+    if (waInbox) {
+      return NextResponse.json({
+        whatsappConnected: true,
+        phoneNumber: waInbox.phone_number
+      })
+    }
+
+    return NextResponse.json({ whatsappConnected: false })
+  } catch (err: any) {
+    console.error('[whatsapp/status]', err.message)
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
