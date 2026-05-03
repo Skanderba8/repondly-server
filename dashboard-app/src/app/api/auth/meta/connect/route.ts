@@ -23,7 +23,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Business not found' }, { status: 404 });
   }
 
-  // chatwootAccountId is set during onboarding — required for inbox creation
   if (!business.chatwootAccountId) {
     return NextResponse.json({ error: 'Chatwoot account not provisioned for this business' }, { status: 400 });
   }
@@ -53,15 +52,15 @@ export async function POST(req: NextRequest) {
       const pageToken: string = page.access_token;
       const pageName: string = page.name;
       let fbInboxId: number | null = null;
-      let igInboxId: number | null = null;
       let igAccountId: string | null = null;
+      let igConnected = false;
 
-      // 2. Check for existing connection — skip if already connected
+      // 2. Check for existing FB connection
       const existingFb = await prisma.connectedPage.findUnique({
         where: { businessId_pageId_channel: { businessId: business.id, pageId, channel: 'FACEBOOK' } },
       });
 
-      // 3. Create Facebook Messenger inbox in Chatwoot (if not already done)
+      // 3. Create Facebook Messenger inbox in Chatwoot
       if (!existingFb) {
         const fbInboxRes = await fetch(
           `${CHATWOOT_BASE_URL}/api/v1/accounts/${chatwootAccountId}/inboxes`,
@@ -71,30 +70,19 @@ export async function POST(req: NextRequest) {
               'Content-Type': 'application/json',
               'api_access_token': CHATWOOT_ADMIN_TOKEN,
             },
-            // Facebook inbox
-body: JSON.stringify({
-  name: `FB - ${pageName}`,
-  channel: {
-    type: 'facebook',
-    page_id: pageId,
-    user_access_token: fbToken,
-    page_access_token: pageToken,
-  },
-}),
+            body: JSON.stringify({
+              name: `FB - ${pageName}`,
+              channel: {
+                type: 'facebook',
+                page_id: pageId,
+                user_access_token: fbToken,
+                page_access_token: pageToken,
+              },
+            }),
           }
         );
         const fbInboxData = await fbInboxRes.json();
-        console.log('FB inbox creation response:', JSON.stringify(fbInboxData))  // ADD THIS
-        console.log('FB inbox payload:', JSON.stringify({
-            name: `FB - ${pageName}`,
-            channel: {
-              type: 'facebook',
-              page_id: pageId,
-              user_access_token: fbToken,
-              page_access_token: pageToken,
-            },
-          }))
-
+        console.log('FB inbox creation response:', JSON.stringify(fbInboxData));
 
         if (fbInboxData?.id) {
           fbInboxId = fbInboxData.id;
@@ -109,6 +97,8 @@ body: JSON.stringify({
             },
           });
         }
+      } else {
+        fbInboxId = existingFb.chatwootInboxId;
       }
 
       // 4. Check if this Page has a linked Instagram Business Account
@@ -124,53 +114,52 @@ body: JSON.stringify({
           where: { businessId_pageId_channel: { businessId: business.id, pageId, channel: 'INSTAGRAM' } },
         });
 
-        if (!existingIg) {
-          const igInboxRes = await fetch(
-            `${CHATWOOT_BASE_URL}/api/v1/accounts/${chatwootAccountId}/inboxes`,
+        if (!existingIg && fbInboxId) {
+          // Patch the FB inbox with the instagram_id — Chatwoot handles IG DMs via the FB page channel
+          const igPatchRes = await fetch(
+            `${CHATWOOT_BASE_URL}/api/v1/accounts/${chatwootAccountId}/inboxes/${fbInboxId}`,
             {
-              method: 'POST',
+              method: 'PATCH',
               headers: {
                 'Content-Type': 'application/json',
                 'api_access_token': CHATWOOT_ADMIN_TOKEN,
               },
-              // Instagram inbox
-body: JSON.stringify({
-  name: `IG - ${pageName}`,
+              body: JSON.stringify({
   channel: {
-    type: 'instagram',
     instagram_id: igAccountId,
-    access_token: pageToken,
   },
 }),
             }
           );
-          const igInboxData = await igInboxRes.json();
+          const igPatchData = await igPatchRes.json();
+          console.log('IG patch response:', JSON.stringify(igPatchData));
 
-          if (igInboxData?.id) {
-            igInboxId = igInboxData.id;
-            await prisma.connectedPage.create({
-              data: {
-                businessId: business.id,
-                pageId,
-                pageName,
-                pageToken,
-                channel: 'INSTAGRAM',
-                chatwootInboxId: igInboxId,
-                igAccountId,
-              },
-            });
-          }
+          await prisma.connectedPage.create({
+            data: {
+              businessId: business.id,
+              pageId,
+              pageName,
+              pageToken,
+              channel: 'INSTAGRAM',
+              chatwootInboxId: fbInboxId, // same inbox as FB
+              igAccountId,
+            },
+          });
+
+          igConnected = true;
+        } else if (existingIg) {
+          igConnected = true;
         }
       }
 
       results.push({
         page: pageName,
         fb: fbInboxId !== null,
-        ig: igInboxId !== null,
+        ig: igConnected,
       });
     }
 
-    // 5. Update channels array on Business (add FACEBOOK/INSTAGRAM if not already there)
+    // 5. Update channels array on Business
     const currentChannels = business.channels || [];
     const toAdd: string[] = [];
     if (!currentChannels.includes('FACEBOOK')) toAdd.push('FACEBOOK');
@@ -218,8 +207,7 @@ body: JSON.stringify({
       `https://graph.facebook.com/v21.0/me/businesses?fields=whatsapp_business_accounts%7Bid,name%7D&access_token=${userToken}`
     );
     const bizData: any = await bizRes.json();
-    const waba =
-      bizData?.data?.[0]?.whatsapp_business_accounts?.data?.[0];
+    const waba = bizData?.data?.[0]?.whatsapp_business_accounts?.data?.[0];
 
     if (!waba) {
       return NextResponse.json({ error: 'No WABA found' }, { status: 400 });
