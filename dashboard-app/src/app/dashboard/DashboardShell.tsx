@@ -1,15 +1,15 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import Messagerie from './messagerie/MessagerieView'
+import FacebookInstagramConnect from '@/components/FacebookInstagramConnect'
 import {
   LayoutDashboard, Inbox, Zap, Bot, Settings,
-  MessageSquare, CheckCircle2, PauseCircle, PlayCircle,
-  LogOut, X, Wifi, Search, BarChart2,
-  Circle, AlertCircle, RefreshCw, ChevronRight, Check
+  LogOut, AlertCircle, ChevronRight, Check, Circle,
+  Wifi, RefreshCw,
 } from 'lucide-react'
 
 // ─── Channel SVG Icons ────────────────────────────────────────────────────────
@@ -20,29 +20,8 @@ const WaIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 )
 
-const IgIcon = ({ size = 14 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-  </svg>
-)
-
-const FbIcon = ({ size = 14 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-  </svg>
-)
-
 // ─── Types ────────────────────────────────────────────────────────────────────
-type PageId = 'home' | 'inbox' | 'automations' | 'bot' | 'settings'
-type BotStatus = 'active' | 'paused'
-
-interface ConnectedPage {
-  id: string
-  pageId: string
-  pageName: string
-  channel: 'FACEBOOK' | 'INSTAGRAM'
-  chatwootInboxId: number | null
-}
+type PageId = 'home' | 'inbox' | 'automations' | 'bot' | 'settings' | 'channels'
 
 const NAV: { id: PageId; label: string; icon: React.ReactNode }[] = [
   { id: 'home',        label: 'Accueil',        icon: <LayoutDashboard size={16} /> },
@@ -54,12 +33,15 @@ const NAV: { id: PageId; label: string; icon: React.ReactNode }[] = [
 
 // ─── Helper Components ────────────────────────────────────────────────────────
 function Pill({ active, label }: { active: boolean; label: string }) {
-  const bg = active ? '#f0fdf4' : '#f1f5f9'
-  const color = active ? '#16a34a' : '#64748b'
-  const dot = active ? '#22c55e' : '#cbd5e1'
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px', borderRadius: 6, background: bg, fontSize: 11, fontWeight: 600, color }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0 }} />
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: '2px 8px', borderRadius: 6,
+      background: active ? '#f0fdf4' : '#f1f5f9',
+      fontSize: 11, fontWeight: 600,
+      color: active ? '#16a34a' : '#64748b',
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: active ? '#22c55e' : '#cbd5e1', flexShrink: 0 }} />
       {label}
     </span>
   )
@@ -67,13 +49,12 @@ function Pill({ active, label }: { active: boolean; label: string }) {
 
 function StatCard({ label, value, sub, loading }: { label: string; value: string | number; sub: string; loading?: boolean }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-      {loading ? (
-        <div style={{ height: 32, width: 60, background: '#f1f5f9', borderRadius: 6, animation: 'pulse 1.5s infinite' }} />
-      ) : (
-        <div style={{ fontSize: 32, fontWeight: 700, color: '#0f172a', lineHeight: 1 }}>{value}</div>
-      )}
+      {loading
+        ? <div style={{ height: 32, width: 60, background: '#f1f5f9', borderRadius: 6 }} />
+        : <div style={{ fontSize: 32, fontWeight: 700, color: '#0f172a', lineHeight: 1 }}>{value}</div>
+      }
       <div style={{ fontSize: 12, color: '#94a3b8' }}>{sub}</div>
     </div>
   )
@@ -83,7 +64,10 @@ function StepRow({ done, label, cta, onClick }: { done: boolean; label: string; 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
       <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, background: done ? '#22c55e' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {done ? <Check size={12} color="#fff" strokeWidth={3} /> : <Circle size={10} color="#cbd5e1" strokeWidth={3} />}
+        {done
+          ? <Check size={12} color="#fff" strokeWidth={3} />
+          : <Circle size={10} color="#cbd5e1" strokeWidth={3} />
+        }
       </div>
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: done ? '#64748b' : '#0f172a', textDecoration: done ? 'line-through' : 'none' }}>{label}</span>
       {!done && (
@@ -95,228 +79,188 @@ function StepRow({ done, label, cta, onClick }: { done: boolean; label: string; 
   )
 }
 
-function ChannelRow({ icon, name, isConnected, onConnect, loading }: { icon: React.ReactNode, name: string, isConnected: boolean, onConnect: () => void, loading: boolean }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {icon}
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{name}</div>
-          <Pill active={isConnected} label={isConnected ? 'Connecté' : 'Non connecté'} />
-        </div>
-      </div>
-      {!isConnected && (
-        <button onClick={onConnect} disabled={loading} style={{
-          padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 600, color: '#0f172a', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, display: 'flex', alignItems: 'center', gap: 6
-        }}>
-          {loading ? <RefreshCw size={12} className="spin" /> : <Wifi size={12} />}
-          Lier
-        </button>
-      )}
-    </div>
-  )
-}
-
-
-// ─── Main Application Component ───────────────────────────────────────────────
-export default function DashboardClient() {
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function DashboardShell() {
   const { data: session, status } = useSession()
 
   const [activePage, setActivePage] = useState<PageId>('home')
-  const [botStatus, setBotStatus]   = useState<BotStatus>('paused')
-  const [fbLoaded, setFbLoaded]     = useState(false)
-
-  // System States & Errors
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg]     = useState<string | null>(null)
   const [loadingData, setLoadingData] = useState(true)
 
-  // Channels
-  const [waConnected, setWaConnected]     = useState(false)
-  const [waLoading, setWaLoading]         = useState(false)
-  const [fbPages, setFbPages]             = useState<ConnectedPage[]>([])
-  const [fbConnecting, setFbConnecting]   = useState(false)
+  // Channel status (read from DB via API)
+  const [waConnected, setWaConnected] = useState(false)
+  const [fbConnected, setFbConnected] = useState(false)
+  const [igConnected, setIgConnected] = useState(false)
+  const [waLoading, setWaLoading]     = useState(false)
 
-  // Onboarding
+  // Onboarding milestones (read from DB)
   const [hasAcceptedDPA, setHasAcceptedDPA]       = useState(false)
   const [hasConfiguredBot, setHasConfiguredBot]   = useState(false)
+  const [botActive, setBotActive]                 = useState(false)
 
-  // Helper to show real-time errors
-  const triggerError = useCallback((msg: string) => {
-    setErrorMsg(msg)
-    setTimeout(() => setErrorMsg(null), 6000)
+  // ── FB SDK init (single place) ─────────────────────────────────────────────
+  // NOTE: FacebookInstagramConnect also calls loadFBSDK() — it's idempotent,
+  //       so calling it here is only needed if we want WA Embedded Signup too.
+  useEffect(() => {
+    const appId = process.env.NEXT_PUBLIC_META_APP_ID
+    if (!appId) return
+
+    function init() {
+      window.FB.init({ appId, cookie: true, xfbml: false, version: 'v21.0' })
+    }
+
+    if (window.FB) { init(); return }
+
+    const prev = window.fbAsyncInit
+    window.fbAsyncInit = () => { prev?.(); init() }
+
+    if (!document.getElementById('fb-sdk')) {
+      const s = document.createElement('script')
+      s.id = 'fb-sdk'
+      s.src = 'https://connect.facebook.net/en_US/sdk.js'
+      s.async = true
+      document.body.appendChild(s)
+    }
   }, [])
 
-  // ── Fetch Initial Real Data ────────────────────────────────────────────────
-  const fetchConnections = useCallback(async () => {
-    setLoadingData(true)
-    try {
-      // 1. Fetch FB/IG
-      const resFb = await fetch('/api/meta/pages')
-      if (!resFb.ok) throw new Error(`Erreur Meta: ${resFb.statusText}`)
-      const dataFb = await resFb.json()
-      if (dataFb.pages) setFbPages(dataFb.pages)
-
-      // 2. Fetch WA Status
-      const resWa = await fetch('/api/whatsapp/status')
-      if (!resWa.ok) throw new Error(`Erreur WhatsApp: ${resWa.statusText}`)
-      const dataWa = await resWa.json()
-      if (dataWa.whatsappConnected) setWaConnected(true)
-
-      // 3. Fetch specific business settings (DPA/Bot) if you have an endpoint for it
-      // For now, we mock the retrieval success
-    } catch (err: any) {
-      triggerError(err.message || 'Échec du chargement des données. Veuillez rafraîchir.')
-    } finally {
-      setLoadingData(false)
-    }
-  }, [triggerError])
-
-  // ── Boot ───────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    function initFB() {
-      ;(window as any).FB.init({
-        appId: process.env.NEXT_PUBLIC_META_APP_ID,
-        cookie: true, xfbml: false, version: 'v21.0',
-      })
-      setFbLoaded(true)
-    }
-
-    if ((window as any).FB) {
-      initFB()
-    } else {
-      ;(window as any).fbAsyncInit = initFB
-      if (!document.getElementById('fb-sdk')) {
-        const s = document.createElement('script')
-        s.id = 'fb-sdk'
-        s.src = 'https://connect.facebook.net/en_US/sdk.js'
-        s.async = true
-        s.onerror = () => triggerError("Impossible de charger le SDK Facebook. Vérifiez votre bloqueur de publicités.")
-        document.body.appendChild(s)
-      }
-    }
-
-    fetchConnections()
-  }, [fetchConnections, triggerError])
-
-  // ── WhatsApp Embedded Signup Listener ───────────────────────────────────────
+  // ── WhatsApp Embedded Signup message listener ──────────────────────────────
   useEffect(() => {
     const handle = async (e: MessageEvent) => {
       if (e.origin !== 'https://www.facebook.com') return
       try {
         const data = JSON.parse(e.data)
-        if (data.type === 'WA_EMBEDDED_SIGNUP') {
-          setWaLoading(true)
-          const res = await fetch('/api/auth/meta/connect', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phoneNumberId: data.data.phone_number_id, wabaId: data.data.waba_id }),
-          })
-          const d = await res.json()
-          if (!res.ok) throw new Error(d.error || 'Erreur lors de la connexion au serveur.')
-          if (d.success) setWaConnected(true)
+        if (data.type !== 'WA_EMBEDDED_SIGNUP') return
+        setWaLoading(true)
+        const res = await fetch('/api/auth/meta/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phoneNumberId: data.data.phone_number_id,
+            wabaId: data.data.waba_id,
+          }),
+        })
+        const d = await res.json()
+        if (!res.ok) throw new Error(d.error || 'Connection failed')
+        if (d.success) {
+          setWaConnected(true)
+          triggerSuccess('WhatsApp connected successfully!')
         }
       } catch (err: any) {
-        triggerError(`Échec de la connexion WhatsApp: ${err.message}`)
+        triggerError(`WhatsApp connection failed: ${err.message}`)
       } finally {
         setWaLoading(false)
       }
     }
     window.addEventListener('message', handle)
     return () => window.removeEventListener('message', handle)
-  }, [triggerError])
+  }, [])
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleWaConnect = () => {
-    if (!fbLoaded) return triggerError("Le SDK Facebook n'est pas encore prêt.")
+  // ── Fetch all connection states from DB ────────────────────────────────────
+  const fetchStatus = useCallback(async () => {
+    setLoadingData(true)
+    try {
+      const [resFb, resWa] = await Promise.all([
+        fetch('/api/meta/pages'),
+        fetch('/api/whatsapp/status'),
+      ])
+
+      if (resFb.ok) {
+        const dataFb = await resFb.json()
+        const pages: any[] = dataFb.pages || []
+        setFbConnected(pages.some((p: any) => p.channel === 'FACEBOOK'))
+        setIgConnected(pages.some((p: any) => p.channel === 'INSTAGRAM'))
+      }
+
+      if (resWa.ok) {
+        const dataWa = await resWa.json()
+        setWaConnected(!!dataWa.whatsappConnected)
+      }
+    } catch (err: any) {
+      triggerError(err.message || 'Failed to load connection status')
+    } finally {
+      setLoadingData(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchStatus() }, [fetchStatus])
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  function triggerError(msg: string) {
+    setErrorMsg(msg)
+    setTimeout(() => setErrorMsg(null), 6000)
+  }
+  function triggerSuccess(msg: string) {
+    setSuccessMsg(msg)
+    setTimeout(() => setSuccessMsg(null), 5000)
+  }
+
+  // ── WA connect ─────────────────────────────────────────────────────────────
+  function handleWaConnect() {
+    if (!window.FB) return triggerError("Facebook SDK not ready. Try again in a moment.")
     setWaLoading(true)
     ;(window as any).FB.login(
       (resp: any) => { if (!resp.authResponse) setWaLoading(false) },
       {
         config_id: process.env.NEXT_PUBLIC_META_CONFIG_ID,
-        response_type: 'code', override_default_response_type: true,
+        response_type: 'code',
+        override_default_response_type: true,
         extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
       }
     )
   }
 
-  const handleFbConnect = () => {
-    if (!fbLoaded) return triggerError("Le SDK Facebook n'est pas encore prêt.")
-    setFbConnecting(true)
-    ;(window as any).FB.login(async (resp: any) => {
-      if (!resp.authResponse?.accessToken) { setFbConnecting(false); return }
-      try {
-        const res = await fetch('/api/auth/meta/connect', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fbAccessToken: resp.authResponse.accessToken }),
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Erreur de liaison serveur.')
-        if (data.success) fetchConnections() // Refresh data
-      } catch (err: any) {
-        triggerError(`Échec de la liaison Meta: ${err.message}`)
-      } finally {
-        setFbConnecting(false)
-      }
-    }, {
-      scope: 'pages_show_list,pages_messaging,pages_read_engagement,instagram_basic,instagram_manage_messages',
-      return_scopes: true, auth_type: 'rerequest',
-    })
-  }
-
-  const completeAction = async (action: 'dpa' | 'bot') => {
-    try {
-      // Future API Call here: await fetch('/api/business/update', { method: 'POST', body: JSON.stringify({ [action]: true }) })
-      if (action === 'dpa') setHasAcceptedDPA(true)
-      if (action === 'bot') setHasConfiguredBot(true)
-    } catch (err: any) {
-      triggerError(`Impossible de sauvegarder la configuration: ${err.message}`)
-    }
-  }
-
-
   if (status === 'loading' || !session) return null
 
   const userName    = session.user?.name || 'Administrateur'
   const userInitial = userName.charAt(0).toUpperCase()
-  const igPages     = fbPages.filter(p => p.channel === 'INSTAGRAM')
-  const fbConnected = fbPages.filter(p => p.channel === 'FACEBOOK')
-  const isFbConn    = fbConnected.length > 0
-  const isIgConn    = igPages.length > 0
 
   const setupCount = [waConnected, hasAcceptedDPA, hasConfiguredBot].filter(Boolean).length
-  const setupDone = setupCount === 3
+  const setupDone  = setupCount === 3
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', -apple-system, sans-serif; background: #f8fafc; overflow: hidden; }
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         button { font-family: inherit; }
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+        @keyframes toast-in { from{opacity:0;transform:translate(-50%,-10px)} to{opacity:1;transform:translate(-50%,0)} }
       `}</style>
 
-      {/* Global Toast for Errors */}
+      {/* ── Toast notifications ── */}
       <AnimatePresence>
         {errorMsg && (
           <motion.div
-            initial={{ opacity: 0, y: -20, x: '-50%' }} animate={{ opacity: 1, y: 0, x: '-50%' }} exit={{ opacity: 0, y: -20, x: '-50%' }}
-            style={{ position: 'fixed', top: 24, left: '50%', zIndex: 9999, background: '#fee2e2', border: '1px solid #fca5a5', padding: '12px 20px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 10px 25px rgba(220,38,38,0.15)' }}
+            initial={{ opacity: 0, y: -16, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -16, x: '-50%' }}
+            style={{ position: 'fixed', top: 20, left: '50%', zIndex: 9999, background: '#fee2e2', border: '1px solid #fca5a5', padding: '11px 18px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 20px rgba(220,38,38,0.15)' }}
           >
-            <AlertCircle size={16} color="#dc2626" />
+            <AlertCircle size={15} color="#dc2626" />
             <span style={{ fontSize: 13, fontWeight: 500, color: '#991b1b' }}>{errorMsg}</span>
+          </motion.div>
+        )}
+        {successMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -16, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -16, x: '-50%' }}
+            style={{ position: 'fixed', top: 20, left: '50%', zIndex: 9999, background: '#f0fdf4', border: '1px solid #86efac', padding: '11px 18px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 20px rgba(22,163,74,0.12)' }}
+          >
+            <Check size={15} color="#16a34a" />
+            <span style={{ fontSize: 13, fontWeight: 500, color: '#166534' }}>{successMsg}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
       <div style={{ display: 'flex', height: '100dvh', width: '100vw' }}>
-        
-        {/* ══ LEFT SIDEBAR ═════════════════════════════════════════════════════ */}
+
+        {/* ══ Sidebar ══════════════════════════════════════════════════════════ */}
         <aside style={{ width: 240, background: '#020617', borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
           <div style={{ height: 70, display: 'flex', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid #1e293b' }}>
             <Image src="/logo.png" alt="Répondly" width={110} height={28} style={{ objectFit: 'contain' }} priority />
@@ -327,12 +271,11 @@ export default function DashboardClient() {
             {NAV.map(item => {
               const active = activePage === item.id
               return (
-                <button key={item.id} onClick={() => setActivePage(item.id)} style={{
-                  display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-                  padding: '10px 12px', borderRadius: 8, background: active ? '#1e293b' : 'transparent',
-                  color: active ? '#f8fafc' : '#94a3b8', fontSize: 13.5, fontWeight: active ? 600 : 500,
-                  border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                }}>
+                <button
+                  key={item.id}
+                  onClick={() => setActivePage(item.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 12px', borderRadius: 8, background: active ? '#1e293b' : 'transparent', color: active ? '#f8fafc' : '#94a3b8', fontSize: 13.5, fontWeight: active ? 600 : 500, border: 'none', cursor: 'pointer', transition: 'all 0.15s' }}
+                >
                   {item.icon} {item.label}
                 </button>
               )
@@ -340,117 +283,171 @@ export default function DashboardClient() {
           </nav>
 
           <div style={{ padding: '20px', borderTop: '1px solid #1e293b' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f8fafc', fontSize: 13, fontWeight: 600 }}>{userInitial}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userName}</div>
-                <button onClick={() => signOut()} style={{ background: 'none', border: 'none', padding: 0, color: '#94a3b8', fontSize: 11, cursor: 'pointer', marginTop: 2 }}>Se déconnecter</button>
+                <button onClick={() => signOut()} style={{ background: 'none', border: 'none', padding: 0, color: '#94a3b8', fontSize: 11, cursor: 'pointer', marginTop: 2 }}>
+                  Se déconnecter
+                </button>
               </div>
             </div>
           </div>
         </aside>
 
-        {/* ══ CENTER COLUMN (MAIN CONTENT) ═════════════════════════════════════ */}
+        {/* ══ Main content ═════════════════════════════════════════════════════ */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: '#f8fafc' }}>
           {/* Topbar */}
           <header style={{ height: 70, borderBottom: '1px solid #e2e8f0', background: '#fff', display: 'flex', alignItems: 'center', padding: '0 32px', flexShrink: 0 }}>
-            <h1 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a' }}>{NAV.find(n => n.id === activePage)?.label}</h1>
+            <h1 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a' }}>
+              {NAV.find(n => n.id === activePage)?.label ?? 'Canaux'}
+            </h1>
           </header>
 
-          {/* Dynamic Content */}
-          <main style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
+          {/* Page content */}
+          <main style={{ flex: 1, overflowY: 'auto', padding: activePage === 'inbox' ? 0 : '32px' }}>
+
             {activePage === 'home' && (
               <div style={{ maxWidth: 800 }}>
                 <h2 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', marginBottom: 24 }}>Vue d'ensemble</h2>
-                
-                {/* Stats Grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
-                  <StatCard label="Messages Traités" value={loadingData ? 0 : 1240} sub="7 derniers jours" loading={loadingData} />
-                  <StatCard label="Taux d'automatisation" value={loadingData ? 0 : '86%'} sub="Géré par l'IA" loading={loadingData} />
-                  <StatCard label="RDV Planifiés" value={loadingData ? 0 : 42} sub="Synchronisés à l'agenda" loading={loadingData} />
+                  <StatCard label="Messages Traités"      value={loadingData ? '—' : 1240} sub="7 derniers jours"   loading={loadingData} />
+                  <StatCard label="Taux d'automatisation" value={loadingData ? '—' : '86%'} sub="Géré par l'IA"    loading={loadingData} />
+                  <StatCard label="RDV Planifiés"         value={loadingData ? '—' : 42}   sub="Synchronisés"       loading={loadingData} />
                 </div>
 
-                {/* Dashboard Action Area */}
                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 24 }}>
                   <h3 style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 16 }}>Accès Rapide</h3>
                   <div style={{ display: 'flex', gap: 12 }}>
-                    <button onClick={() => setActivePage('inbox')} style={{ background: '#0f172a', color: '#fff', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 500, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Inbox size={16} /> Accéder à la messagerie unifiée
+                    <button
+                      onClick={() => setActivePage('inbox')}
+                      style={{ background: '#0f172a', color: '#fff', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 500, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      <Inbox size={16} /> Messagerie unifiée
                     </button>
-                    <button onClick={() => completeAction('bot')} style={{ background: '#fff', color: '#0f172a', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 500, border: '1px solid #cbd5e1', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Bot size={16} /> Entraîner l'Agent IA
+                    <button
+                      onClick={() => setActivePage('channels' as PageId)}
+                      style={{ background: '#fff', color: '#0f172a', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 500, border: '1px solid #cbd5e1', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      <Wifi size={16} /> Gérer les canaux
                     </button>
                   </div>
                 </div>
               </div>
             )}
-            
-            {activePage === 'inbox' && <Messagerie />}
-            {activePage === 'automations' && <div style={{ textAlign: 'center', padding: '100px 0', color: '#64748b' }}><Zap size={32} style={{ opacity: 0.5, marginBottom: 16 }}/><br/>Module Automatisations en développement</div>}
-            {activePage === 'bot' && <div style={{ textAlign: 'center', padding: '100px 0', color: '#64748b' }}><Bot size={32} style={{ opacity: 0.5, marginBottom: 16 }}/><br/>Configuration de l'IA experte</div>}
-            {activePage === 'settings' && <div style={{ textAlign: 'center', padding: '100px 0', color: '#64748b' }}><Settings size={32} style={{ opacity: 0.5, marginBottom: 16 }}/><br/>Paramètres du compte</div>}
+
+            {activePage === 'inbox'       && <Messagerie />}
+            {activePage === 'automations' && <EmptyPage icon={<Zap size={32} />} label="Automatisations en développement" />}
+            {activePage === 'bot'         && <EmptyPage icon={<Bot size={32} />} label="Configuration de l'Agent IA" />}
+            {activePage === 'settings'    && <EmptyPage icon={<Settings size={32} />} label="Paramètres du compte" />}
+
+            {/* ── Channels page: wraps the FacebookInstagramConnect component ── */}
+            {(activePage as string) === 'channels' && (
+              <div style={{ maxWidth: 640 }}>
+                <FacebookInstagramConnect />
+
+                {/* WhatsApp section */}
+                <div style={{ marginTop: 32, padding: '20px 24px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 32, height: 32, background: '#dcfce7', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <WaIcon size={16} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>WhatsApp API</div>
+                        <Pill active={waConnected} label={waConnected ? 'Connecté' : 'Non connecté'} />
+                      </div>
+                    </div>
+                    {!waConnected && (
+                      <button
+                        onClick={handleWaConnect}
+                        disabled={waLoading}
+                        style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 600, color: '#0f172a', cursor: waLoading ? 'not-allowed' : 'pointer', opacity: waLoading ? 0.6 : 1, display: 'flex', alignItems: 'center', gap: 6 }}
+                      >
+                        {waLoading ? <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Wifi size={12} />}
+                        Lier via Embedded Signup
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </main>
         </div>
 
-        {/* ══ RIGHT PANEL (INTEGRATIONS & ACTIONS) ═════════════════════════════ */}
+        {/* ══ Right panel (home only) ═══════════════════════════════════════════ */}
         {activePage === 'home' && (
-          <aside style={{ width: 340, background: '#fff', borderLeft: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', flexShrink: 0, overflowY: 'auto' }}>
-            
-            {/* Onboarding Checklist */}
-            <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9' }}>
+          <aside style={{ width: 320, background: '#fff', borderLeft: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', flexShrink: 0, overflowY: 'auto' }}>
+
+            {/* Setup checklist */}
+            <div style={{ padding: 24, borderBottom: '1px solid #f1f5f9' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>Mise en service</h3>
-                <span style={{ fontSize: 12, fontWeight: 600, color: setupDone ? '#16a34a' : '#64748b', background: setupDone ? '#f0fdf4' : '#f1f5f9', padding: '2px 8px', borderRadius: 10 }}>{setupCount}/3</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: setupDone ? '#16a34a' : '#64748b', background: setupDone ? '#f0fdf4' : '#f1f5f9', padding: '2px 8px', borderRadius: 10 }}>
+                  {setupCount}/3
+                </span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <StepRow done={waConnected} label="Lier WhatsApp API" cta="Lier" onClick={handleWaConnect} />
-                <StepRow done={hasAcceptedDPA} label="Accord de conformité" cta="Signer" onClick={() => completeAction('dpa')} />
-                <StepRow done={hasConfiguredBot} label="Comportement de l'IA" cta="Régler" onClick={() => completeAction('bot')} />
+                <StepRow done={waConnected}      label="Lier WhatsApp API"        cta="Lier"    onClick={() => setActivePage('channels' as PageId)} />
+                <StepRow done={hasAcceptedDPA}   label="Accord de conformité"     cta="Signer"  onClick={() => {}} />
+                <StepRow done={hasConfiguredBot} label="Comportement de l'IA"     cta="Régler"  onClick={() => setActivePage('bot')} />
               </div>
             </div>
 
-            {/* Channels Management */}
-            <div style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 16 }}>Canaux de communication</h3>
+            {/* Channel status summary */}
+            <div style={{ padding: 24 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 14 }}>Canaux actifs</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                
-                {/* WhatsApp */}
-                <ChannelRow icon={<div style={{ width: 32, height: 32, background: '#dcfce7', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><WaIcon size={16} /></div>} 
-                  name="WhatsApp API" isConnected={waConnected} onConnect={handleWaConnect} loading={waLoading} />
-
-                {/* Facebook */}
-                <ChannelRow icon={<div style={{ width: 32, height: 32, background: '#eff6ff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1877F2' }}><FbIcon size={16} /></div>} 
-                  name="Facebook Messenger" isConnected={isFbConn} onConnect={handleFbConnect} loading={fbConnecting} />
-
-                {/* Instagram */}
-                <ChannelRow icon={<div style={{ width: 32, height: 32, background: '#fdf2f8', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ background: 'linear-gradient(135deg,#f09433,#dc2743,#bc1888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}><IgIcon size={16} /></span></div>} 
-                  name="Instagram Direct" isConnected={isIgConn} onConnect={handleFbConnect} loading={fbConnecting} />
-
+                {[
+                  { label: 'WhatsApp',           active: waConnected },
+                  { label: 'Facebook Messenger', active: fbConnected },
+                  { label: 'Instagram Direct',   active: igConnected },
+                ].map(ch => (
+                  <div key={ch.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{ch.label}</span>
+                    <Pill active={ch.active} label={ch.active ? 'Connecté' : 'Inactif'} />
+                  </div>
+                ))}
               </div>
-            </div>
-
-            {/* AI Control Box */}
-            <div style={{ margin: 'auto 24px 24px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                <Bot size={20} color={botStatus === 'active' ? '#16a34a' : '#64748b'} />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>Agent Répondly</div>
-                  <div style={{ fontSize: 11, color: '#64748b' }}>{botStatus === 'active' ? 'Traitement auto activé' : 'En veille'}</div>
-                </div>
-              </div>
-              <button 
-                onClick={() => {
-                  if (!setupDone) return triggerError("Veuillez terminer la mise en service avant d'activer l'IA.")
-                  setBotStatus(s => s === 'active' ? 'paused' : 'active')
-                }} 
-                style={{ width: '100%', padding: '8px', borderRadius: 6, border: `1px solid ${botStatus === 'active' ? '#fca5a5' : '#e2e8f0'}`, background: botStatus === 'active' ? '#fef2f2' : '#fff', color: botStatus === 'active' ? '#dc2626' : '#0f172a', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
-                {botStatus === 'active' ? 'Désactiver l\'IA' : 'Activer l\'IA'}
+              <button
+                onClick={() => setActivePage('channels' as PageId)}
+                style={{ marginTop: 14, width: '100%', padding: '9px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 600, color: '#0f172a', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                <Wifi size={13} /> Gérer les canaux
               </button>
             </div>
 
+            {/* AI Agent toggle */}
+            <div style={{ margin: 'auto 24px 24px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <Bot size={20} color={botActive ? '#16a34a' : '#64748b'} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>Agent Répondly</div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>{botActive ? 'Traitement auto activé' : 'En veille'}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (!setupDone) return triggerError("Terminez la mise en service avant d'activer l'IA.")
+                  setBotActive(b => !b)
+                }}
+                style={{ width: '100%', padding: '8px', borderRadius: 6, border: `1px solid ${botActive ? '#fca5a5' : '#e2e8f0'}`, background: botActive ? '#fef2f2' : '#fff', color: botActive ? '#dc2626' : '#0f172a', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                {botActive ? "Désactiver l'IA" : "Activer l'IA"}
+              </button>
+            </div>
           </aside>
         )}
       </div>
     </>
+  )
+}
+
+function EmptyPage({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '100px 0', color: '#94a3b8' }}>
+      <div style={{ opacity: 0.4, marginBottom: 14, display: 'flex', justifyContent: 'center' }}>{icon}</div>
+      {label}
+    </div>
   )
 }
