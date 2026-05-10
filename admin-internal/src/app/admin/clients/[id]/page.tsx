@@ -1,15 +1,126 @@
 // admin-internal/src/app/clients/[id]/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, User, Bot, Activity, StickyNote,
   RefreshCw, ShieldOff, ShieldCheck, Eye, Key,
-  CheckCircle, XCircle, Copy, Check,
+  CheckCircle, XCircle, Copy, Check, MessageCircle,
+  Clock, AlertCircle,
 } from 'lucide-react'
+
+// ============================================
+// TypeScript Interfaces (Requirements 1.1, 1.2)
+// ============================================
+
+import { updateCredentials, updateBotConfig, toggleAutoRule, addAdminNote } from './actions'
+
+type BusinessInfo = {
+  aiPrompt?: string
+  aiTone?: string
+  aiFaqs?: Array<{ q: string; a: string }>
+  routingRules?: Array<{ condition: string; action: string }>
+  welcomeMessage?: string
+  fallbackResponse?: string
+}
+
+type Conversation = {
+  id: number
+  status: string
+  lastMessage: {
+    content: string
+    createdAt: string
+  }
+  contact: {
+    id: number
+    name: string
+  }
+}
+
+// ============================================
+// Parallel Data Fetching Functions (Requirement 1.3)
+// ============================================
+
+const CHATWOOT_BASE = 'http://127.0.0.1:3000'
+
+async function fetchConversationsFromChatwoot(
+  accountId: number,
+  apiToken: string
+): Promise<Conversation[]> {
+  try {
+    const response = await fetch(
+      `${CHATWOOT_BASE}/api/v1/accounts/${accountId}/conversations`,
+      {
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        next: { revalidate: 30 }, // Cache for 30 seconds
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error(`Chatwoot API error: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    return data.payload.map((conv: {
+      id: number
+      status: string
+      messages?: Array<{ content?: string; created_at?: string }>
+      contact?: { id: number; name?: string }
+      updated_at?: string
+    }) => ({
+      id: conv.id,
+      status: conv.status,
+      lastMessage: {
+        content: conv.messages?.[0]?.content || '',
+        createdAt: conv.messages?.[0]?.created_at || conv.updated_at || new Date().toISOString(),
+      },
+      contact: {
+        id: conv.contact?.id || 0,
+        name: conv.contact?.name || 'Unknown',
+      },
+    }))
+  } catch (error) {
+    console.error('Failed to fetch Chatwoot conversations:', error)
+    return []
+  }
+}
+
+async function fetchBusinessData(clientId: string) {
+  const res = await fetch(`/api/admin/clients/${clientId}`, {
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error('Failed to fetch business data')
+  return res.json()
+}
+
+async function fetchConversationsData(clientId: string) {
+  // First get the business to get credentials
+  const res = await fetch(`/api/admin/clients/${clientId}`, {
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error('Failed to fetch client for conversations')
+  const business = await res.json()
+  
+  if (!business.chatwootAccountId || !business.chatwootApiToken) {
+    return { conversations: [], error: 'Missing Chatwoot credentials' }
+  }
+  
+  try {
+    const conversations = await fetchConversationsFromChatwoot(
+      business.chatwootAccountId,
+      business.chatwootApiToken
+    )
+    return { conversations, error: null }
+  } catch (error) {
+    return { conversations: [], error: String(error) }
+  }
+}
 
 const C = {
   bg: '#ffffff', bgAlt: '#f4f7fb', blue: '#1a6bff', blueLight: '#e8f0ff',
@@ -25,12 +136,14 @@ const STATUS_META: Record<string, { bg: string; color: string; dot: string }> = 
   CANCELLED:{ bg: '#f1f5f9', color: '#5a6a80', dot: '#94a3b8' },
 }
 
+// Updated type definitions with BusinessInfo support
 type AutoRule = { id: string; name: string; trigger: string; responseTemplate: string; active: boolean; conditions: Record<string, unknown> }
 type ActivityLog = { id: string; action: string; metadata: Record<string, unknown> | null; createdAt: string }
 type AdminNote = { id: string; content: string; createdAt: string }
 type Business = {
   id: string; name: string; email: string; plan: string; status: string;
   trialEndsAt: string | null; chatwootAccountId: number | null; chatwootApiToken: string | null;
+  businessInfo: BusinessInfo | null;
   autoRules: AutoRule[]; activityLogs: ActivityLog[]; adminNotes: AdminNote[];
 }
 
@@ -62,7 +175,69 @@ export default function ClientDetailPage() {
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [form, setForm] = useState<Partial<Business>>({})
+  // Task 2: Credentials saving state
+  const [credentialsSaving, setCredentialsSaving] = useState(false)
+  const [credentialsSuccess, setCredentialsSuccess] = useState(false)
 
+  // Task 3: Bot Config saving state
+  const [botConfigSaving, setBotConfigSaving] = useState(false)
+  const [botConfigSuccess, setBotConfigSuccess] = useState(false)
+
+  // Task 4: Recent Chats state
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [conversationsLoading, setConversationsLoading] = useState(false)
+  const [conversationsError, setConversationsError] = useState<string | null>(null)
+
+  // Task 3: Handler for saving bot config using Server Action
+  async function handleSaveBotConfig(config: {
+    aiPrompt?: string
+    aiTone?: string
+    aiFaqs?: Array<{ q: string; a: string }>
+    routingRules?: Array<{ condition: string; action: string }>
+  }) {
+    setBotConfigSaving(true)
+    setBotConfigSuccess(false)
+    const result = await updateBotConfig(id, config)
+    if (result.success) {
+      // Refresh business data
+      const res = await fetch(`/api/admin/clients/${id}`, { cache: 'no-store' })
+      if (res.ok) {
+        const updated = await res.json()
+        setBusiness(updated)
+        setForm(updated)
+      }
+      setBotConfigSuccess(true)
+      setTimeout(() => setBotConfigSuccess(false), 3000)
+    } else {
+      console.error('Failed to save bot config:', result.error)
+    }
+    setBotConfigSaving(false)
+  }
+
+  // Task 4.1: Fetch conversations when business data is available
+  const fetchConversations = useCallback(async (businessData: Business) => {
+    if (!businessData.chatwootAccountId || !businessData.chatwootApiToken) {
+      setConversationsError('Configurez les identifiants Chatwoot pour voir les conversations')
+      return
+    }
+    
+    setConversationsLoading(true)
+    setConversationsError(null)
+    
+    try {
+      const convs = await fetchConversationsFromChatwoot(
+        businessData.chatwootAccountId,
+        businessData.chatwootApiToken
+      )
+      setConversations(convs)
+    } catch (err) {
+      setConversationsError(String(err))
+    } finally {
+      setConversationsLoading(false)
+    }
+  }, [])
+
+  // Task 4.3: Independent loading state for conversations
   useEffect(() => {
     fetch(`/api/admin/clients/${id}`)
       .then(async (r) => {
@@ -79,6 +254,9 @@ export default function ClientDetailPage() {
         }
         setBusiness(safeData); setForm(safeData)
         setNotes(safeData.adminNotes); setRules(safeData.autoRules)
+        
+        // Task 4.1: Fetch conversations after business data loads
+        fetchConversations(safeData)
       })
       .catch((err) => {
         console.error(">>> FAILED TO LOAD CLIENT:", err)
@@ -88,7 +266,7 @@ export default function ClientDetailPage() {
         // ALWAYS stop the loading spinner, even if it crashes!
         setLoading(false)
       })
-  }, [id])
+  }, [id, fetchConversations])
 
   async function handleSave() {
     setSaving(true)
@@ -97,6 +275,27 @@ export default function ClientDetailPage() {
     })
     const updated = await res.json()
     setBusiness(updated); setForm(updated); setSaving(false)
+  }
+
+  // Task 2: Handler for credentials save using Server Action
+  async function handleSaveCredentials(credentials: { chatwootAccountId?: number | null; chatwootApiToken?: string }) {
+    setCredentialsSaving(true)
+    setCredentialsSuccess(false)
+    const result = await updateCredentials(id, credentials)
+    if (result.success) {
+      // Refresh business data
+      const res = await fetch(`/api/admin/clients/${id}`, { cache: 'no-store' })
+      if (res.ok) {
+        const updated = await res.json()
+        setBusiness(updated)
+        setForm(updated)
+      }
+      setCredentialsSuccess(true)
+      setTimeout(() => setCredentialsSuccess(false), 3000)
+    } else {
+      console.error('Failed to save credentials:', result.error)
+    }
+    setCredentialsSaving(false)
   }
 
   async function handleResetPassword() {
@@ -266,11 +465,30 @@ export default function ClientDetailPage() {
                 onStatusChange={handleStatusChange}
                 onImpersonate={handleImpersonate}
                 onCopyPassword={copyPassword}
+                // Task 2: Credentials section props
+                credentialsSaving={credentialsSaving}
+                credentialsSuccess={credentialsSuccess}
+                onSaveCredentials={handleSaveCredentials}
+                // Task 4: Recent Chats props
+                conversations={conversations}
+                conversationsLoading={conversationsLoading}
+                conversationsError={conversationsError}
+                onRefreshConversations={() => business && fetchConversations(business)}
               />
             )}
             {tab === 'bot' && (
-              <TabBot rules={rules} syncing={syncing} syncMsg={syncMsg}
-                onToggleRule={handleToggleRule} onSync={handleSync} />
+              <TabBot 
+                business={business} 
+                rules={rules} 
+                syncing={syncing} 
+                syncMsg={syncMsg}
+                onToggleRule={handleToggleRule} 
+                onSync={handleSync}
+                // Task 3: Bot config handlers
+                botConfigSaving={botConfigSaving}
+                botConfigSuccess={botConfigSuccess}
+                onSaveBotConfig={handleSaveBotConfig}
+              />
             )}
             {tab === 'activite' && <TabActivite logs={business.activityLogs} />}
             {tab === 'notes' && (
@@ -339,6 +557,10 @@ function Field({
 function TabCompte({
   form, business, saving, newPassword, copied,
   onFormChange, onSave, onResetPassword, onStatusChange, onImpersonate, onCopyPassword,
+  // Task 2: Credentials section props
+  credentialsSaving, credentialsSuccess, onSaveCredentials,
+  // Task 4: Recent Chats props
+  conversations, conversationsLoading, conversationsError, onRefreshConversations,
 }: {
   form: Partial<Business>; business: Business; saving: boolean
   newPassword: string | null; copied: boolean
@@ -346,7 +568,37 @@ function TabCompte({
   onSave: () => void; onResetPassword: () => void
   onStatusChange: (s: string) => void; onImpersonate: () => void
   onCopyPassword: () => void
+  // Task 2: Credentials section props
+  credentialsSaving: boolean
+  credentialsSuccess: boolean
+  onSaveCredentials: (credentials: { chatwootAccountId?: number | null; chatwootApiToken?: string }) => Promise<void>
+  // Task 4: Recent Chats props
+  conversations: Conversation[]
+  conversationsLoading: boolean
+  conversationsError: string | null
+  onRefreshConversations: () => void
 }) {
+  // Task 2: Local state for credentials form fields (for separate save)
+  const [credForm, setCredForm] = useState({
+    chatwootAccountId: String(form.chatwootAccountId ?? ''),
+    chatwootApiToken: form.chatwootApiToken ?? '',
+  })
+  const [showToken, setShowToken] = useState(false)
+
+  // Sync local credForm when form changes from parent
+  useEffect(() => {
+    setCredForm({
+      chatwootAccountId: String(form.chatwootAccountId ?? ''),
+      chatwootApiToken: form.chatwootApiToken ?? '',
+    })
+  }, [form.chatwootAccountId, form.chatwootApiToken])
+
+  async function handleSaveCredentialsClick() {
+    await onSaveCredentials({
+      chatwootAccountId: credForm.chatwootAccountId ? Number(credForm.chatwootAccountId) : null,
+      chatwootApiToken: credForm.chatwootApiToken,
+    })
+  }
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
       {/* Info card */}
@@ -387,20 +639,103 @@ function TabCompte({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Chatwoot */}
+        {/* Task 2: Chatwoot Credentials Section with edit form */}
         <div style={{ background: C.bg, borderRadius: 12, border: `1px solid ${C.border}`, padding: 24 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 16 }}>Chatwoot</div>
-          <Field
-            label="Account ID"
-            value={String(form.chatwootAccountId ?? '')}
-            onChange={v => onFormChange({ ...form, chatwootAccountId: v ? Number(v) : null })}
-            type="number"
-          />
-          <Field
-            label="API Token"
-            value={(form.chatwootApiToken as string) ?? ''}
-            onChange={v => onFormChange({ ...form, chatwootApiToken: v })}
-          />
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 7 }}>
+            <ShieldCheck size={14} color={C.mid} /> Chatwoot - Credentials
+          </div>
+          
+          {/* Account ID Field - Task 2.1 */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.mid, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Chatwoot Account ID
+            </label>
+            <input
+              type="number"
+              value={credForm.chatwootAccountId}
+              onChange={e => setCredForm({ ...credForm, chatwootAccountId: e.target.value })}
+              style={inputStyle}
+              placeholder="Enter account ID"
+              onFocus={e => {
+                e.currentTarget.style.borderColor = C.blue
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26,107,255,0.1)'
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = C.border
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            />
+          </div>
+          
+          {/* API Token Field with password masking - Task 2.2 */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.mid, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Chatwoot API Token
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showToken ? 'text' : 'password'}
+                value={credForm.chatwootApiToken}
+                onChange={e => setCredForm({ ...credForm, chatwootApiToken: e.target.value })}
+                style={{ ...inputStyle, paddingRight: 40 }}
+                placeholder="Enter API token"
+                onFocus={e => {
+                  e.currentTarget.style.borderColor = C.blue
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26,107,255,0.1)'
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = C.border
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken(!showToken)}
+                style={{
+                  position: 'absolute', right: 8, top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none', border: 'none',
+                  cursor: 'pointer', color: C.mid,
+                  padding: 4, display: 'flex', alignItems: 'center',
+                }}
+              >
+                {showToken ? <Eye size={16} /> : <Key size={16} />}
+              </button>
+            </div>
+          </div>
+          
+          {/* Task 2.3: Save button with loading/success states */}
+          <button
+            onClick={handleSaveCredentialsClick}
+            disabled={credentialsSaving}
+            style={{
+              width: '100%', padding: '10px 0',
+              background: credentialsSaving ? C.mid : (credentialsSuccess ? C.green : C.blue),
+              color: '#fff',
+              border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
+              cursor: credentialsSaving ? 'not-allowed' : 'pointer',
+              transition: 'background 0.15s, transform 0.1s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+            onMouseEnter={e => {
+              if (!credentialsSaving && !credentialsSuccess) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#0047cc'
+              }
+            }}
+            onMouseLeave={e => {
+              if (!credentialsSaving && !credentialsSuccess) {
+                (e.currentTarget as HTMLButtonElement).style.background = C.blue
+              }
+            }}
+          >
+            {credentialsSaving ? (
+              <>Enregistrement…</>
+            ) : credentialsSuccess ? (
+              <>✓ Enregistré</>
+            ) : (
+              <>Enregistrer les credentials</>
+            )}
+          </button>
         </div>
 
         {/* Actions */}
@@ -507,20 +842,296 @@ function TabCompte({
             )}
           </AnimatePresence>
         </div>
+
+        {/* Task 4.2 & 4.3: Recent Chats Section */}
+        <div style={{ background: C.bg, borderRadius: 12, border: `1px solid ${C.border}`, padding: 24, marginTop: 16 }}>
+          <div style={{ 
+            fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 16, 
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <MessageCircle size={14} color={C.mid} /> Conversations récentes
+              {conversations.length > 0 && (
+                <span style={{
+                  marginLeft: 8, fontSize: 11, fontWeight: 600,
+                  background: C.blueLight, color: C.blue,
+                  padding: '2px 8px', borderRadius: 99,
+                }}>
+                  {conversations.length}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={onRefreshConversations}
+              disabled={conversationsLoading}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 10px', borderRadius: 6,
+                background: conversationsLoading ? C.bgAlt : 'transparent',
+                border: `1px solid ${C.border}`,
+                color: C.mid, fontSize: 12, cursor: conversationsLoading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              <RefreshCw size={12} style={{ 
+                animation: conversationsLoading ? 'spin 1s linear infinite' : 'none',
+              }} />
+              Actualiser
+            </button>
+          </div>
+
+          {/* Task 4.3: Loading State - Skeleton */}
+          {conversationsLoading && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{
+                  padding: '14px 16px', borderRadius: 10,
+                  background: C.bgAlt, border: `1px solid ${C.border}`,
+                }}>
+                  <div style={{
+                    height: 14, width: '40%', background: C.border,
+                    borderRadius: 4, marginBottom: 8,
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }} />
+                  <div style={{
+                    height: 12, width: '70%', background: C.border,
+                    borderRadius: 4,
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                    animationDelay: '0.1s',
+                  }} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Task 4.2: Error State */}
+          {!conversationsLoading && conversationsError && (
+            <div style={{
+              padding: '20px 16px', borderRadius: 10,
+              background: C.redBg, border: `1px solid #fca5a5`,
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <AlertCircle size={16} color={C.red} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.red, marginBottom: 2 }}>
+                  Erreur de chargement
+                </div>
+                <div style={{ fontSize: 12, color: C.red, opacity: 0.8 }}>
+                  {conversationsError}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Task 4.2: Conversation List */}
+          {!conversationsLoading && !conversationsError && (
+            <>
+              {conversations.length === 0 ? (
+                <div style={{
+                  padding: '30px 20px', textAlign: 'center',
+                  background: C.bgAlt, borderRadius: 10,
+                  color: C.mid, fontSize: 13,
+                }}>
+                  <MessageCircle size={24} style={{ marginBottom: 8, opacity: 0.5 }} />
+                  <div>Aucune conversation trouvée</div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {conversations.map((conv) => (
+                    <ConversationItem key={conv.id} conversation={conv} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-// ---- Tab: Bot Config ----
+// Task 4.2: Conversation Item Component
+function ConversationItem({ conversation }: { conversation: Conversation }) {
+  const isOpen = conversation.status === 'open'
+  const timeAgo = formatTimeAgo(conversation.lastMessage.createdAt)
+  
+  return (
+    <div style={{
+      padding: '14px 16px', borderRadius: 10,
+      background: C.bg, border: `1px solid ${C.border}`,
+      display: 'flex', alignItems: 'flex-start', gap: 12,
+      transition: 'border-color 0.15s, box-shadow 0.15s',
+    }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = C.blue
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(26,107,255,0.08)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = C.border
+        e.currentTarget.style.boxShadow = 'none'
+      }}
+    >
+      {/* Status indicator */}
+      <div style={{
+        width: 10, height: 10, borderRadius: '50%',
+        background: isOpen ? C.green : C.mid,
+        marginTop: 5, flexShrink: 0,
+      }} />
+      
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: 4,
+        }}>
+          <div style={{
+            fontSize: 14, fontWeight: 600, color: C.ink,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {conversation.contact.name}
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            fontSize: 11, color: C.mid, flexShrink: 0,
+          }}>
+            <Clock size={11} />
+            {timeAgo}
+          </div>
+        </div>
+        
+        <div style={{
+          fontSize: 13, color: C.mid,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {conversation.lastMessage.content || <em style={{ opacity: 0.6 }}>Aucun message</em>}
+        </div>
+      </div>
+      
+      {/* Status badge */}
+      <div style={{
+        padding: '2px 8px', borderRadius: 99,
+        fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+        background: isOpen ? C.greenBg : C.bgAlt,
+        color: isOpen ? C.green : C.mid,
+        flexShrink: 0,
+      }}>
+        {conversation.status}
+      </div>
+    </div>
+  )
+}
+
+// Helper function to format time ago
+function formatTimeAgo(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+  
+  if (diffMins < 1) return 'à l\'instant'
+  if (diffMins < 60) return `il y a ${diffMins} min`
+  if (diffHours < 24) return `il y a ${diffHours}h`
+  if (diffDays < 7) return `il y a ${diffDays}j`
+  return date.toLocaleDateString('fr-FR')
+}
 function TabBot({
-  rules, syncing, syncMsg, onToggleRule, onSync,
+  business, rules, syncing, syncMsg, onToggleRule, onSync,
+  botConfigSaving, botConfigSuccess, onSaveBotConfig,
 }: {
+  business: Business | null
   rules: AutoRule[]; syncing: boolean
   syncMsg: { text: string; ok: boolean } | null
   onToggleRule: (id: string, active: boolean) => void
   onSync: () => void
+  // Task 3: Bot config props
+  botConfigSaving: boolean
+  botConfigSuccess: boolean
+  onSaveBotConfig: (config: {
+    aiPrompt?: string
+    aiTone?: string
+    aiFaqs?: Array<{ q: string; a: string }>
+    routingRules?: Array<{ condition: string; action: string }>
+  }) => Promise<void>
 }) {
+  // Task 3: Local state for bot configuration form
+  const businessInfo = business?.businessInfo || {}
+  const [botConfig, setBotConfig] = useState({
+    aiPrompt: businessInfo.aiPrompt || '',
+    aiTone: businessInfo.aiTone || 'professional',
+    aiFaqs: businessInfo.aiFaqs || [] as Array<{ q: string; a: string }>,
+    routingRules: businessInfo.routingRules || [] as Array<{ condition: string; action: string }>,
+  })
+
+  // Sync local state when business changes
+  useEffect(() => {
+    if (business?.businessInfo) {
+      setBotConfig({
+        aiPrompt: business.businessInfo.aiPrompt || '',
+        aiTone: business.businessInfo.aiTone || 'professional',
+        aiFaqs: business.businessInfo.aiFaqs || [],
+        routingRules: business.businessInfo.routingRules || [],
+      })
+    }
+  }, [business?.businessInfo])
+
+  // Task 3.1: Add new FAQ item
+  const addFaq = () => {
+    setBotConfig(prev => ({
+      ...prev,
+      aiFaqs: [...prev.aiFaqs, { q: '', a: '' }],
+    }))
+  }
+
+  // Task 3.1: Remove FAQ item
+  const removeFaq = (index: number) => {
+    setBotConfig(prev => ({
+      ...prev,
+      aiFaqs: prev.aiFaqs.filter((_, i) => i !== index),
+    }))
+  }
+
+  // Task 3.1: Update FAQ item
+  const updateFaq = (index: number, field: 'q' | 'a', value: string) => {
+    setBotConfig(prev => ({
+      ...prev,
+      aiFaqs: prev.aiFaqs.map((faq, i) => 
+        i === index ? { ...faq, [field]: value } : faq
+      ),
+    }))
+  }
+
+  // Task 3.4: Add new routing rule
+  const addRoutingRule = () => {
+    setBotConfig(prev => ({
+      ...prev,
+      routingRules: [...prev.routingRules, { condition: '', action: '' }],
+    }))
+  }
+
+  // Task 3.4: Remove routing rule
+  const removeRoutingRule = (index: number) => {
+    setBotConfig(prev => ({
+      ...prev,
+      routingRules: prev.routingRules.filter((_, i) => i !== index),
+    }))
+  }
+
+  // Task 3.4: Update routing rule
+  const updateRoutingRule = (index: number, field: 'condition' | 'action', value: string) => {
+    setBotConfig(prev => ({
+      ...prev,
+      routingRules: prev.routingRules.map((rule, i) => 
+        i === index ? { ...rule, [field]: value } : rule
+      ),
+    }))
+  }
+
+  // Task 3.5: Handle save click
+  async function handleSaveBotConfigClick() {
+    await onSaveBotConfig(botConfig)
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -636,7 +1247,277 @@ function TabBot({
           ))}
         </div>
       )}
-      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+
+      {/* Task 3: Bot AI Prompt Section */}
+      <div style={{ 
+        marginTop: 28, 
+        paddingTop: 24, 
+        borderTop: `1px solid ${C.border}`,
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: C.ink, marginBottom: 20 }}>
+          Configuration AI du Bot
+        </div>
+
+        <div style={{ background: C.bg, borderRadius: 12, border: `1px solid ${C.border}`, padding: 24 }}>
+          {/* Task 3.1: AI System Prompt Textarea */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.mid, marginBottom: 7, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              System Prompt AI
+            </label>
+            <textarea
+              value={botConfig.aiPrompt}
+              onChange={e => setBotConfig(prev => ({ ...prev, aiPrompt: e.target.value }))}
+              placeholder="Entrez les instructions system pour le bot AI..."
+              rows={5}
+              style={{
+                width: '100%', padding: '12px',
+                border: `1px solid ${C.border}`, borderRadius: 8,
+                fontSize: 13.5, color: C.ink, background: C.bg,
+                outline: 'none', boxSizing: 'border-box',
+                fontFamily: 'inherit', resize: 'vertical',
+                transition: 'border-color 0.15s, box-shadow 0.15s',
+              }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = C.blue
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26,107,255,0.1)'
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = C.border
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            />
+          </div>
+
+          {/* Task 3.2: Bot Tone Configuration */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.mid, marginBottom: 7, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Ton du Bot
+            </label>
+            <select
+              value={botConfig.aiTone}
+              onChange={e => setBotConfig(prev => ({ ...prev, aiTone: e.target.value }))}
+              style={{
+                width: '100%', padding: '9px 12px',
+                border: `1px solid ${C.border}`, borderRadius: 8,
+                fontSize: 13.5, color: C.ink, background: C.bg,
+                outline: 'none', boxSizing: 'border-box', cursor: 'pointer',
+                transition: 'border-color 0.15s, box-shadow 0.15s',
+              }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = C.blue
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26,107,255,0.1)'
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = C.border
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              <option value="professional">Professional</option>
+              <option value="friendly">Friendly</option>
+              <option value="casual">Casual</option>
+            </select>
+          </div>
+
+          {/* Task 3.3: FAQs Configuration */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                FAQs
+              </label>
+              <button
+                type="button"
+                onClick={addFaq}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '5px 10px', borderRadius: 6,
+                  background: C.blueLight, border: 'none',
+                  color: C.blue, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                + Ajouter
+              </button>
+            </div>
+            {botConfig.aiFaqs.length === 0 ? (
+              <div style={{ 
+                padding: '20px', textAlign: 'center', 
+                background: C.bgAlt, borderRadius: 8, color: C.mid, fontSize: 13 
+              }}>
+                Aucune FAQ configurée. Cliquez sur "Ajouter" pour en créer une.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {botConfig.aiFaqs.map((faq, index) => (
+                  <div key={index} style={{
+                    background: C.bgAlt, borderRadius: 8, padding: 12,
+                    display: 'flex', flexDirection: 'column', gap: 8,
+                  }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <input
+                          type="text"
+                          value={faq.q}
+                          onChange={e => updateFaq(index, 'q', e.target.value)}
+                          placeholder="Question"
+                          style={{
+                            width: '100%', padding: '8px 10px',
+                            border: `1px solid ${C.border}`, borderRadius: 6,
+                            fontSize: 13, color: C.ink, background: C.bg,
+                            outline: 'none', boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <input
+                          type="text"
+                          value={faq.a}
+                          onChange={e => updateFaq(index, 'a', e.target.value)}
+                          placeholder="Réponse"
+                          style={{
+                            width: '100%', padding: '8px 10px',
+                            border: `1px solid ${C.border}`, borderRadius: 6,
+                            fontSize: 13, color: C.ink, background: C.bg,
+                            outline: 'none', boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFaq(index)}
+                        style={{
+                          padding: '6px 8px', borderRadius: 6,
+                          background: C.redBg, border: 'none',
+                          color: C.red, fontSize: 12, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center',
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Task 3.4: Routing Rules Configuration */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Règles de Routage
+              </label>
+              <button
+                type="button"
+                onClick={addRoutingRule}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '5px 10px', borderRadius: 6,
+                  background: C.blueLight, border: 'none',
+                  color: C.blue, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                + Ajouter
+              </button>
+            </div>
+            {botConfig.routingRules.length === 0 ? (
+              <div style={{ 
+                padding: '20px', textAlign: 'center', 
+                background: C.bgAlt, borderRadius: 8, color: C.mid, fontSize: 13 
+              }}>
+                Aucune règle de routage configurée. Cliquez sur "Ajouter" pour en créer une.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {botConfig.routingRules.map((rule, index) => (
+                  <div key={index} style={{
+                    background: C.bgAlt, borderRadius: 8, padding: 12,
+                    display: 'flex', flexDirection: 'column', gap: 8,
+                  }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <input
+                          type="text"
+                          value={rule.condition}
+                          onChange={e => updateRoutingRule(index, 'condition', e.target.value)}
+                          placeholder="Condition (ex: contains:pricing)"
+                          style={{
+                            width: '100%', padding: '8px 10px',
+                            border: `1px solid ${C.border}`, borderRadius: 6,
+                            fontSize: 13, color: C.ink, background: C.bg,
+                            outline: 'none', boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <input
+                          type="text"
+                          value={rule.action}
+                          onChange={e => updateRoutingRule(index, 'action', e.target.value)}
+                          placeholder="Action (ex: route_to:support)"
+                          style={{
+                            width: '100%', padding: '8px 10px',
+                            border: `1px solid ${C.border}`, borderRadius: 6,
+                            fontSize: 13, color: C.ink, background: C.bg,
+                            outline: 'none', boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeRoutingRule(index)}
+                        style={{
+                          padding: '6px 8px', borderRadius: 6,
+                          background: C.redBg, border: 'none',
+                          color: C.red, fontSize: 12, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center',
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Task 3.5: Save Button with Loading/Success States */}
+          <button
+            onClick={handleSaveBotConfigClick}
+            disabled={botConfigSaving}
+            style={{
+              width: '100%', padding: '12px 0',
+              background: botConfigSaving ? C.mid : (botConfigSuccess ? C.green : C.blue),
+              color: '#fff',
+              border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
+              cursor: botConfigSaving ? 'not-allowed' : 'pointer',
+              transition: 'background 0.15s, transform 0.1s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+            onMouseEnter={e => {
+              if (!botConfigSaving && !botConfigSuccess) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#0047cc'
+              }
+            }}
+            onMouseLeave={e => {
+              if (!botConfigSaving && !botConfigSuccess) {
+                (e.currentTarget as HTMLButtonElement).style.background = C.blue
+              }
+            }}
+          >
+            {botConfigSaving ? (
+              <>Enregistrement…</>
+            ) : botConfigSuccess ? (
+              <>✓ Enregistré</>
+            ) : (
+              <>Enregistrer la configuration AI</>
+            )}
+          </button>
+        </div>
+      </div>
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+      `}</style>
     </div>
   )
 }
