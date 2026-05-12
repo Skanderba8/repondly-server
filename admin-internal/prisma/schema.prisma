@@ -9,23 +9,23 @@ datasource db {
 }
 
 model Business {
-  id                   String         @id @default(cuid())
+  id                   String           @id @default(cuid())
   name                 String
-  email                String         @unique
+  email                String           @unique
   passwordHash         String
   phone                String?
-  chatwootAccountId    Int?           @unique
+  chatwootAccountId    Int?             @unique
   chatwootApiToken     String?
-  plan                 Plan           @default(FREE)
-  status               String         @default("TRIAL")
+  plan                 Plan             @default(FREE)
+  status               String           @default("TRIAL")
   trialEndsAt          DateTime?
   lastLoginAt          DateTime?
-  paidThisMonth        Boolean        @default(false)
+  paidThisMonth        Boolean          @default(false)
   paymentMethod        String?
-  channels             String[]       @default([])
+  channels             String[]         @default([])
   businessInfo         Json?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   clients              Client[]
   autoRules            AutoRule[]
@@ -38,33 +38,33 @@ model Business {
 }
 
 model Client {
-  id                   String         @id @default(cuid())
+  id                   String    @id @default(cuid())
   businessId           String
   name                 String
   phone                String?
   email                String?
   channel              Channel
   chatwootContactId    Int?
-  createdAt            DateTime       @default(now())
+  createdAt            DateTime  @default(now())
 
-  business             Business       @relation(fields: [businessId], references: [id])
+  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   reminders            Reminder[]
   bookings             Booking[]
 }
 
 model AutoRule {
-  id                   String         @id @default(cuid())
+  id                   String    @id @default(cuid())
   businessId           String
   name                 String
   trigger              Trigger
-  conditions           Json           // e.g. { "keyword": "price", "channel": "whatsapp" }
+  conditions           Json
   action               Action
   responseTemplate     String
-  active               Boolean        @default(true)
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  active               Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  business             Business       @relation(fields: [businessId], references: [id])
+  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model Reminder {
@@ -77,53 +77,51 @@ model Reminder {
   status               ReminderStatus @default(PENDING)
   createdAt            DateTime       @default(now())
 
-  business             Business       @relation(fields: [businessId], references: [id])
-  client               Client         @relation(fields: [clientId], references: [id])
+  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client               Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
-  id                   String         @id @default(cuid())
+  id                   String        @id @default(cuid())
   businessId           String
   clientId             String
   service              String
   datetime             DateTime
-  status               BookingStatus  @default(PENDING)
+  status               BookingStatus @default(PENDING)
   calendarEventId      String?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
-  business             Business       @relation(fields: [businessId], references: [id])
-  client               Client         @relation(fields: [clientId], references: [id])
+  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client               Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model AdminNote {
-  id          String   @id @default(cuid())
-  businessId  String
-  content     String
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  businessId String
+  content    String
+  createdAt  DateTime @default(now())
 
-  business    Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model OnboardingStage {
-  id          String   @id @default(cuid())
-  businessId  String   @unique
-  stage       String   @default("DEMO_BOOKED")
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  businessId String   @unique
+  stage      String   @default("DEMO_BOOKED")
+  updatedAt  DateTime @updatedAt
 
-  business    Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model ActivityLog {
-  id          String   @id @default(cuid())
-  businessId  String?
-  adminUserId String?
-  action      String
-  metadata    Json?
-  ipAddress   String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  businessId String
+  action     String
+  metadata   Json?
+  createdAt  DateTime @default(now())
 
-  business    Business? @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model AdminUser {
@@ -139,19 +137,19 @@ model AdminUser {
 }
 
 model BotEvent {
-  id           String   @id @default(cuid())
-  businessId   String?
-  eventType    String
-  channel      String?
-  message      String?
-  ruleMatched  String?
-  wasHandled   Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  id          String   @id @default(cuid())
+  businessId  String?
+  eventType   String
+  channel     String?
+  message     String?
+  ruleMatched String?
+  wasHandled  Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
-  business     Business? @relation(fields: [businessId], references: [id])
+  business    Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
 }
 
-// ---------- Enums ----------
+// ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum Plan {
   FREE

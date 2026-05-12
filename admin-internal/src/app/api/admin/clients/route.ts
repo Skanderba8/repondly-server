@@ -2,69 +2,115 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { createChatwootAccount, inviteChatwootUser } from '@/lib/chatwoot'
 
-export async function GET(request: NextRequest) {
-  const auth = await requireAdmin(request)
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAdmin(req)
   if (auth instanceof NextResponse) return auth
 
-  const businesses = await prisma.business.findMany({
-    orderBy: { createdAt: 'desc' },
-  })
+  const { id } = await params
 
-  return NextResponse.json(businesses)
-}
-
-export async function POST(request: NextRequest) {
-  const auth = await requireAdmin(request)
-  if (auth instanceof NextResponse) return auth
-
-  const body = await request.json() as { name?: string; email?: string; password?: string; plan?: string; trialEndsAt?: string }
-  const { name, email, password, plan, trialEndsAt } = body
-
-  if (!name || !email || !password) {
-    return NextResponse.json({ error: 'Bad request' }, { status: 400 })
-  }
-
-  const existing = await prisma.business.findUnique({ where: { email } })
-  if (existing) return NextResponse.json({ error: 'Email already exists' }, { status: 409 })
-
-  const passwordHash = await bcrypt.hash(password, 10)
-
-  // 1. Create the Business in your PostgreSQL database first
-  let business = await prisma.business.create({
-    data: {
-      name,
-      email,
-      passwordHash,
-      plan: (plan ?? 'FREE') as 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS',
-      trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
+  const business = await prisma.business.findUnique({
+    where: { id },
+    include: {
+      autoRules: {
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, name: true, trigger: true, responseTemplate: true, active: true },
+      },
+      activityLogs: {
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: { id: true, action: true, metadata: true, createdAt: true },
+      },
+      adminNotes: {
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, content: true, createdAt: true },
+      },
     },
   })
 
-  // 2. Provision the headless Chatwoot background environment
-  try {
-    // Action 1: Create the Chatwoot workspace
-    const cwAccount = await createChatwootAccount(name)
-
-    // Action 2: Attach the client's email to it internally
-    await inviteChatwootUser(cwAccount.id, name, email)
-
-    // Action 3: Permanently link the Chatwoot ID to your Prisma Business model
-    business = await prisma.business.update({
-      where: { id: business.id },
-      data: { chatwootAccountId: cwAccount.id }
-    })
-
-    return NextResponse.json(business, { status: 201 })
-  } catch (error) {
-    console.error('Chatwoot Provisioning Error:', error)
-    
-    // If Chatwoot fails (e.g. network issue), we still return the created Prisma business
-    // but we attach a warning so the frontend/admin knows manual intervention is needed.
-    return NextResponse.json(
-      { ...business, warning: 'Business created, but Chatwoot auto-provisioning failed.' },
-      { status: 201 }
-    )
+  if (!business) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
+
+  // Never return the hashed password
+  const { password: _pw, ...safe } = business as typeof business & { password?: string }
+  return NextResponse.json(safe)
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAdmin(req)
+  if (auth instanceof NextResponse) return auth
+
+  const { id } = await params
+  const body = await req.json()
+
+  // Fields allowed to be updated
+  const {
+    name, email, phone, plan, status, trialEndsAt,
+    chatwootAccountId, chatwootApiToken,
+    newPassword,
+  } = body
+
+  const data: Record<string, unknown> = {}
+  if (name !== undefined) data.name = name
+  if (email !== undefined) data.email = email
+  if (phone !== undefined) data.phone = phone ?? null
+  if (plan !== undefined) data.plan = plan
+  if (status !== undefined) data.status = status
+  if (trialEndsAt !== undefined) data.trialEndsAt = trialEndsAt ? new Date(trialEndsAt) : null
+  if (chatwootAccountId !== undefined) data.chatwootAccountId = chatwootAccountId ? Number(chatwootAccountId) : null
+  if (chatwootApiToken !== undefined) data.chatwootApiToken = chatwootApiToken || null
+
+  // Password reset
+  if (newPassword) {
+    data.password = await bcrypt.hash(newPassword, 12)
+    // Log it
+    await prisma.activityLog.create({
+      data: {
+        businessId: id,
+        action: 'Mot de passe réinitialisé par un administrateur',
+        metadata: {},
+      },
+    })
+  }
+
+  // Log status changes
+  if (status !== undefined) {
+    await prisma.activityLog.create({
+      data: {
+        businessId: id,
+        action: `Statut changé en ${status} par un administrateur`,
+        metadata: {},
+      },
+    }).catch(() => null) // non-blocking
+  }
+
+  const updated = await prisma.business.update({
+    where: { id },
+    data,
+    include: {
+      autoRules: {
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, name: true, trigger: true, responseTemplate: true, active: true },
+      },
+      activityLogs: {
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: { id: true, action: true, metadata: true, createdAt: true },
+      },
+      adminNotes: {
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, content: true, createdAt: true },
+      },
+    },
+  })
+
+  const { password: _pw2, ...safe } = updated as typeof updated & { password?: string }
+  return NextResponse.json(safe)
 }
