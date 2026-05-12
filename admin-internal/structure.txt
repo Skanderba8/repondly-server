@@ -19,84 +19,79 @@
 │   └── window.svg
 ├── src
 │   ├── app
-│   │   ├── admin
-│   │   │   ├── OverviewClient.tsx
+│   │   ├── OverviewClient.tsx
+│   │   ├── access
+│   │   │   └── page.tsx
+│   │   ├── api
 │   │   │   ├── access
-│   │   │   │   └── page.tsx
-│   │   │   ├── billing
-│   │   │   │   └── page.tsx
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── auth
+│   │   │   │   └── [...nextauth]
+│   │   │   │       └── route.ts
+│   │   │   ├── auto-rules
+│   │   │   │   └── [id]
+│   │   │   │       └── route.ts
+│   │   │   ├── badges
+│   │   │   │   └── route.ts
 │   │   │   ├── bot
-│   │   │   │   └── page.tsx
+│   │   │   │   ├── events
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── restart
+│   │   │   │       └── route.ts
 │   │   │   ├── chatwoot
-│   │   │   │   └── page.tsx
+│   │   │   │   └── route.ts
 │   │   │   ├── clients
 │   │   │   │   ├── [id]
-│   │   │   │   │   ├── actions.ts
-│   │   │   │   │   └── page.tsx
-│   │   │   │   ├── new
-│   │   │   │   │   └── page.tsx
-│   │   │   │   └── page.tsx
-│   │   │   ├── database
-│   │   │   │   └── page.tsx
-│   │   │   ├── layout.tsx
-│   │   │   ├── n8n
-│   │   │   │   └── page.tsx
-│   │   │   ├── onboarding
-│   │   │   │   ├── OnboardingClient.tsx
-│   │   │   │   └── page.tsx
-│   │   │   ├── page.tsx
-│   │   │   └── system
-│   │   │       └── page.tsx
-│   │   ├── api
-│   │   │   ├── admin
-│   │   │   │   ├── access
-│   │   │   │   │   ├── [id]
+│   │   │   │   │   ├── chatwoot
 │   │   │   │   │   │   └── route.ts
-│   │   │   │   │   └── route.ts
-│   │   │   │   ├── auto-rules
-│   │   │   │   │   └── [id]
-│   │   │   │   │       └── route.ts
-│   │   │   │   ├── badges
-│   │   │   │   │   └── route.ts
-│   │   │   │   ├── bot
-│   │   │   │   │   ├── events
-│   │   │   │   │   │   └── route.ts
-│   │   │   │   │   └── restart
-│   │   │   │   │       └── route.ts
-│   │   │   │   ├── chatwoot
-│   │   │   │   │   └── route.ts
-│   │   │   │   ├── clients
-│   │   │   │   │   ├── [id]
-│   │   │   │   │   │   ├── chatwoot
-│   │   │   │   │   │   │   └── route.ts
-│   │   │   │   │   │   ├── notes
-│   │   │   │   │   │   │   └── route.ts
-│   │   │   │   │   │   ├── route.ts
-│   │   │   │   │   │   ├── stage
-│   │   │   │   │   │   │   └── route.ts
-│   │   │   │   │   │   └── sync
-│   │   │   │   │   │       └── route.ts
-│   │   │   │   │   └── route.ts
-│   │   │   │   ├── database
-│   │   │   │   │   ├── migrate
+│   │   │   │   │   ├── notes
 │   │   │   │   │   │   └── route.ts
 │   │   │   │   │   ├── route.ts
-│   │   │   │   │   └── tables
-│   │   │   │   │       └── [table]
-│   │   │   │   │           └── route.ts
-│   │   │   │   ├── n8n
-│   │   │   │   │   ├── [id]
+│   │   │   │   │   ├── stage
 │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── sync
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── database
+│   │   │   │   ├── migrate
 │   │   │   │   │   └── route.ts
-│   │   │   │   └── system
-│   │   │   │       └── route.ts
-│   │   │   └── auth
-│   │   │       └── [...nextauth]
-│   │   │           └── route.ts
+│   │   │   │   ├── route.ts
+│   │   │   │   └── tables
+│   │   │   │       └── [table]
+│   │   │   │           └── route.ts
+│   │   │   ├── n8n
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   └── system
+│   │   │       └── route.ts
 │   │   ├── auth
 │   │   │   └── signin
 │   │   │       └── page.tsx
-│   │   └── layout.tsx
+│   │   ├── billing
+│   │   │   └── page.tsx
+│   │   ├── bot
+│   │   │   └── page.tsx
+│   │   ├── chatwoot
+│   │   │   └── page.tsx
+│   │   ├── clients
+│   │   │   ├── [id]
+│   │   │   │   ├── actions.ts
+│   │   │   │   └── page.tsx
+│   │   │   ├── new
+│   │   │   │   └── page.tsx
+│   │   │   └── page.tsx
+│   │   ├── database
+│   │   │   └── page.tsx
+│   │   ├── n8n
+│   │   │   └── page.tsx
+│   │   ├── onboarding
+│   │   │   ├── OnboardingClient.tsx
+│   │   │   └── page.tsx
+│   │   └── system
+│   │       └── page.tsx
 │   ├── components
 │   │   ├── AdminSidebar.tsx
 │   │   ├── LanguageContext.tsx
@@ -124,4 +119,4 @@
 ├── tsconfig.json
 └── tsconfig.tsbuildinfo
 
-51 directories, 74 files
+49 directories, 71 files
