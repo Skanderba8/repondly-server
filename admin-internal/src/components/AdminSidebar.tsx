@@ -22,12 +22,12 @@ interface AdminSidebarProps {
 }
 
 const ACTIVE_LINKS = [
-  { label: "Vue d'ensemble", href: '/admin', icon: LayoutDashboard, exact: true },
-  { label: 'Clients', href: '/admin/clients', icon: Users, exact: false },
-  { label: 'Système', href: '/admin/system', icon: Server, exact: false },
-  { label: 'n8n', href: '/admin/n8n', icon: Workflow, exact: false },
-  { label: 'Base de données', href: '/admin/database', icon: Database, exact: false, superAdminOnly: true },
-  { label: 'Accès', href: '/admin/access', icon: Shield, exact: false, superAdminOnly: true },
+  { label: "Vue d'ensemble", href: '/', icon: LayoutDashboard, exact: true },
+  { label: 'Clients', href: '/clients', icon: Users, exact: false },
+  { label: 'Système', href: '/system', icon: Server, exact: false },
+  { label: 'n8n', href: '/n8n', icon: Workflow, exact: false },
+  { label: 'Base de données', href: '/database', icon: Database, exact: false, superAdminOnly: true },
+  { label: 'Accès', href: '/access', icon: Shield, exact: false, superAdminOnly: true },
 ]
 
 const PLACEHOLDER_LINKS = [
