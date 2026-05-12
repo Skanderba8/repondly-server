@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,30 +7,29 @@ datasource db {
 }
 
 model Business {
-  id                    String          @id @default(cuid())
+  id                    String    @id @default(cuid())
   name                  String
-  email                 String          @unique
+  email                 String    @unique
   passwordHash          String
   phone                 String?
-  chatwootAccountId     Int?            @unique
+  chatwootAccountId     Int?      @unique
   chatwootApiToken      String?
-  plan                  Plan            @default(FREE)
-  status                String          @default("TRIAL")
+  plan                  Plan      @default(FREE)
+  status                String    @default("TRIAL")
   trialEndsAt           DateTime?
   lastLoginAt           DateTime?
-  paidThisMonth         Boolean         @default(false)
+  paidThisMonth         Boolean   @default(false)
   paymentMethod         String?
-  channels              String[]        @default([])
+  channels              String[]  @default([])
   businessInfo          Json?
 
-  // WhatsApp Embedded Signup
   // WhatsApp Embedded Signup
   wabaId                String?
   whatsappPhoneNumberId String?
   whatsappInboxId       Int?
   whatsappConnected     Boolean   @default(false)
 
-    // Facebook
+  // Facebook
   facebookPageId        String?
   facebookPageToken     String?
   facebookInboxId       Int?
@@ -48,9 +45,10 @@ model Business {
   hasSetBusinessHours   Boolean   @default(false)
   hasConfiguredBot      Boolean   @default(false)
 
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
+  // Relationships
   clients               Client[]
   autoRules             AutoRule[]
   reminders             Reminder[]
@@ -63,16 +61,16 @@ model Business {
 }
 
 model Client {
-  id                String         @id @default(cuid())
+  id                String    @id @default(cuid())
   businessId        String
   name              String
   phone             String?
   email             String?
   channel           Channel
   chatwootContactId Int?
-  createdAt         DateTime       @default(now())
+  createdAt         DateTime  @default(now())
 
-  business          Business       @relation(fields: [businessId], references: [id])
+  business          Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   reminders         Reminder[]
   bookings          Booking[]
 }
@@ -89,7 +87,7 @@ model AutoRule {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  business         Business @relation(fields: [businessId], references: [id])
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model Reminder {
@@ -102,8 +100,8 @@ model Reminder {
   status      ReminderStatus @default(PENDING)
   createdAt   DateTime       @default(now())
 
-  business    Business       @relation(fields: [businessId], references: [id])
-  client      Client         @relation(fields: [clientId], references: [id])
+  business    Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client      Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
@@ -117,8 +115,8 @@ model Booking {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  business        Business      @relation(fields: [businessId], references: [id])
-  client          Client        @relation(fields: [clientId], references: [id])
+  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model AdminNote {
@@ -127,7 +125,7 @@ model AdminNote {
   content    String
   createdAt  DateTime @default(now())
 
-  business   Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model OnboardingStage {
@@ -136,7 +134,7 @@ model OnboardingStage {
   stage      String   @default("DEMO_BOOKED")
   updatedAt  DateTime @updatedAt
 
-  business   Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model ActivityLog {
@@ -146,20 +144,20 @@ model ActivityLog {
   metadata   Json?
   createdAt  DateTime @default(now())
 
-  business   Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model BotEvent {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   businessId  String?
   eventType   String
   channel     String?
   message     String?
   ruleMatched String?
-  wasHandled  Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+  wasHandled  Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
-  business    Business? @relation(fields: [businessId], references: [id])
+  business    Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
 }
 
 model ConnectedPage {
@@ -175,12 +173,24 @@ model ConnectedPage {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  business        Business @relation(fields: [businessId], references: [id])
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, pageId, channel])
 }
 
-// ---------- Enums ----------
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  role         AdminRole @default(ADMIN)
+  active       Boolean   @default(true)
+  passwordHash String
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum Plan {
   FREE
@@ -221,13 +231,7 @@ enum BookingStatus {
   CANCELLED
 }
 
-model AdminUser {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  role         String   @default("ADMIN")
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
 }

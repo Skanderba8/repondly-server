@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,91 +7,116 @@ datasource db {
 }
 
 model Business {
-  id                   String           @id @default(cuid())
-  name                 String
-  email                String           @unique
-  passwordHash         String
-  phone                String?
-  chatwootAccountId    Int?             @unique
-  chatwootApiToken     String?
-  plan                 Plan             @default(FREE)
-  status               String           @default("TRIAL")
-  trialEndsAt          DateTime?
-  lastLoginAt          DateTime?
-  paidThisMonth        Boolean          @default(false)
-  paymentMethod        String?
-  channels             String[]         @default([])
-  businessInfo         Json?
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
+  id                    String    @id @default(cuid())
+  name                  String
+  email                 String    @unique
+  passwordHash          String
+  phone                 String?
+  chatwootAccountId     Int?      @unique
+  chatwootApiToken      String?
+  plan                  Plan      @default(FREE)
+  status                String    @default("TRIAL")
+  trialEndsAt           DateTime?
+  lastLoginAt           DateTime?
+  paidThisMonth         Boolean   @default(false)
+  paymentMethod         String?
+  channels              String[]  @default([])
+  businessInfo          Json?
 
-  clients              Client[]
-  autoRules            AutoRule[]
-  reminders            Reminder[]
-  bookings             Booking[]
-  adminNotes           AdminNote[]
-  onboarding           OnboardingStage?
-  activityLogs         ActivityLog[]
-  botEvents            BotEvent[]
+  // WhatsApp Embedded Signup
+  wabaId                String?
+  whatsappPhoneNumberId String?
+  whatsappInboxId       Int?
+  whatsappConnected     Boolean   @default(false)
+
+  // Facebook
+  facebookPageId        String?
+  facebookPageToken     String?
+  facebookInboxId       Int?
+  facebookConnected     Boolean   @default(false)
+
+  // Instagram
+  instagramAccountId    String?
+  instagramInboxId      Int?
+  instagramConnected    Boolean   @default(false)
+
+  // New Onboarding Milestones
+  hasAcceptedDPA        Boolean   @default(false)
+  hasSetBusinessHours   Boolean   @default(false)
+  hasConfiguredBot      Boolean   @default(false)
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relationships
+  clients               Client[]
+  autoRules             AutoRule[]
+  reminders             Reminder[]
+  bookings              Booking[]
+  adminNotes            AdminNote[]
+  onboarding            OnboardingStage?
+  activityLogs          ActivityLog[]
+  botEvents             BotEvent[]
+  connectedPages        ConnectedPage[]
 }
 
 model Client {
-  id                   String    @id @default(cuid())
-  businessId           String
-  name                 String
-  phone                String?
-  email                String?
-  channel              Channel
-  chatwootContactId    Int?
-  createdAt            DateTime  @default(now())
+  id                String    @id @default(cuid())
+  businessId        String
+  name              String
+  phone             String?
+  email             String?
+  channel           Channel
+  chatwootContactId Int?
+  createdAt         DateTime  @default(now())
 
-  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  reminders            Reminder[]
-  bookings             Booking[]
+  business          Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  reminders         Reminder[]
+  bookings          Booking[]
 }
 
 model AutoRule {
-  id                   String    @id @default(cuid())
-  businessId           String
-  name                 String
-  trigger              Trigger
-  conditions           Json
-  action               Action
-  responseTemplate     String
-  active               Boolean   @default(true)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id               String   @id @default(cuid())
+  businessId       String
+  name             String
+  trigger          Trigger
+  conditions       Json
+  action           Action
+  responseTemplate String
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model Reminder {
-  id                   String         @id @default(cuid())
-  businessId           String
-  clientId             String
-  message              String
-  scheduledAt          DateTime
-  sentAt               DateTime?
-  status               ReminderStatus @default(PENDING)
-  createdAt            DateTime       @default(now())
+  id          String         @id @default(cuid())
+  businessId  String
+  clientId    String
+  message     String
+  scheduledAt DateTime
+  sentAt      DateTime?
+  status      ReminderStatus @default(PENDING)
+  createdAt   DateTime       @default(now())
 
-  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  client               Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  business    Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client      Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
-  id                   String        @id @default(cuid())
-  businessId           String
-  clientId             String
-  service              String
-  datetime             DateTime
-  status               BookingStatus @default(PENDING)
-  calendarEventId      String?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  businessId      String
+  clientId        String
+  service         String
+  datetime        DateTime
+  status          BookingStatus @default(PENDING)
+  calendarEventId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  client               Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model AdminNote {
@@ -124,18 +147,6 @@ model ActivityLog {
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
-model AdminUser {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  name         String
-  role         AdminRole @default(ADMIN)
-  active       Boolean   @default(true)
-  passwordHash String
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-}
-
 model BotEvent {
   id          String   @id @default(cuid())
   businessId  String?
@@ -147,6 +158,36 @@ model BotEvent {
   createdAt   DateTime @default(now())
 
   business    Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+}
+
+model ConnectedPage {
+  id              String   @id @default(cuid())
+  businessId      String
+  pageId          String
+  pageName        String
+  pageToken       String
+  channel         Channel
+  chatwootInboxId Int?
+  igAccountId     String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, pageId, channel])
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  role         AdminRole @default(ADMIN)
+  active       Boolean   @default(true)
+  passwordHash String
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
