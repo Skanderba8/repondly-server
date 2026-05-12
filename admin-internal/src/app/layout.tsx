@@ -1,6 +1,8 @@
 import Providers from "@/components/Providers";
 import AdminSidebar from "@/components/AdminSidebar";
 import { auth } from "@/lib/auth";
+// @ts-ignore: CSS module type declarations are unavailable in this environment
+import "./globals.css";
 
 export const metadata = {
   title: "Repondly Admin",
