@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Server, ChevronLeft, ChevronRight,
   LogOut, Shield, Database, CreditCard, Kanban, Activity,
@@ -42,22 +41,22 @@ export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [hovered, setHovered] = useState<string | null>(null)
 
-  const activeLinks = ACTIVE_LINKS.filter(l => !l.superAdminOnly || adminUser.role === 'SUPER_ADMIN')
+  const activeLinks = ACTIVE_LINKS.filter(l => !l.superAdminOnly || (adminUser && adminUser.role === 'SUPER_ADMIN'))
 
   function isActive(href: string, exact: boolean) {
     return exact ? pathname === href : pathname.startsWith(href)
   }
 
   return (
-    <motion.aside
-      animate={{ width: collapsed ? 64 : 220 }}
-      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+    <aside
       style={{
-        minWidth: collapsed ? 64 : 220, height: '100vh',
+        width: collapsed ? 64 : 220, minWidth: collapsed ? 64 : 220,
+        height: '100vh',
         background: C.bg, borderRight: `1px solid ${C.border}`,
         display: 'flex', flexDirection: 'column',
         position: 'sticky', top: 0, overflow: 'hidden', zIndex: 20,
         boxShadow: '2px 0 12px rgba(13,27,46,0.04)',
+        transition: 'width 0.25s ease, min-width 0.25s ease',
       }}
     >
       {/* Logo */}
@@ -67,42 +66,36 @@ export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
         justifyContent: collapsed ? 'center' : 'space-between',
         borderBottom: `1px solid ${C.border}`, minHeight: 64,
       }}>
-        <AnimatePresence mode="wait">
-          {!collapsed ? (
-            <motion.div key="full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                width: 30, height: 30, borderRadius: 8,
-                background: 'linear-gradient(135deg, #1a6bff 0%, #0047cc 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <Shield size={15} color="#fff" />
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: C.ink, lineHeight: 1.2 }}>Répondly</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#ff3b30', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Admin</div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div key="icon" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{
-                width: 30, height: 30, borderRadius: 8,
-                background: 'linear-gradient(135deg, #1a6bff 0%, #0047cc 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
+        {!collapsed ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: 8,
+              background: 'linear-gradient(135deg, #1a6bff 0%, #0047cc 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
               <Shield size={15} color="#fff" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {!collapsed && (
-          <button onClick={() => setCollapsed(true)} style={{
-            background: 'transparent', border: `1px solid ${C.border}`,
-            borderRadius: 6, width: 24, height: 24, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.mid,
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: C.ink, lineHeight: 1.2 }}>Répondly</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#ff3b30', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Admin</div>
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            width: 30, height: 30, borderRadius: 8,
+            background: 'linear-gradient(135deg, #1a6bff 0%, #0047cc 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <ChevronLeft size={13} />
-          </button>
+            <Shield size={15} color="#fff" />
+          </div>
         )}
+        <button onClick={() => setCollapsed(!collapsed)} style={{
+          background: 'transparent', border: `1px solid ${C.border}`,
+          borderRadius: 6, width: 24, height: 24, cursor: 'pointer',
+          display: collapsed ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', color: C.mid,
+        }}>
+          <ChevronLeft size={13} />
+        </button>
         {collapsed && (
           <button onClick={() => setCollapsed(false)} style={{
             background: 'transparent', border: `1px solid ${C.border}`,
@@ -137,24 +130,14 @@ export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
                 position: 'relative', whiteSpace: 'nowrap', overflow: 'hidden',
               }}
             >
-              {active && (
-                <motion.div layoutId="activeNav" style={{
-                  position: 'absolute', inset: 0, background: C.blueLight,
-                  borderRadius: 8, zIndex: 0,
-                }} transition={{ duration: 0.2 }} />
-              )}
-              <span style={{ position: 'relative', zIndex: 1, display: 'flex', flexShrink: 0 }}>
+              <span style={{ display: 'flex', flexShrink: 0 }}>
                 <Icon size={16} />
               </span>
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.18 }}
-                    style={{ position: 'relative', zIndex: 1, overflow: 'hidden', flex: 1 }}>
-                    {label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
+              {!collapsed && (
+                <span style={{ overflow: 'hidden', flex: 1 }}>
+                  {label}
+                </span>
+              )}
             </Link>
           )
         })}
@@ -180,18 +163,14 @@ export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
             }}
           >
             <span style={{ display: 'flex', flexShrink: 0 }}><Icon size={16} /></span>
-            <AnimatePresence>
-              {!collapsed && (
-                <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.18 }}
-                  style={{ overflow: 'hidden', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>{label}</span>
-                  <span style={{ fontSize: 9, fontWeight: 700, background: C.bgAlt, color: C.muted, padding: '1px 5px', borderRadius: 4, marginLeft: 4 }}>
-                    SOON
-                  </span>
-                </motion.span>
-              )}
-            </AnimatePresence>
+            {!collapsed && (
+              <span style={{ overflow: 'hidden', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>{label}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, background: C.bgAlt, color: C.muted, padding: '1px 5px', borderRadius: 4, marginLeft: 4 }}>
+                  SOON
+                </span>
+              </span>
+            )}
           </div>
         ))}
       </nav>
@@ -202,33 +181,30 @@ export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
         borderTop: `1px solid ${C.border}`,
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 10px', background: C.bgAlt, borderRadius: 8, overflow: 'hidden',
-              }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #1a6bff 0%, #0047cc 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>
-                  {(adminUser.name || adminUser.email).slice(0, 2).toUpperCase()}
-                </span>
+        {!collapsed && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 10px', background: C.bgAlt, borderRadius: 8, overflow: 'hidden',
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #1a6bff 0%, #0047cc 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>
+                {(adminUser.name || adminUser.email).slice(0, 2).toUpperCase()}
+              </span>
+            </div>
+            <div style={{ overflow: 'hidden', flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {adminUser.name || adminUser.email}
               </div>
-              <div style={{ overflow: 'hidden', flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {adminUser.name || adminUser.email}
-                </div>
-                <div style={{ fontSize: 10, color: C.mid }}>
-                  {adminUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
-                </div>
+              <div style={{ fontSize: 10, color: C.mid }}>
+                {adminUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+        )}
         <button onClick={() => signOut({ callbackUrl: '/auth/signin' })}
           title={collapsed ? 'Se déconnecter' : undefined}
           style={{
@@ -242,17 +218,9 @@ export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
           onMouseLeave={e => { const el = e.currentTarget as HTMLButtonElement; el.style.background = 'transparent'; el.style.color = C.mid; el.style.borderColor = C.border }}
         >
           <LogOut size={14} />
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.18 }}
-                style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                Se déconnecter
-              </motion.span>
-            )}
-          </AnimatePresence>
+          {!collapsed && <span>Se déconnecter</span>}
         </button>
       </div>
-    </motion.aside>
+    </aside>
   )
 }

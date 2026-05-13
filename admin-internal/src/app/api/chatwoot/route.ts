@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 import { prisma } from '@/lib/prisma'
-import { Pool } from 'pg'
+import { getChatwootPool } from '@/lib/db-pools'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -123,8 +123,7 @@ async function fetchLinkedClientsCount(): Promise<number> {
 }
 
 /**
- * Connect directly to the Chatwoot PostgreSQL database and count
- * conversations, contacts, and messages.
+ * Fetch Chatwoot DB stats using the shared pool.
  * Returns zeros on any error.
  */
 async function fetchChatwootDbStats(): Promise<{
@@ -132,17 +131,10 @@ async function fetchChatwootDbStats(): Promise<{
   totalContacts: number
   totalMessages: number
 }> {
-  const connectionString = process.env.DATABASE_URL_CHATWOOT
-  if (!connectionString) {
+  const pool = getChatwootPool()
+  if (!pool) {
     return { totalConversations: 0, totalContacts: 0, totalMessages: 0 }
   }
-
-  const pool = new Pool({
-    connectionString,
-    connectionTimeoutMillis: 5000,
-    query_timeout: 5000,
-    max: 1,
-  })
 
   try {
     const client = await pool.connect()
@@ -162,8 +154,6 @@ async function fetchChatwootDbStats(): Promise<{
     }
   } catch {
     return { totalConversations: 0, totalContacts: 0, totalMessages: 0 }
-  } finally {
-    await pool.end().catch(() => {})
   }
 }
 
@@ -187,7 +177,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!accountId || !apiToken) {
-      console.error('[/api/admin/chatwoot] Missing CHATWOOT_ACCOUNT_ID or CHATWOOT_API_TOKEN env vars')
+      console.error('[/api/chatwoot] Missing CHATWOOT_ACCOUNT_ID or CHATWOOT_API_TOKEN env vars')
       return NextResponse.json(OFFLINE_RESPONSE)
     }
 
@@ -216,7 +206,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(stats)
   } catch (error) {
-    console.error('[/api/admin/chatwoot]', error)
+    console.error('[/api/chatwoot]', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

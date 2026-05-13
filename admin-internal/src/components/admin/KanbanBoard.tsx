@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { ArrowRight, Clock, StickyNote } from 'lucide-react'
 
 const STAGES = [
@@ -45,7 +44,7 @@ export default function KanbanBoard({ businesses }: { businesses: Business[] }) 
   async function advanceStage(businessId: string, e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    await fetch(`/api/admin/clients/${businessId}/stage`, { method: 'PATCH' })
+    await fetch(`/api/clients/${businessId}/stage`, { method: 'PATCH' })
     router.refresh()
   }
 
@@ -56,11 +55,11 @@ export default function KanbanBoard({ businesses }: { businesses: Business[] }) 
           const meta = STAGE_META[stage]
           const cards = businesses.filter(b => (b.onboarding?.stage ?? 'DEMO_BOOKED') === stage)
           return (
-            <motion.div
+            <div
               key={stage}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: colIdx * 0.07, duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+             }
+             }
+             }
               style={{ width: 248, flexShrink: 0 }}
             >
               {/* Column header */}
@@ -111,11 +110,11 @@ export default function KanbanBoard({ businesses }: { businesses: Business[] }) 
                     const planStyle = PLAN_BADGE[b.plan] ?? { bg: '#f1f5f9', color: '#5a6a80' }
 
                     return (
-                      <motion.div
+                      <div
                         key={b.id}
-                        initial={{ opacity: 0, scale: 0.96 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: colIdx * 0.07 + cardIdx * 0.04, duration: 0.25 }}
+                       }
+                       }
+                       }
                         whileHover={{ y: -2, boxShadow: '0 6px 20px rgba(13,27,46,0.1)' }}
                         style={{
                           background: '#ffffff',
@@ -126,7 +125,7 @@ export default function KanbanBoard({ businesses }: { businesses: Business[] }) 
                           boxShadow: '0 1px 3px rgba(13,27,46,0.05)',
                         }}
                       >
-                        <Link href={`/admin/clients/${b.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                        <Link href={`/clients/${b.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                           <div style={{ fontWeight: 700, fontSize: 13, color: '#0d1b2e', marginBottom: 6 }}>
                             {b.name}
                           </div>
@@ -184,12 +183,12 @@ export default function KanbanBoard({ businesses }: { businesses: Business[] }) 
                             Étape suivante <ArrowRight size={11} />
                           </button>
                         )}
-                      </motion.div>
+                      </div>
                     )
                   })}
                 </div>
               </div>
-            </motion.div>
+            </div>
           )
         })}
       </div>

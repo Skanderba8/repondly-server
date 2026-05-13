@@ -2,7 +2,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import {
   RefreshCw, Server, Database, Globe, Bot, Activity,
   HardDrive, Cpu, ShieldCheck, Megaphone, LayoutDashboard,
@@ -101,10 +100,10 @@ function ProgressBar({ percent, warn = 70, danger = 90 }: { percent: number; war
   const color = percent >= danger ? C.red : percent >= warn ? C.yellow : C.blue
   return (
     <div style={{ background: C.border, borderRadius: 99, height: 8, overflow: 'hidden', marginTop: 10 }}>
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: `${Math.min(percent, 100)}%` }}
-        transition={{ duration: 0.7, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
+      <div
+       }
+       %` }}
+       }
         style={{ height: '100%', background: color, borderRadius: 99 }}
       />
     </div>
@@ -142,13 +141,6 @@ function Pm2Badge({ status }: { status: string }) {
   )
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 12 },
-  show: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { delay: i * 0.07, duration: 0.3, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] },
-  }),
-}
 
 // ─── Service card definitions ─────────────────────────────────────────────────
 
@@ -181,7 +173,7 @@ export default function SystemPage() {
   async function fetchData(showRefresh = false) {
     if (showRefresh) setRefreshing(true)
     try {
-      const res = await fetch('/api/admin/system', { cache: 'no-store' })
+      const res = await fetch('/api/system', { cache: 'no-store' })
       if (res.ok) {
         setData(await res.json())
         setLastUpdated(new Date())
@@ -194,22 +186,22 @@ export default function SystemPage() {
 
   useEffect(() => {
     void fetchData()
-    const interval = setInterval(() => { void fetchData() }, 30000)
+    const interval = setInterval(() => { void fetchData() }, 60000)
     return () => clearInterval(interval)
   }, [])
 
   return (
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+      <div
+       }}}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}
       >
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>Santé du système</h1>
           {lastUpdated && (
             <p style={{ fontSize: 12, color: C.mid, margin: '4px 0 0' }}>
-              Mis à jour à {lastUpdated.toLocaleTimeString('fr-FR')} · Actualisation auto toutes les 30s
+              Mis à jour à {lastUpdated.toLocaleTimeString('fr-FR')} · Actualisation auto toutes les 60s
             </p>
           )}
         </div>
@@ -234,13 +226,13 @@ export default function SystemPage() {
           <RefreshCw size={14} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
           Actualiser
         </button>
-      </motion.div>
+      </div>
 
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40vh' }}>
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          <div
+           }
+           }
             style={{ width: 28, height: 28, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }}
           />
         </div>
@@ -260,7 +252,7 @@ export default function SystemPage() {
               const online = resolveOnline(svc)
               const latency = resolveLatency(svc)
               return (
-                <motion.div key={key} custom={i} variants={fadeUp} initial="hidden" animate="show">
+                <div key={key}>
                   <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '18px 20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                       <div style={{
@@ -274,7 +266,7 @@ export default function SystemPage() {
                     </div>
                     <StatusBadge online={online} latency={latency} />
                   </div>
-                </motion.div>
+                </div>
               )
             })}
           </div>
@@ -285,7 +277,7 @@ export default function SystemPage() {
               { label: 'Disque',      icon: HardDrive, pct: data.disk.percent,   used: data.disk.used,   total: data.disk.total   },
               { label: 'Mémoire RAM', icon: Cpu,       pct: data.memory.percent, used: data.memory.used, total: data.memory.total },
             ].map(({ label, icon: Icon, pct, used, total }, i) => (
-              <motion.div key={label} custom={i + SERVICE_CARDS.length} variants={fadeUp} initial="hidden" animate="show">
+              <div key={label}>
                 <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                     <Icon size={14} color={C.mid} />
@@ -297,13 +289,13 @@ export default function SystemPage() {
                   </div>
                   <ProgressBar percent={pct} />
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
           {/* ── PM2 ── */}
           {data.pm2.length > 0 && (
-            <motion.div custom={SERVICE_CARDS.length + 2} variants={fadeUp} initial="hidden" animate="show">
+            <div>
               <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
                 <div style={{ padding: '14px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Server size={14} color={C.mid} />
@@ -335,11 +327,11 @@ export default function SystemPage() {
                   </tbody>
                 </table>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* ── SSL Certificates ── */}
-          <motion.div custom={SERVICE_CARDS.length + 3} variants={fadeUp} initial="hidden" animate="show">
+          <div>
             <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <ShieldCheck size={14} color={C.mid} />
@@ -364,14 +356,14 @@ export default function SystemPage() {
                 ))}
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* ── Routing Map ── */}
-          <motion.div custom={SERVICE_CARDS.length + 4} variants={fadeUp} initial="hidden" animate="show">
+          <div>
             <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px' }}>
               <RoutingMap services={data.services} ssl={data.ssl} />
             </div>
-          </motion.div>
+          </div>
 
         </div>
       )}

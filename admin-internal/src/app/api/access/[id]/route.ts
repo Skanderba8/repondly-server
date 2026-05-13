@@ -71,7 +71,7 @@ export async function PATCH(
 
     return NextResponse.json(user)
   } catch (error) {
-    console.error('[PATCH /api/admin/access/[id]]', error)
+    console.error('[PATCH /api/access/[id]]', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }
@@ -124,7 +124,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[DELETE /api/admin/access/[id]]', error)
+    console.error('[DELETE /api/access/[id]]', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

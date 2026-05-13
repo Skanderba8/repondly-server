@@ -2,7 +2,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { groupNoRuleEvents } from '@/lib/admin-utils'
 import { RefreshCw, RotateCcw, Filter, CheckCircle, XCircle, Wifi, WifiOff } from 'lucide-react'
 
@@ -26,10 +25,6 @@ const CHANNEL_META: Record<string, { label: string; bg: string; color: string }>
   FACEBOOK:  { label: 'Facebook', bg: '#dbeafe', color: '#2563eb' },
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 12 },
-  show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.3, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] } }),
-}
 
 export default function BotMonitorPage() {
   const [events, setEvents] = useState<BotEvent[]>([])
@@ -43,26 +38,26 @@ export default function BotMonitorPage() {
 
   async function fetchEvents(showRefresh = false) {
     if (showRefresh) setRefreshing(true)
-    const r = await fetch('/api/admin/bot/events', { cache: 'no-store' })
+    const r = await fetch('/api/bot/events', { cache: 'no-store' })
     if (r.ok) setEvents(await r.json())
     setLoading(false); setRefreshing(false)
   }
 
   async function fetchStatus() {
-    const r = await fetch('/api/admin/system', { cache: 'no-store' })
+    const r = await fetch('/api/system', { cache: 'no-store' })
     if (r.ok) { const d: SystemStatus = await r.json(); setBotStatus(d.bot) }
   }
 
   useEffect(() => {
     void fetchEvents(); void fetchStatus()
-    const interval = setInterval(() => { void fetchStatus() }, 30000)
+    const interval = setInterval(() => { void fetchStatus() }, 60000)
     return () => clearInterval(interval)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleRestart() {
     if (!confirm('Redémarrer le bot ?')) return
     setRestarting(true); setBotStatus(null)
-    await fetch('/api/admin/bot/restart', { method: 'POST' })
+    await fetch('/api/bot/restart', { method: 'POST' })
     await new Promise(r => setTimeout(r, 4000))
     await fetchStatus(); setRestarting(false)
   }
@@ -89,7 +84,7 @@ export default function BotMonitorPage() {
   return (
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+      <div}}}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>Monitoring Bot</h1>
         <button
@@ -107,12 +102,12 @@ export default function BotMonitorPage() {
           <RefreshCw size={14} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
           Actualiser
         </button>
-      </motion.div>
+      </div>
 
       {/* Status + stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 14, marginBottom: 20 }}>
         {/* Bot status */}
-        <motion.div custom={0} variants={fadeUp} initial="hidden" animate="show">
+        <div>
           <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: botBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -143,20 +138,20 @@ export default function BotMonitorPage() {
               Redémarrer
             </button>
           </div>
-        </motion.div>
+        </div>
 
         {[
           { label: 'Événements', value: events.length, color: C.ink, sub: 'total' },
           { label: 'Traités', value: `${handledPct}%`, color: C.green, sub: `${handledCount} événements` },
           { label: 'Sans règle', value: noRuleCount, color: noRuleCount > 0 ? C.red : C.mid, sub: noRuleCount > 0 ? 'à traiter' : 'aucun' },
         ].map((s, i) => (
-          <motion.div key={s.label} custom={i + 1} variants={fadeUp} initial="hidden" animate="show">
+          <div key={s.label}>
             <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '18px 22px' }}>
               <div style={{ fontSize: 11, color: C.mid, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
               <div style={{ fontSize: 28, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
               <div style={{ fontSize: 11, color: C.mid, marginTop: 4 }}>{s.sub}</div>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
@@ -180,12 +175,12 @@ export default function BotMonitorPage() {
             <Filter size={12} /> Filtres
           </button>
 
-          <AnimatePresence>
+          <>
             {showFilters && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
+              <div
+               }
+               }
+               }
                 style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}
               >
                 <select
@@ -200,9 +195,9 @@ export default function BotMonitorPage() {
                   <input type="checkbox" checked={noRuleOnly} onChange={e => setNoRuleOnly(e.target.checked)} style={{ width: 14, height: 14, cursor: 'pointer', accentColor: C.blue }} />
                   Sans règle uniquement
                 </label>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
+          </>
 
           <span style={{ fontSize: 12, color: C.mid, marginLeft: 'auto', fontWeight: 500 }}>
             {filtered.length} événement{filtered.length !== 1 ? 's' : ''}
@@ -211,7 +206,7 @@ export default function BotMonitorPage() {
       </div>
 
       {/* Events table */}
-      <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show"
+      <div
         style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', marginBottom: 20 }}>
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: C.mid, fontSize: 14 }}>Chargement…</div>
@@ -275,14 +270,14 @@ export default function BotMonitorPage() {
             </tbody>
           </table>
         )}
-      </motion.div>
+      </div>
 
       {/* No-rule groups */}
-      <AnimatePresence>
+      <>
         {noRuleGroups.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
+           }
+           }
             style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}
           >
             <div style={{ padding: '14px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -307,9 +302,9 @@ export default function BotMonitorPage() {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
     </div>

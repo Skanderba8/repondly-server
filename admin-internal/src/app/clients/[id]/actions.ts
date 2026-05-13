@@ -28,7 +28,7 @@ export async function updateCredentials(
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const res = await fetch(`${baseUrl}/api/admin/clients/${clientId}`, {
+    const res = await fetch(`${baseUrl}/api/clients/${clientId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData),
@@ -56,7 +56,7 @@ export async function updateBotConfig(
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     
     // Fetch current business info and merge with new data
-    const res = await fetch(`${baseUrl}/api/admin/clients/${clientId}`)
+    const res = await fetch(`${baseUrl}/api/clients/${clientId}`)
     if (!res.ok) {
       return { success: false, error: 'Failed to fetch current config' }
     }
@@ -71,7 +71,7 @@ export async function updateBotConfig(
       routingRules: data.routingRules ?? currentBusinessInfo.routingRules,
     }
     
-    const updateRes = await fetch(`${baseUrl}/api/admin/clients/${clientId}`, {
+    const updateRes = await fetch(`${baseUrl}/api/clients/${clientId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ businessInfo: newBusinessInfo }),
@@ -92,7 +92,7 @@ export async function toggleAutoRule(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const res = await fetch(`${baseUrl}/api/admin/auto-rules/${ruleId}`, {
+    const res = await fetch(`${baseUrl}/api/auto-rules/${ruleId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active }),
@@ -113,7 +113,7 @@ export async function addAdminNote(
 ): Promise<{ success: boolean; note?: unknown; error?: string }> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const res = await fetch(`${baseUrl}/api/admin/clients/${clientId}/notes`, {
+    const res = await fetch(`${baseUrl}/api/clients/${clientId}/notes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),

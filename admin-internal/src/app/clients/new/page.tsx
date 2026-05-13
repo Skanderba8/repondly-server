@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { ArrowLeft, UserPlus } from 'lucide-react'
 
 const C = {
@@ -31,12 +30,12 @@ export default function NewClientPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true); setError('')
-    const res = await fetch('/api/admin/clients', {
+    const res = await fetch('/api/clients', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form),
     })
     if (res.ok) {
       const data = await res.json()
-      router.push(`/admin/clients/${data.id}`)
+      router.push(`/clients/${data.id}`)
     } else {
       const data = await res.json()
       setError(data.error ?? 'Une erreur est survenue')
@@ -52,14 +51,14 @@ export default function NewClientPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: C.bgAlt, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '48px 16px' }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+      <div
+       }
+       }
+       }
         style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 16, padding: 32, maxWidth: 480, width: '100%', boxShadow: '0 4px 24px rgba(13,27,46,0.07)' }}
       >
         <div style={{ marginBottom: 24 }}>
-          <Link href="/admin/clients" style={{
+          <Link href="/clients" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             fontSize: 13, color: C.mid, textDecoration: 'none',
             padding: '5px 10px', borderRadius: 7, border: `1px solid ${C.border}`,
@@ -130,13 +129,13 @@ export default function NewClientPage() {
           </div>
 
           {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
+            <div
+             }
+             }
               style={{ padding: '10px 14px', background: '#fef2f2', borderRadius: 8, border: '1px solid #fca5a5', color: C.red, fontSize: 13 }}
             >
               {error}
-            </motion.div>
+            </div>
           )}
 
           <button
@@ -155,7 +154,7 @@ export default function NewClientPage() {
             {loading ? 'Création en cours…' : 'Créer le client'}
           </button>
         </form>
-      </motion.div>
+      </div>
     </div>
   )
 }

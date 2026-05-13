@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { sslColor } from '@/lib/system-utils'
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
@@ -230,10 +229,10 @@ function RoutingCard({
   const isSpecial = rule.isRedirect
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.06, ease: [0.4, 0, 0.2, 1] }}
+    <div
+     }
+     }
+     }
       style={{
         background: isSpecial ? C.bgAlt : C.bg,
         border: `1px solid ${C.border}`,
@@ -339,7 +338,7 @@ function RoutingCard({
         {online !== null && <ServiceBadge online={online} />}
         {rule.sslDomain && <SslBadge days={sslDays} />}
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -349,10 +348,10 @@ export default function RoutingMap({ services, ssl }: RoutingMapProps) {
   return (
     <section>
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
+      <div
+       }
+       }
+       }
         style={{ marginBottom: 14 }}
       >
         <h2
@@ -369,7 +368,7 @@ export default function RoutingMap({ services, ssl }: RoutingMapProps) {
         <p style={{ fontSize: 12, color: C.mid, margin: 0 }}>
           Configuration des règles de proxy inverse — {ROUTING_RULES.length} règles actives
         </p>
-      </motion.div>
+      </div>
 
       {/* Cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

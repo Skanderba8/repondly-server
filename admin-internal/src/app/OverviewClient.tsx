@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
   Users, TrendingUp, AlertTriangle, Settings2,
@@ -40,14 +39,6 @@ function timeAgo(iso: string): string {
   return `il y a ${Math.floor(hours / 24)}j`
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { delay: i * 0.06, duration: 0.35, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] },
-  }),
-}
-
 type Props = {
   stats: {
     totalClients: number
@@ -79,7 +70,7 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
       icon: Users,
       color: C.blue,
       bg: C.blueLight,
-      href: '/admin/clients',
+      href: '/clients',
     },
     {
       label: 'MRR',
@@ -88,7 +79,7 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
       icon: TrendingUp,
       color: C.green,
       bg: C.greenBg,
-      href: '/admin/billing',
+      href: '/billing',
     },
     {
       label: 'Essais expirant',
@@ -97,7 +88,7 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
       icon: AlertTriangle,
       color: stats.trialsExpiring > 0 ? C.yellow : C.mid,
       bg: stats.trialsExpiring > 0 ? C.yellowBg : C.bgAlt,
-      href: '/admin/clients',
+      href: '/clients',
     },
     {
       label: 'Config en attente',
@@ -106,19 +97,14 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
       icon: Settings2,
       color: stats.pendingConfig > 0 ? C.yellow : C.mid,
       bg: stats.pendingConfig > 0 ? C.yellowBg : C.bgAlt,
-      href: '/admin/onboarding',
+      href: '/onboarding',
     },
   ]
 
   return (
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        style={{ marginBottom: 28 }}
-      >
+      <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>Vue d&apos;ensemble</h1>
@@ -136,12 +122,12 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
             {globalStatus === 'ok' ? 'Tous les systèmes opérationnels' : globalStatus === 'degraded' ? 'Système dégradé' : 'Système critique'}
           </span>
         </div>
-      </motion.div>
+      </div>
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-        {statCards.map((s, i) => (
-          <motion.div key={s.label} custom={i} variants={fadeUp} initial="hidden" animate="show">
+        {statCards.map((s) => (
+          <div key={s.label} className="fade-in">
             <Link href={s.href} style={{ textDecoration: 'none', display: 'block' }}>
               <div
                 style={{
@@ -191,26 +177,26 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
                 <div style={{ fontSize: 12, color: C.mid }}>{s.sub}</div>
               </div>
             </Link>
-          </motion.div>
+          </div>
         ))}
       </div>
 
       {/* Services + Plan breakdown */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
         {/* Services */}
-        <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show">
+        <div className="fade-in">
           <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>
               Services
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
-                { label: 'Bot WhatsApp', online: services.botOnline, icon: Bot, href: '/admin/bot' },
-                { label: 'app.repondly.com', online: services.appOnline, icon: Globe, href: '/admin/system' },
-                { label: 'n8n', online: services.n8nOnline, icon: Workflow, href: '/admin/n8n' },
-                { label: 'Chatwoot', online: services.chatwootOnline, icon: MessageSquare, href: '/admin/chatwoot' },
-                { label: 'Marketing', online: services.marketingOnline, icon: Megaphone, href: '/admin/system' },
-                { label: 'Dashboard', online: services.dashboardOnline, icon: LayoutDashboard, href: '/admin/system' },
+                { label: 'Bot WhatsApp', online: services.botOnline, icon: Bot, href: '/bot' },
+                { label: 'app.repondly.com', online: services.appOnline, icon: Globe, href: '/system' },
+                { label: 'n8n', online: services.n8nOnline, icon: Workflow, href: '/n8n' },
+                { label: 'Chatwoot', online: services.chatwootOnline, icon: MessageSquare, href: '/chatwoot' },
+                { label: 'Marketing', online: services.marketingOnline, icon: Megaphone, href: '/system' },
+                { label: 'Dashboard', online: services.dashboardOnline, icon: LayoutDashboard, href: '/system' },
               ].map(svc => (
                 <Link key={svc.label} href={svc.href} style={{ textDecoration: 'none' }}>
                   <div style={{
@@ -245,10 +231,10 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
               ))}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Plan breakdown */}
-        <motion.div custom={5} variants={fadeUp} initial="hidden" animate="show">
+        <div className="fade-in">
           <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>
               Répartition des plans
@@ -268,11 +254,8 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
                       {plan}
                     </span>
                     <div style={{ flex: 1, background: C.border, borderRadius: 99, height: 6, overflow: 'hidden' }}>
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.6, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                        style={{ height: '100%', background: style.color === '#ffffff' ? C.ink : style.color, borderRadius: 99 }}
+                      <div
+                        style={{ height: '100%', width: `${pct}%`, background: style.color === '#ffffff' ? C.ink : style.color, borderRadius: 99, transition: 'width 0.6s ease' }}
                       />
                     </div>
                     <span style={{ fontSize: 12, fontWeight: 600, color: C.ink, minWidth: 20, textAlign: 'right' }}>{count}</span>
@@ -281,11 +264,11 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
               })}
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Recent activity */}
-      <motion.div custom={6} variants={fadeUp} initial="hidden" animate="show">
+      <div className="fade-in">
         <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
           <div style={{
             padding: '16px 22px',
@@ -296,7 +279,7 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
               <Activity size={15} color={C.mid} />
               <span style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>Activité récente</span>
             </div>
-            <Link href="/admin/clients" style={{ fontSize: 12, color: C.blue, textDecoration: 'none', fontWeight: 500 }}>
+            <Link href="/clients" style={{ fontSize: 12, color: C.blue, textDecoration: 'none', fontWeight: 500 }}>
               Voir tout →
             </Link>
           </div>
@@ -306,11 +289,8 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
             </div>
           ) : (
             recentActivity.map((entry, i) => (
-              <motion.div
+              <div
                 key={entry.id}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + i * 0.04, duration: 0.25 }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -333,11 +313,11 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
                 <span style={{ fontSize: 11, color: C.mid, whiteSpace: 'nowrap' }}>
                   {timeAgo(entry.createdAt)}
                 </span>
-              </motion.div>
+              </div>
             ))
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

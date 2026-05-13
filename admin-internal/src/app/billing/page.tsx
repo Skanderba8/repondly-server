@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import type { Business } from '@prisma/client'
 import { PLAN_PRICES, calculateExpectedRevenue, calculateConfirmedRevenue, calculatePendingRevenue } from '@/lib/admin-utils'
 import { TrendingUp, CheckCircle, Clock, RotateCcw, MessageCircle } from 'lucide-react'
@@ -13,10 +12,6 @@ const C = {
   yellow: '#d97706', yellowBg: '#fff7ed',
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 14 },
-  show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, duration: 0.3, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] } }),
-}
 
 export default function BillingPage() {
   const [businesses, setBusinesses] = useState<Business[]>([])
@@ -24,11 +19,11 @@ export default function BillingPage() {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   useEffect(() => {
-    void fetch('/api/admin/clients').then(r => r.json()).then(data => { setBusinesses(data); setLoading(false) })
+    void fetch('/api/clients').then(r => r.json()).then(data => { setBusinesses(data); setLoading(false) })
   }, [])
 
   async function togglePaid(id: string, paidThisMonth: boolean) {
-    await fetch(`/api/admin/clients/${id}`, {
+    await fetch(`/api/clients/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paidThisMonth }),
     })
@@ -38,7 +33,7 @@ export default function BillingPage() {
   async function resetPayments() {
     if (!confirm('Réinitialiser tous les paiements du mois ?')) return
     await Promise.all(businesses.map(b =>
-      fetch(`/api/admin/clients/${b.id}`, {
+      fetch(`/api/clients/${b.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paidThisMonth: false }),
       })
@@ -56,7 +51,7 @@ export default function BillingPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        <div}}
           style={{ width: 24, height: 24, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
       </div>
     )
@@ -65,7 +60,7 @@ export default function BillingPage() {
   return (
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+      <div}}}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>Suivi de facturation</h1>
@@ -86,7 +81,7 @@ export default function BillingPage() {
         >
           <RotateCcw size={13} /> Réinitialiser les paiements
         </button>
-      </motion.div>
+      </div>
 
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
@@ -95,7 +90,7 @@ export default function BillingPage() {
           { label: 'Revenus confirmés', amount: confirmed, color: C.green, bg: C.greenBg, icon: CheckCircle },
           { label: 'En attente', amount: pending, color: C.yellow, bg: C.yellowBg, icon: Clock },
         ].map((s, i) => (
-          <motion.div key={s.label} custom={i} variants={fadeUp} initial="hidden" animate="show">
+          <div key={s.label}>
             <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '22px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                 <div style={{ width: 34, height: 34, borderRadius: 9, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -106,12 +101,12 @@ export default function BillingPage() {
               <div style={{ fontSize: 30, fontWeight: 700, color: s.color }}>{s.amount} DT</div>
               <div style={{ marginTop: 10, height: 4, borderRadius: 99, background: s.bg }} />
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
       {/* Progress bar */}
-      <motion.div custom={3} variants={fadeUp} initial="hidden" animate="show"
+      <div
         style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 22px', marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>Progression des paiements</span>
@@ -120,17 +115,17 @@ export default function BillingPage() {
           </span>
         </div>
         <div style={{ background: C.border, borderRadius: 99, height: 8, overflow: 'hidden' }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${expected > 0 ? (confirmed / expected) * 100 : 0}%` }}
-            transition={{ duration: 0.8, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          <div
+           }
+           %` }}
+           }
             style={{ height: '100%', background: `linear-gradient(90deg, ${C.green}, #22c55e)`, borderRadius: 99 }}
           />
         </div>
-      </motion.div>
+      </div>
 
       {/* Table */}
-      <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show">
+      <div>
         <div style={{ background: C.bg, borderRadius: 12, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -192,9 +187,9 @@ export default function BillingPage() {
                             transition: 'background 0.2s', flexShrink: 0,
                           }}
                         >
-                          <motion.div
-                            animate={{ x: b.paidThisMonth ? 18 : 2 }}
-                            transition={{ duration: 0.2 }}
+                          <div
+                           }
+                           }
                             style={{ position: 'absolute', top: 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}
                           />
                         </div>
@@ -229,7 +224,7 @@ export default function BillingPage() {
             </tbody>
           </table>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

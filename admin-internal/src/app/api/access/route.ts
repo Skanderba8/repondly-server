@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(users)
   } catch (error) {
-    console.error('[GET /api/admin/access]', error)
+    console.error('[GET /api/access]', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(user, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/admin/access]', error)
+    console.error('[POST /api/access]', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

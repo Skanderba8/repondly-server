@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const error = err as Error & { stdout?: string; stderr?: string }
     const output = error.stdout ?? error.stderr ?? ''
-    console.error('[/api/admin/database/migrate]', error)
+    console.error('[/api/database/migrate]', error)
     return NextResponse.json({
       success: false,
       output,

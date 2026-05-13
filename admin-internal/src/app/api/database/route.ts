@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
-import { Pool } from 'pg'
+import { getRepondlyPool, getChatwootPool } from '@/lib/db-pools'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,23 +41,7 @@ type DatabaseStats = {
  * Returns disconnected state on any error.
  */
 async function fetchPrismaDbStats(): Promise<DatabaseStats['prismaDb']> {
-  const connectionString = process.env.DATABASE_URL
-  if (!connectionString) {
-    return {
-      connected: false,
-      latency: null,
-      totalSizeMb: 0,
-      tables: [],
-      migrations: [],
-    }
-  }
-
-  const pool = new Pool({
-    connectionString,
-    connectionTimeoutMillis: 5000,
-    query_timeout: 10000,
-    max: 1,
-  })
+  const pool = getRepondlyPool()
 
   const start = Date.now()
   try {
@@ -114,7 +98,7 @@ ORDER BY relname`
       client.release()
     }
   } catch (err) {
-    console.error('[/api/admin/database] Prisma DB error:', err)
+    console.error('[/api/database] Prisma DB error:', err)
     return {
       connected: false,
       latency: null,
@@ -122,8 +106,6 @@ ORDER BY relname`
       tables: [],
       migrations: [],
     }
-  } finally {
-    await pool.end().catch(() => {})
   }
 }
 
@@ -134,8 +116,8 @@ ORDER BY relname`
  * Returns disconnected state on any error.
  */
 async function fetchChatwootDbStats(): Promise<DatabaseStats['chatwootDb']> {
-  const connectionString = process.env.DATABASE_URL_CHATWOOT
-  if (!connectionString) {
+  const pool = getChatwootPool()
+  if (!pool) {
     return {
       connected: false,
       latency: null,
@@ -145,13 +127,6 @@ async function fetchChatwootDbStats(): Promise<DatabaseStats['chatwootDb']> {
       messages: 0,
     }
   }
-
-  const pool = new Pool({
-    connectionString,
-    connectionTimeoutMillis: 5000,
-    query_timeout: 10000,
-    max: 1,
-  })
 
   const start = Date.now()
   try {
@@ -183,7 +158,7 @@ async function fetchChatwootDbStats(): Promise<DatabaseStats['chatwootDb']> {
       client.release()
     }
   } catch (err) {
-    console.error('[/api/admin/database] Chatwoot DB error:', err)
+    console.error('[/api/database] Chatwoot DB error:', err)
     return {
       connected: false,
       latency: null,
@@ -192,8 +167,6 @@ async function fetchChatwootDbStats(): Promise<DatabaseStats['chatwootDb']> {
       contacts: 0,
       messages: 0,
     }
-  } finally {
-    await pool.end().catch(() => {})
   }
 }
 
@@ -214,7 +187,7 @@ export async function GET(request: NextRequest) {
     const stats: DatabaseStats = { prismaDb, chatwootDb }
     return NextResponse.json(stats)
   } catch (error) {
-    console.error('[/api/admin/database]', error)
+    console.error('[/api/database]', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

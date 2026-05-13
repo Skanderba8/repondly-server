@@ -50,7 +50,7 @@ export async function PATCH(
 
     if (!response.ok) {
       const text = await response.text().catch(() => '')
-      console.error(`[/api/admin/n8n/${id}] n8n responded ${response.status}:`, text)
+      console.error(`[/api/n8n/${id}] n8n responded ${response.status}:`, text)
       return NextResponse.json(
         { error: `Erreur n8n : ${response.status}` },
         { status: response.status }
@@ -60,7 +60,7 @@ export async function PATCH(
     const updated = await response.json()
     return NextResponse.json(updated)
   } catch (error) {
-    console.error(`[/api/admin/n8n/[id]]`, error)
+    console.error(`[/api/n8n/[id]]`, error)
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 })
   }
 }

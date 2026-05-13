@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   Database, RefreshCw, AlertCircle, CheckCircle2, XCircle,
   Activity, Table2, GitBranch, Play, HardDrive, MessageSquare,
@@ -52,10 +51,6 @@ function formatCellValue(val: unknown): string {
   return str.length > 80 ? str.slice(0, 80) + '…' : str
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 12 },
-  show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.28, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] } }),
-}
 
 function StatusBadge({ connected, latency }: { connected: boolean; latency: number | null }) {
   return (
@@ -86,7 +81,7 @@ function TableViewerModal({
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/admin/database/tables/${tableName}?page=${p}&search=${encodeURIComponent(search)}`)
+      const res = await fetch(`/api/database/tables/${tableName}?page=${p}&search=${encodeURIComponent(search)}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setData(await res.json() as TableData)
     } catch (e) {
@@ -105,7 +100,7 @@ function TableViewerModal({
     const id = row[pkCol]
     setDeleting(String(id))
     try {
-      const res = await fetch(`/api/admin/database/tables/${tableName}`, {
+      const res = await fetch(`/api/database/tables/${tableName}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: String(id), column: pkCol }),
@@ -124,11 +119,11 @@ function TableViewerModal({
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(13,27,46,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', overflowY: 'auto' }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96 }}
-        transition={{ duration: 0.2 }}
+      <div
+       }
+       }
+       }
+       }
         style={{ background: C.bg, borderRadius: 16, width: '100%', maxWidth: 1100, boxShadow: '0 24px 80px rgba(0,0,0,0.2)', overflow: 'hidden' }}
       >
         {/* Modal header */}
@@ -158,7 +153,7 @@ function TableViewerModal({
         <div style={{ overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}>
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              <div}}
                 style={{ width: 24, height: 24, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%', margin: '0 auto' }} />
             </div>
           ) : error ? (
@@ -227,14 +222,14 @@ function TableViewerModal({
             </div>
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Delete confirmation */}
-      <AnimatePresence>
+      <>
         {deleteConfirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <div}}}
             style={{ position: 'fixed', inset: 0, background: 'rgba(13,27,46,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
+            <div}}
               style={{ background: C.bg, borderRadius: 12, padding: '24px 28px', maxWidth: 380, width: '90%', boxShadow: '0 16px 48px rgba(0,0,0,0.2)' }}>
               <h3 style={{ fontSize: 15, fontWeight: 700, color: C.ink, margin: '0 0 8px' }}>Supprimer cette ligne ?</h3>
               <p style={{ fontSize: 12, color: C.mid, margin: '0 0 6px' }}>
@@ -251,10 +246,10 @@ function TableViewerModal({
                   {deleting ? 'Suppression…' : 'Supprimer'}
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
     </div>
   )
 }
@@ -280,7 +275,7 @@ export default function DatabaseManager() {
     else setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/admin/database', { cache: 'no-store' })
+      const res = await fetch('/api/database', { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setData(await res.json() as DatabaseStats)
       setLastUpdated(new Date())
@@ -296,7 +291,7 @@ export default function DatabaseManager() {
   async function handleMigrate() {
     setMigrating(true); setMigrateResult(null)
     try {
-      const res = await fetch('/api/admin/database/migrate', { method: 'POST' })
+      const res = await fetch('/api/database/migrate', { method: 'POST' })
       const json = await res.json() as MigrateResult
       setMigrateResult(json)
       if (json.success) void fetchData(true)
@@ -313,7 +308,7 @@ export default function DatabaseManager() {
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
 
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+      <div}}}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -328,7 +323,7 @@ export default function DatabaseManager() {
           {isSuperAdmin && (
             <button onClick={() => { void handleMigrate() }} disabled={migrating || loading}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: pendingMigrations.length > 0 ? C.yellow : C.bgAlt, color: pendingMigrations.length > 0 ? '#fff' : C.mid, border: `1px solid ${pendingMigrations.length > 0 ? C.yellow : C.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: migrating || loading ? 0.6 : 1 }}>
-              {migrating ? <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} style={{ display: 'inline-flex' }}><RefreshCw size={13} /></motion.span> : <Play size={13} />}
+              {migrating ? <span}} style={{ display: 'inline-flex' }}><RefreshCw size={13} /></span> : <Play size={13} />}
               {migrating ? 'Migration…' : 'Appliquer les migrations'}
             </button>
           )}
@@ -338,12 +333,12 @@ export default function DatabaseManager() {
             Actualiser
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Migration result */}
-      <AnimatePresence>
+      <>
         {migrateResult && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          <div}}}
             style={{ marginBottom: 18, background: migrateResult.success ? C.greenBg : C.redBg, border: `1px solid ${migrateResult.success ? C.green : C.red}30`, borderRadius: 12, padding: '14px 18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: migrateResult.success ? C.green : C.red, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
               {migrateResult.success ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
@@ -354,31 +349,31 @@ export default function DatabaseManager() {
                 {migrateResult.error ?? migrateResult.output}
               </pre>
             )}
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
-      <AnimatePresence mode="wait">
+      <>
         {loading && (
-          <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <div key="loading"}}}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40vh' }}>
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            <div}}
               style={{ width: 28, height: 28, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
-          </motion.div>
+          </div>
         )}
 
         {!loading && error && (
-          <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          <div key="error"}}
             style={{ display: 'flex', alignItems: 'center', gap: 12, background: C.redBg, border: `1px solid ${C.red}30`, borderRadius: 12, padding: '16px 20px', color: C.red, fontSize: 14 }}>
             <AlertCircle size={18} /> {error}
-          </motion.div>
+          </div>
         )}
 
         {!loading && !error && data && (
-          <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div key="content"}} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
             {/* DB connection cards */}
-            <motion.div custom={0} variants={fadeUp} initial="hidden" animate="show">
+            <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
                   { label: 'Prisma DB', db: data.prismaDb },
@@ -402,11 +397,11 @@ export default function DatabaseManager() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
             {/* Chatwoot stats */}
             {data.chatwootDb.connected && (
-              <motion.div custom={1} variants={fadeUp} initial="hidden" animate="show">
+              <div>
                 <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
                   <div style={{ padding: '14px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <MessageSquare size={14} color={C.mid} />
@@ -430,12 +425,12 @@ export default function DatabaseManager() {
                     ))}
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Prisma tables — clickable */}
             {data.prismaDb.connected && (
-              <motion.div custom={2} variants={fadeUp} initial="hidden" animate="show">
+              <div>
                 <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
                   <div style={{ padding: '14px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Table2 size={14} color={C.mid} />
@@ -472,11 +467,11 @@ export default function DatabaseManager() {
                     </tbody>
                   </table>
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Migration history */}
-            <motion.div custom={3} variants={fadeUp} initial="hidden" animate="show">
+            <div>
               <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
                 <div style={{ padding: '14px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <GitBranch size={14} color={C.mid} />
@@ -516,14 +511,14 @@ export default function DatabaseManager() {
                   </table>
                 )}
               </div>
-            </motion.div>
+            </div>
 
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Table viewer modal */}
-      <AnimatePresence>
+      <>
         {selectedTable && (
           <TableViewerModal
             tableName={selectedTable}
@@ -531,7 +526,7 @@ export default function DatabaseManager() {
             onClose={() => setSelectedTable(null)}
           />
         )}
-      </AnimatePresence>
+      </>
 
       <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
     </div>

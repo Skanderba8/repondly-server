@@ -16,5 +16,12 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  // Only run middleware on page routes, NOT on:
+  // - /api/* (API routes have their own requireAdmin check)
+  // - /_next/* (static assets, chunks, images)
+  // - /auth/* (signin page — would cause redirect loops)
+  // - /favicon.ico, /robots.txt, etc.
+  matcher: [
+    '/((?!api|_next/static|_next/image|auth|favicon\\.ico|robots\\.txt).*)',
+  ],
 }

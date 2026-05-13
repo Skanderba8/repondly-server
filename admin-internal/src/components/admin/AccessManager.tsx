@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle2, Eye, EyeOff, UserX, UserCheck } from 'lucide-react'
 
 const C = {
@@ -48,7 +47,7 @@ export default function AccessManager() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/admin/access', { cache: 'no-store' })
+      const res = await fetch('/api/access', { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setUsers(await res.json() as AdminUser[])
     } catch (e) {
@@ -77,7 +76,7 @@ export default function AccessManager() {
     setSubmitting(true)
     setFormError(null)
     try {
-      const res = await fetch('/api/admin/access', {
+      const res = await fetch('/api/access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -94,7 +93,7 @@ export default function AccessManager() {
   async function toggleActive(user: AdminUser) {
     setActionLoading(user.id)
     try {
-      const res = await fetch(`/api/admin/access/${user.id}`, {
+      const res = await fetch(`/api/access/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !user.active }),
@@ -109,7 +108,7 @@ export default function AccessManager() {
   async function handleDelete(id: string) {
     setActionLoading(id)
     try {
-      const res = await fetch(`/api/admin/access/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/access/${id}`, { method: 'DELETE' })
       const json = await res.json() as { success?: boolean; error?: string }
       if (res.ok && json.success) {
         setUsers(prev => prev.filter(u => u.id !== id))
@@ -124,7 +123,7 @@ export default function AccessManager() {
     if (!newPassword) return
     setActionLoading(id)
     try {
-      await fetch(`/api/admin/access/${id}`, {
+      await fetch(`/api/access/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: newPassword }),
@@ -137,7 +136,7 @@ export default function AccessManager() {
   return (
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+      <div}}}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: 9, background: C.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -153,12 +152,12 @@ export default function AccessManager() {
             <Plus size={13} /> Nouvel admin
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Create form */}
-      <AnimatePresence>
+      <>
         {showForm && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+          <div}}}
             style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px', marginBottom: 18 }}>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: C.ink, margin: '0 0 16px' }}>Créer un administrateur</h2>
             {formError && (
@@ -209,9 +208,9 @@ export default function AccessManager() {
                 </button>
               </div>
             </form>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Error */}
       {error && (
@@ -223,11 +222,11 @@ export default function AccessManager() {
       {/* Table */}
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          <div}}
             style={{ width: 28, height: 28, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
         </div>
       ) : (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        <div}}
           style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
@@ -294,15 +293,15 @@ export default function AccessManager() {
               ))}
             </tbody>
           </table>
-        </motion.div>
+        </div>
       )}
 
       {/* Delete confirmation modal */}
-      <AnimatePresence>
+      <>
         {deleteConfirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <div}}}
             style={{ position: 'fixed', inset: 0, background: 'rgba(13,27,46,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+            <div}}}
               style={{ background: C.bg, borderRadius: 14, padding: '28px 32px', maxWidth: 400, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: C.ink, margin: '0 0 10px' }}>Confirmer la suppression</h3>
               <p style={{ fontSize: 13, color: C.mid, margin: '0 0 20px' }}>Cette action est irréversible. L&apos;administrateur sera définitivement supprimé.</p>
@@ -316,10 +315,10 @@ export default function AccessManager() {
                   Supprimer
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
     </div>
   )
 }

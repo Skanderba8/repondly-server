@@ -6,8 +6,17 @@ module.exports = {
     script: 'node_modules/.bin/next',
     args: 'start -p 3006',
     cwd: '/opt/repondly/admin-internal',
+    // Memory limit: restart if exceeds 300MB
+    max_memory_restart: '300M',
+    // Exponential backoff restart delay to prevent crash-loops
+    exp_backoff_restart_delay: 1000,
+    // Maximum restarts in a 15-minute window before stopping
+    max_restarts: 10,
+    min_uptime: '10s',
     env: {
       NODE_ENV: 'production',
+      // Limit Node.js heap to 256MB (Next.js production doesn't need much)
+      NODE_OPTIONS: '--max-old-space-size=256',
       DATABASE_URL: process.env.DATABASE_URL,
       DATABASE_URL_CHATWOOT: process.env.DATABASE_URL_CHATWOOT,
       NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,

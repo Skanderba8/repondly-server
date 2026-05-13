@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Plus, ChevronRight, CheckCircle, XCircle, Clock, Ban, RefreshCw, MessageSquare } from 'lucide-react'
 
 const C = {
@@ -50,7 +49,7 @@ export default function ClientsPage() {
 
   async function load() {
     setLoading(true)
-    const res = await fetch('/api/admin/clients')
+    const res = await fetch('/api/clients')
     const data = await res.json()
     setClients(Array.isArray(data) ? data : data.clients ?? [])
     setLoading(false)
@@ -69,7 +68,7 @@ export default function ClientsPage() {
     e.preventDefault()
     if (!newForm.name || !newForm.email) return
     setSubmitting(true)
-    await fetch('/api/admin/clients', {
+    await fetch('/api/clients', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newForm),
@@ -148,10 +147,10 @@ export default function ClientsPage() {
       </div>
 
       {/* Create form inline */}
-      <AnimatePresence>
+      <>
         {creating && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
+          <div}}
+           }}
             style={{ overflow: 'hidden', marginBottom: 12 }}>
             <form onSubmit={handleCreate} style={{
               background: C.bg, border: `1px solid ${C.blue}`,
@@ -186,9 +185,9 @@ export default function ClientsPage() {
                 Annuler
               </button>
             </form>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Table */}
       <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
@@ -207,7 +206,7 @@ export default function ClientsPage() {
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            <div}}
               style={{ width: 22, height: 22, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
           </div>
         ) : filtered.length === 0 ? (
@@ -215,14 +214,14 @@ export default function ClientsPage() {
             {query || statusFilter !== 'ALL' ? 'Aucun client trouvé.' : 'Aucun client pour le moment.'}
           </div>
         ) : (
-          <AnimatePresence>
+          <>
             {filtered.map((client, i) => {
               const sm = STATUS_META[client.status] ?? STATUS_META.TRIAL
               const pm = PLAN_META[client.plan] ?? PLAN_META.FREE
               return (
-                <motion.div key={client.id}
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.025 }}>
-                  <Link href={`/admin/clients/${client.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                <div key={client.id}
+                 }}}>
+                  <Link href={`/clients/${client.id}`} style={{ textDecoration: 'none', display: 'block' }}>
                     <div style={{
                       display: 'grid', gridTemplateColumns: '2fr 2fr 100px 90px 80px 80px 36px',
                       padding: '12px 18px', alignItems: 'center',
@@ -279,10 +278,10 @@ export default function ClientsPage() {
                       </div>
                     </div>
                   </Link>
-                </motion.div>
+                </div>
               )
             })}
-          </AnimatePresence>
+          </>
         )}
       </div>
     </div>

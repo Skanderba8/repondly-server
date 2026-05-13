@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
-import { Pool } from 'pg'
+import { getRepondlyPool } from '@/lib/db-pools'
 
 const ALLOWED_TABLES = [
   'ActivityLog', 'AdminNote', 'AdminUser', 'AutoRule', 'Booking',
   'BotEvent', 'Business', 'Client', 'OnboardingStage',
   'Reminder', '_prisma_migrations',
 ]
-
-function getPool() {
-  return new Pool({
-    connectionString: process.env.DATABASE_URL,
-    connectionTimeoutMillis: 5000,
-    max: 1,
-  })
-}
 
 export async function GET(
   req: NextRequest,
@@ -32,9 +24,8 @@ export async function GET(
   const page = parseInt(url.searchParams.get('page') ?? '1')
   const limit = 50
   const offset = (page - 1) * limit
-  const search = url.searchParams.get('search') ?? ''
 
-  const pool = getPool()
+  const pool = getRepondlyPool()
   try {
     const client = await pool.connect()
     try {
@@ -72,8 +63,6 @@ export async function GET(
   } catch (err) {
     console.error('[table-data]', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
-  } finally {
-    await pool.end().catch(() => {})
   }
 }
 
@@ -94,7 +83,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Missing id or column' }, { status: 400 })
   }
 
-  const pool = getPool()
+  const pool = getRepondlyPool()
   try {
     const client = await pool.connect()
     try {
@@ -105,7 +94,5 @@ export async function DELETE(
     }
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 })
-  } finally {
-    await pool.end().catch(() => {})
   }
 }

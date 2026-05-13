@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, User, MessageSquare, Activity, StickyNote,
   RefreshCw, ShieldOff, ShieldCheck, Eye, Key,
@@ -204,7 +203,7 @@ export default function ClientDetailPage() {
 
   // Load business
   useEffect(() => {
-    fetch(`/api/admin/clients/${id}`)
+    fetch(`/api/clients/${id}`)
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((data: Business) => {
         const safe = {
@@ -231,7 +230,7 @@ export default function ClientDetailPage() {
     setCwLoading(true)
     setCwError(null)
     try {
-      const res = await fetch(`/api/admin/clients/${id}/chatwoot`, { cache: 'no-store' })
+      const res = await fetch(`/api/clients/${id}/chatwoot`, { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setCwData(await res.json())
     } catch (e) {
@@ -247,7 +246,7 @@ export default function ClientDetailPage() {
 
   async function handleSave() {
     setSaving(true)
-    const res = await fetch(`/api/admin/clients/${id}`, {
+    const res = await fetch(`/api/clients/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     })
@@ -262,7 +261,7 @@ export default function ClientDetailPage() {
       chatwootAccountId: credForm.chatwootAccountId ? Number(credForm.chatwootAccountId) : null,
       chatwootApiToken: credForm.chatwootApiToken || null,
     }
-    const res = await fetch(`/api/admin/clients/${id}`, {
+    const res = await fetch(`/api/clients/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
@@ -274,7 +273,7 @@ export default function ClientDetailPage() {
   }
 
   async function handleStatusChange(status: string) {
-    const res = await fetch(`/api/admin/clients/${id}`, {
+    const res = await fetch(`/api/clients/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     })
@@ -284,7 +283,7 @@ export default function ClientDetailPage() {
 
   async function handleResetPassword() {
     const plain = generatePassword()
-    await fetch(`/api/admin/clients/${id}`, {
+    await fetch(`/api/clients/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newPassword: plain }),
     })
@@ -292,7 +291,7 @@ export default function ClientDetailPage() {
   }
 
   async function handleToggleRule(ruleId: string, active: boolean) {
-    await fetch(`/api/admin/auto-rules/${ruleId}`, {
+    await fetch(`/api/auto-rules/${ruleId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active }),
     })
@@ -302,7 +301,7 @@ export default function ClientDetailPage() {
   async function handleAddNote(e: React.FormEvent) {
     e.preventDefault()
     if (!noteContent.trim()) return
-    const res = await fetch(`/api/admin/clients/${id}/notes`, {
+    const res = await fetch(`/api/clients/${id}/notes`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: noteContent }),
     })
@@ -321,7 +320,7 @@ export default function ClientDetailPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        <div}}
           style={{ width: 24, height: 24, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
       </div>
     )
@@ -331,7 +330,7 @@ export default function ClientDetailPage() {
     return (
       <div style={{ padding: 48, textAlign: 'center', color: C.mid }}>
         <div style={{ fontSize: 15, marginBottom: 12 }}>Client introuvable.</div>
-        <Link href="/admin/clients" style={{ color: C.blue, fontSize: 13 }}>← Retour aux clients</Link>
+        <Link href="/clients" style={{ color: C.blue, fontSize: 13 }}>← Retour aux clients</Link>
       </div>
     )
   }
@@ -346,7 +345,7 @@ export default function ClientDetailPage() {
         padding: '14px 28px', display: 'flex', alignItems: 'center', gap: 12,
         position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <Link href="/admin/clients" style={{
+        <Link href="/clients" style={{
           display: 'flex', alignItems: 'center', gap: 5,
           color: C.mid, textDecoration: 'none', fontSize: 13,
           padding: '5px 10px', borderRadius: 7, border: `1px solid ${C.border}`,
@@ -394,9 +393,9 @@ export default function ClientDetailPage() {
 
       {/* Content */}
       <div style={{ padding: '24px 28px', maxWidth: 900 }}>
-        <AnimatePresence mode="wait">
-          <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
+        <>
+          <div key={tab}}}
+           }}>
 
             {/* ── TAB: COMPTE ── */}
             {tab === 'compte' && (
@@ -514,9 +513,9 @@ export default function ClientDetailPage() {
                       )}
                     </div>
 
-                    <AnimatePresence>
+                    <>
                       {newPassword && (
-                        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                        <div}}}
                           style={{
                             marginTop: 14, padding: '12px 14px', background: C.yellowBg,
                             borderRadius: 8, border: '1px solid #fde68a',
@@ -543,9 +542,9 @@ export default function ClientDetailPage() {
                               {copied ? 'Copié' : 'Copier'}
                             </button>
                           </div>
-                        </motion.div>
+                        </div>
                       )}
-                    </AnimatePresence>
+                    </>
                   </Card>
 
                   {/* Auto Rules summary */}
@@ -573,7 +572,7 @@ export default function ClientDetailPage() {
                               background: rule.active ? C.blue : C.border,
                               position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
                             }}>
-                              <motion.div animate={{ x: rule.active ? 17 : 2 }} transition={{ duration: 0.2 }}
+                              <div}}
                                 style={{ position: 'absolute', top: 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                             </div>
                           </div>
@@ -606,7 +605,7 @@ export default function ClientDetailPage() {
 
                 {cwLoading && (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    <div}}
                       style={{ width: 24, height: 24, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
                   </div>
                 )}
@@ -872,8 +871,8 @@ INBOX_ID_${i.name.toUpperCase().replace(/\s+/g, '_')}=${i.id}`).join('\n')}`}
                 )}
               </div>
             )}
-          </motion.div>
-        </AnimatePresence>
+          </div>
+        </>
       </div>
 
       <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>

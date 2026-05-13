@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare,
   ExternalLink,
@@ -44,13 +43,6 @@ type ChatwootData = {
 
 // ─── Animation variants ───────────────────────────────────────────────────────
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 12 },
-  show: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { delay: i * 0.06, duration: 0.28, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] },
-  }),
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -124,7 +116,7 @@ export default function ChatwootPanel() {
     else setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/admin/chatwoot', { cache: 'no-store' })
+      const res = await fetch('/api/chatwoot', { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json() as ChatwootData
       setData(json)
@@ -147,10 +139,10 @@ export default function ChatwootPanel() {
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
 
       {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <div
+       }
+       }
+       }
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 28, flexWrap: 'wrap', gap: 12,
@@ -241,24 +233,24 @@ export default function ChatwootPanel() {
             Actualiser
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* ── Loading ── */}
-      <AnimatePresence mode="wait">
+      <>
         {loading && (
-          <motion.div
+          <div
             key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+           }
+           }
+           }
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               minHeight: '40vh',
             }}
           >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            <div
+             }
+             }
               style={{
                 width: 28, height: 28,
                 border: `2px solid ${C.border}`,
@@ -266,16 +258,16 @@ export default function ChatwootPanel() {
                 borderRadius: '50%',
               }}
             />
-          </motion.div>
+          </div>
         )}
 
         {/* ── Error ── */}
         {!loading && error && (
-          <motion.div
+          <div
             key="error"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+           }
+           }
+           }
             style={{
               display: 'flex', alignItems: 'center', gap: 12,
               background: C.redBg, border: `1px solid ${C.red}30`,
@@ -285,21 +277,21 @@ export default function ChatwootPanel() {
           >
             <AlertCircle size={18} />
             <span>Impossible de charger les données Chatwoot : <strong>{error}</strong></span>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Content ── */}
         {!loading && !error && data && (
-          <motion.div
+          <div
             key="content"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+           }
+           }
+           }
             style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
           >
 
             {/* ── Service health card ── */}
-            <motion.div custom={0} variants={fadeUp} initial="hidden" animate="show">
+            <div>
               <div style={{
                 background: C.bg, border: `1px solid ${C.border}`,
                 borderRadius: 14, padding: '20px 24px',
@@ -335,10 +327,10 @@ export default function ChatwootPanel() {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* ── Live stats ── */}
-            <motion.div custom={1} variants={fadeUp} initial="hidden" animate="show">
+            <div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
                 <StatCard
                   label="Conversations ouvertes"
@@ -369,10 +361,10 @@ export default function ChatwootPanel() {
                   icon={Link}
                 />
               </div>
-            </motion.div>
+            </div>
 
             {/* ── DB stats ── */}
-            <motion.div custom={2} variants={fadeUp} initial="hidden" animate="show">
+            <div>
               <div style={{
                 background: C.bg, border: `1px solid ${C.border}`,
                 borderRadius: 14, overflow: 'hidden',
@@ -430,11 +422,11 @@ export default function ChatwootPanel() {
                   ))}
                 </div>
               </div>
-            </motion.div>
+            </div>
 
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       <style>{`
         @keyframes spin {

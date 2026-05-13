@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 import { prisma } from '@/lib/prisma'
-import { Pool } from 'pg'
+import { getRepondlyPool } from '@/lib/db-pools'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,26 +34,18 @@ async function countTrialsExpiring(): Promise<number> {
 
     return count
   } catch (err) {
-    console.error('[/api/admin/badges] trialsExpiring error:', err)
+    console.error('[/api/badges] trialsExpiring error:', err)
     return 0
   }
 }
 
 /**
- * Count pending Prisma migrations by querying _prisma_migrations directly
- * via a pg Pool connection. A migration is pending when finished_at IS NULL.
+ * Count pending Prisma migrations using the shared pool.
+ * A migration is pending when finished_at IS NULL.
  * Returns 0 on any error.
  */
 async function countPendingMigrations(): Promise<number> {
-  const connectionString = process.env.DATABASE_URL
-  if (!connectionString) return 0
-
-  const pool = new Pool({
-    connectionString,
-    connectionTimeoutMillis: 5000,
-    query_timeout: 5000,
-    max: 1,
-  })
+  const pool = getRepondlyPool()
 
   try {
     const client = await pool.connect()
@@ -66,10 +58,8 @@ async function countPendingMigrations(): Promise<number> {
       client.release()
     }
   } catch (err) {
-    console.error('[/api/admin/badges] pendingMigrations error:', err)
+    console.error('[/api/badges] pendingMigrations error:', err)
     return 0
-  } finally {
-    await pool.end().catch(() => {})
   }
 }
 
@@ -90,7 +80,7 @@ export async function GET(request: NextRequest) {
     const response: BadgesResponse = { trialsExpiring, pendingMigrations }
     return NextResponse.json(response)
   } catch (error) {
-    console.error('[/api/admin/badges]', error)
+    console.error('[/api/badges]', error)
     return NextResponse.json({ trialsExpiring: 0, pendingMigrations: 0 })
   }
 }

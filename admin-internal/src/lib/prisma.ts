@@ -1,19 +1,12 @@
 import { PrismaClient } from '@prisma/client'
-import { Pool } from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
 
-// 1. Create the pg connection pool
-const connectionString = process.env.DATABASE_URL as string
-const pool = new Pool({ connectionString })
-
-// 2. Initialize the Prisma adapter with the pool
-const adapter = new PrismaPg(pool)
-
-// 3. Pass the adapter to the PrismaClient
+// Use native Prisma client (no pg adapter needed for standard Node.js server).
+// The adapter-pg is only needed for edge runtimes — it adds ~50MB overhead.
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter })
+export const prisma = globalForPrisma.prisma || new PrismaClient({
+  // Limit connection pool (Prisma's built-in pool manager)
+  datasourceUrl: process.env.DATABASE_URL,
+})
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-}
+globalForPrisma.prisma = prisma

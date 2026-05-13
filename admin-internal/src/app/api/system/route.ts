@@ -6,7 +6,7 @@ import { X509Certificate } from 'crypto'
 import * as fs from 'fs'
 import { execSync } from 'child_process'
 import * as net from 'net'
-import { Pool } from 'pg'
+import { getChatwootPool } from '@/lib/db-pools'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,6 +15,38 @@ type DbStatus      = { connected: boolean; latency: number | null }
 type RedisStatus   = { connected: boolean; latency: number | null }
 type ResourceMetric = { used: number; total: number; percent: number }
 type Pm2Process    = { name: string; status: string; cpu: number; memory: number; uptime: number | null }
+
+// ─── Cache for expensive operations ───────────────────────────────────────────
+
+type CachedMetrics = {
+  disk: ResourceMetric
+  pm2: Pm2Process[]
+  ssl: Record<string, number | null>
+  timestamp: number
+}
+
+let metricsCache: CachedMetrics | null = null
+const CACHE_TTL_MS = 60_000 // Cache expensive shell commands for 60s
+
+function getCachedMetrics(): CachedMetrics {
+  const now = Date.now()
+  if (metricsCache && (now - metricsCache.timestamp) < CACHE_TTL_MS) {
+    return metricsCache
+  }
+
+  metricsCache = {
+    disk: getDiskUsage(),
+    pm2: getPm2Status(),
+    ssl: {
+      'repondly.com':        getSslDaysRemaining('repondly.com'),
+      'admin.repondly.com':  getSslDaysRemaining('admin.repondly.com'),
+      'n8n.repondly.com':    getSslDaysRemaining('n8n.repondly.com'),
+      'inbox.repondly.com':  getSslDaysRemaining('inbox.repondly.com'),
+    },
+    timestamp: now,
+  }
+  return metricsCache
+}
 
 // ─── Service checks ───────────────────────────────────────────────────────────
 
@@ -42,17 +74,13 @@ async function checkPrismaDatabase(): Promise<DbStatus> {
 }
 
 /**
- * Check an arbitrary PostgreSQL database via a direct pg connection.
- * Uses a 5 000 ms connect + query timeout.
+ * Check the Chatwoot database using the shared pool.
  */
-async function checkDatabase(connectionString: string): Promise<DbStatus> {
+async function checkChatwootDatabase(): Promise<DbStatus> {
+  const pool = getChatwootPool()
+  if (!pool) return { connected: false, latency: null }
+
   const start = Date.now()
-  const pool = new Pool({
-    connectionString,
-    connectionTimeoutMillis: 5000,
-    query_timeout: 5000,
-    max: 1,
-  })
   try {
     const client = await pool.connect()
     try {
@@ -63,8 +91,6 @@ async function checkDatabase(connectionString: string): Promise<DbStatus> {
     }
   } catch {
     return { connected: false, latency: null }
-  } finally {
-    await pool.end().catch(() => {})
   }
 }
 
@@ -167,8 +193,7 @@ export async function GET(request: NextRequest) {
   const authResult = await requireAdmin(request)
   if (authResult instanceof NextResponse) return authResult
 
-  const chatwootDbUrl = process.env.DATABASE_URL_CHATWOOT
-
+  // Run lightweight checks in parallel
   const [
     bot,
     app,
@@ -181,28 +206,21 @@ export async function GET(request: NextRequest) {
     redis,
   ] = await Promise.all([
     checkService('http://127.0.0.1:3001/health'),
-    checkService('https://admin.repondly.com'),
+    checkService('http://127.0.0.1:3006'),   // check self via localhost, not HTTPS
     checkService('https://n8n.repondly.com'),
     checkService('http://127.0.0.1:3000'),
     checkService('http://127.0.0.1:3005'),
     checkService('http://127.0.0.1:3004'),
     checkPrismaDatabase(),
-    chatwootDbUrl
-      ? checkDatabase(chatwootDbUrl)
-      : Promise.resolve<DbStatus>({ connected: false, latency: null }),
+    checkChatwootDatabase(),
     checkRedis(),
   ])
 
-  const disk   = getDiskUsage()
-  const memory = getMemoryUsage()
-  const pm2    = getPm2Status()
+  // Use cached values for expensive shell commands (disk, pm2, ssl)
+  const cached = getCachedMetrics()
 
-  const ssl = {
-    'repondly.com':        getSslDaysRemaining('repondly.com'),
-    'admin.repondly.com':   getSslDaysRemaining('admin.repondly.com'),
-    'n8n.repondly.com':    getSslDaysRemaining('n8n.repondly.com'),
-    'inbox.repondly.com':  getSslDaysRemaining('inbox.repondly.com'),
-  }
+  // Memory is cheap to compute — always fresh
+  const memory = getMemoryUsage()
 
   return NextResponse.json({
     services: {
@@ -216,9 +234,9 @@ export async function GET(request: NextRequest) {
       chatwootDb,
       redis,
     },
-    disk,
+    disk: cached.disk,
     memory,
-    ssl,
-    pm2,
+    ssl: cached.ssl,
+    pm2: cached.pm2,
   })
 }
