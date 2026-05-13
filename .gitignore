@@ -58,6 +58,8 @@ Thumbs.db
 *.pem
 .vercel
 .idea/
+.windsurfrules
+CONTEXT.md
 
 # ========================
 # Test coverage
