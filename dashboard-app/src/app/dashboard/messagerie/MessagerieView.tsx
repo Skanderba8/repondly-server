@@ -235,8 +235,8 @@ function EmptyState({ text, icon }: { text: string; icon?: React.ReactNode }) {
 
 // ─── Conversation List Item ─────────────────────────────────────────────────────
 function ConvItem({
-  conv, active, onClick, repondlyStatus,
-}: { conv: Conversation; active: boolean; onClick: () => void; repondlyStatus?: RepondlyStatus }) {
+  conv, active, onClick, repondlyStatus, onResolve,
+}: { conv: Conversation; active: boolean; onClick: () => void; repondlyStatus?: RepondlyStatus; onResolve?: (convId: number) => void }) {
   const contact = conv.meta.sender
   const preview = conv.last_non_activity_message?.content || ''
   const ts      = conv.last_non_activity_message?.created_at || conv.last_activity_at
@@ -289,8 +289,8 @@ function ConvItem({
             </span>
           )}
         </div>
-        {repondlyStatus && (
-          <div style={{ marginTop: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+          {repondlyStatus && (
             <span style={{
               fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em',
               color: repondlyStatus === 'RESOLUE' ? C.success : C.primary,
@@ -308,8 +308,24 @@ function ConvItem({
             }}>
               {repondlyStatus === 'RESOLUE' ? 'Résolue' : 'En attente'}
             </span>
-          </div>
-        )}
+          )}
+          {onResolve && repondlyStatus === 'EN_ATTENTE' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onResolve(conv.id) }}
+              style={{
+                fontSize: 11, fontWeight: 600, color: C.success,
+                background: 'rgba(34, 197, 94, 0.1)',
+                border: '1px solid rgba(34, 197, 94, 0.2)',
+                padding: '3px 8px', borderRadius: 6,
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(34, 197, 94, 0.2)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(34, 197, 94, 0.1)'}
+            >
+              Résoudre
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -335,7 +351,8 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
         } catch {}
       }
       checkStatus()
-      const interval = setInterval(checkStatus, 3000)
+      // Check status every 10s instead of 3s for better performance
+      const interval = setInterval(checkStatus, 10_000)
       return () => clearInterval(interval)
     }
   }, [isOut, conversationId, msg.id, onStatusCheck])
@@ -386,9 +403,6 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
             <AlertCircle size={12} />
           </div>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          {channelType && <ChannelIcon channelType={channelType} size={12} />}
-        </div>
         {msg.attachments?.length ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {msg.attachments.map(a => (
@@ -616,7 +630,13 @@ function NotesPanel({ conversationId, isOpen, onClose }: { conversationId: numbe
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────────
-export default function Messagerie() {
+interface MessagerieProps {
+  onConversationChange?: (convId: number | null, status: RepondlyStatus) => void
+  externalNotesOpen?: boolean
+  onNotesOpenChange?: (open: boolean) => void
+}
+
+export default function Messagerie({ onConversationChange, externalNotesOpen, onNotesOpenChange }: MessagerieProps) {
   const [tabStatus, setTabStatus]       = useState<RepondlyStatus>('EN_ATTENTE')
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [convLoading, setConvLoading]   = useState(true)
@@ -632,13 +652,12 @@ export default function Messagerie() {
   const [statusLoading, setStatusLoading] = useState(false)
 
   const [notesOpen, setNotesOpen]       = useState(false)
+  const effectiveNotesOpen = externalNotesOpen !== undefined ? externalNotesOpen : notesOpen
   const [repondlyStatuses, setRepondlyStatuses] = useState<Map<number, RepondlyStatus>>(new Map())
 
   const [enAttenteCount, setEnAttenteCount] = useState(0)
   const [resolueCount, setResolueCount] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [profileOpen, setProfileOpen] = useState(false)
   const [channelFilter, setChannelFilter] = useState<'all' | 'whatsapp' | 'facebook'>('all')
   const [channelCounts, setChannelCounts] = useState({ whatsapp: 0, facebook_instagram: 0 })
 
@@ -811,6 +830,29 @@ export default function Messagerie() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
+  // ── Pause polling when tab is not visible ───────────────────────────────────────
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Pause polling when tab is hidden
+        if (convPollRef.current) clearInterval(convPollRef.current)
+        if (msgPollRef.current) clearInterval(msgPollRef.current)
+      } else {
+        // Resume polling when tab is visible
+        fetchConversations()
+        if (convPollRef.current) clearInterval(convPollRef.current)
+        convPollRef.current = setInterval(fetchConversations, 30_000)
+        if (activeConvId) {
+          fetchMessages(activeConvId)
+          if (msgPollRef.current) clearInterval(msgPollRef.current)
+          msgPollRef.current = setInterval(() => fetchMessages(activeConvId), 10_000)
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [fetchConversations, fetchMessages, activeConvId])
+
   // ── Initial load ─────────────────────────────────────────────────────────────
   useEffect(() => {
     setConvLoading(true)
@@ -830,9 +872,9 @@ export default function Messagerie() {
     setMsgLoading(true)
     fetchMessages(activeConvId).finally(() => setMsgLoading(false))
 
-    // Poll messages every 3s
+    // Poll messages every 10s (reduced from 3s for better performance)
     if (msgPollRef.current) clearInterval(msgPollRef.current)
-    msgPollRef.current = setInterval(() => fetchMessages(activeConvId), 3_000)
+    msgPollRef.current = setInterval(() => fetchMessages(activeConvId), 10_000)
     return () => { if (msgPollRef.current) clearInterval(msgPollRef.current) }
   }, [activeConvId, fetchMessages])
 
@@ -880,18 +922,23 @@ export default function Messagerie() {
   }
 
   // ── Toggle status ─────────────────────────────────────────────────────────────
-  const toggleStatus = async () => {
-    if (!activeConv || statusLoading) return
-    const currentStatus = repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE'
+  const toggleStatus = async (convId?: number) => {
+    const targetConv = convId ? conversations.find(c => c.id === convId) : activeConv
+    if (!targetConv || statusLoading) return
+    const currentStatus = repondlyStatuses.get(targetConv.id) || 'EN_ATTENTE'
     const newStatus = currentStatus === 'EN_ATTENTE' ? 'RESOLUE' : 'EN_ATTENTE'
     setStatusLoading(true)
     try {
       await fetch('/api/chatwoot/conversation-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId: activeConv.id, status: newStatus }),
+        body: JSON.stringify({ conversationId: targetConv.id, status: newStatus }),
       })
-      setRepondlyStatuses(prev => new Map(prev).set(activeConv.id, newStatus))
+      setRepondlyStatuses(prev => new Map(prev).set(targetConv.id, newStatus))
+      // Notify parent of status change
+      if (onConversationChange) {
+        onConversationChange(targetConv.id, newStatus)
+      }
       if (newStatus === 'RESOLUE') {
         setResolueCount(prev => prev + 1)
         setEnAttenteCount(prev => Math.max(0, prev - 1))
@@ -903,6 +950,15 @@ export default function Messagerie() {
       setStatusLoading(false)
     }
   }
+
+  // ── Listen for status toggle from topbar ───────────────────────────────────────
+  useEffect(() => {
+    const handleToggle = () => {
+      toggleStatus()
+    }
+    window.addEventListener('toggle-conversation-status', handleToggle)
+    return () => window.removeEventListener('toggle-conversation-status', handleToggle)
+  }, [toggleStatus])
 
   // ── Filtered conversations ────────────────────────────────────────────────────
   const filtered = conversations.filter(c => {
@@ -941,211 +997,15 @@ export default function Messagerie() {
 
   return (
     <div style={{
-      display: 'flex', height: '100%', overflow: 'hidden',
+      display: 'flex', height: '100%', width: '100%', overflow: 'hidden',
       background: C.pageBg, fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       position: 'relative',
+      touchAction: 'manipulation',
     }}>
-
-      {/* ══ Mobile Sidebar Overlay ══════════════════════════════════════════════ */}
-      <AnimatePresence>
-        {mobileSidebarOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setMobileSidebarOpen(false)}
-              style={{
-                position: 'fixed', inset: 0,
-                background: 'rgba(0, 0, 0, 0.5)',
-                zIndex: 1000,
-              }}
-            />
-            {/* Sidebar */}
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              style={{
-                position: 'fixed', left: 0, top: 0, bottom: 0,
-                width: 280, maxWidth: '85vw',
-                background: '#FFFFFF',
-                zIndex: 1001,
-                display: 'flex', flexDirection: 'column',
-                boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
-              }}
-            >
-              {/* Logo */}
-              <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
-                <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-                  <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                  <span style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-                    Répondly
-                  </span>
-                </a>
-              </div>
-
-              {/* Nav */}
-              <nav style={{ flex: 1, padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 0, overflowY: 'auto' }}>
-                {[
-                  { id: 'home', label: 'Accueil', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
-                  { id: 'inbox', label: 'Messagerie', icon: <MessageSquare size={20} />, href: '/dashboard/messagerie', active: true },
-                  { id: 'channels', label: 'Canaux', icon: <Radio size={20} />, href: '/dashboard/channels' },
-                  { id: 'calendrier', label: 'Calendrier', icon: <Calendar size={20} />, href: '/dashboard/calendrier' },
-                  { id: 'bot', label: 'Agent IA', icon: <Bot size={20} />, href: '/dashboard/bot' },
-                  { id: 'settings', label: 'Paramètres', icon: <Settings size={20} />, href: '/dashboard/settings' },
-                ].map((item, index) => (
-                  <a
-                    key={item.id}
-                    href={item.href}
-                    onClick={() => setMobileSidebarOpen(false)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 14,
-                      width: '100%', padding: '14px 20px',
-                      background: item.active ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
-                      color: item.active ? C.primary : C.textSecondary,
-                      fontSize: 16, fontWeight: item.active ? 600 : 400,
-                      border: 'none', cursor: 'pointer', transition: 'background 0.2s ease',
-                      textDecoration: 'none',
-                      position: 'relative',
-                    }}
-                    onMouseEnter={e => { if (!item.active) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)' }}
-                    onMouseLeave={e => { if (!item.active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-                  >
-                    <span style={{ color: item.active ? C.primary : 'inherit' }}>{item.icon}</span>
-                    <span style={{ flex: 1 }}>{item.label}</span>
-                    {item.active && (
-                      <div style={{
-                        position: 'absolute', left: 0, top: 0, bottom: 0,
-                        width: 3, background: C.primary,
-                      }} />
-                    )}
-                  </a>
-                ))}
-              </nav>
-
-              {/* User */}
-              <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(0,0,0,0.06)', background: '#FFFFFF', flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                    background: C.primary,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 15, fontWeight: 700, color: '#fff',
-                  }}>{initial}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
-                    <div style={{ fontSize: 13, color: C.textSecondary }}>Compte actif</div>
-                  </div>
-                  <button onClick={() => { signOut(); setMobileSidebarOpen(false) }} title="Déconnexion" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textSecondary, padding: 8, display: 'flex', borderRadius: 8, transition: 'color 0.15s' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = C.error}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = C.textSecondary}
-                  >
-                    <LogOut size={18} />
-                  </button>
-                </div>
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* ══ Mobile Topbar ════════════════════════════════════════════════════════ */}
-      {isMobile && (
-        <header style={{
-          position: 'fixed', top: 0, left: 0, right: 0,
-          height: 64, flexShrink: 0,
-          background: C.cardBg,
-          borderBottom: `1px solid ${C.border}`,
-          display: 'flex', alignItems: 'center',
-          padding: '0 12px',
-          gap: 12,
-          zIndex: 100,
-        }}>
-          {/* Hamburger menu */}
-          <button
-            onClick={() => setMobileSidebarOpen(true)}
-            style={{
-              background: 'none', border: 'none',
-              cursor: 'pointer', padding: 8,
-              color: C.textSecondary,
-              borderRadius: 8,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Menu size={24} />
-          </button>
-
-          {/* Repondly branding */}
-          <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 'auto' }}>
-            <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-            <span style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-              Répondly
-            </span>
-          </a>
-
-          {/* User avatar */}
-          <button
-            onClick={() => setProfileOpen(!profileOpen)}
-            style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: C.primary,
-              border: profileOpen ? `2px solid ${C.primary}` : '2px solid transparent',
-              color: '#fff', fontSize: 15, fontWeight: 700,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'border-color 0.15s',
-            }}
-          >{initial}</button>
-
-          {/* Profile dropdown */}
-          <AnimatePresence>
-            {profileOpen && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -8 }}
-                transition={{ duration: 0.12 }}
-                style={{
-                  position: 'absolute', top: 72, right: 12,
-                  background: C.cardBg, border: `1px solid ${C.border}`,
-                  borderRadius: 12, padding: 6,
-                  minWidth: 180, boxShadow: '0 16px 40px rgba(15,23,42,0.12)',
-                  zIndex: 200,
-                }}
-              >
-                <div style={{ padding: '10px 12px 8px', borderBottom: `1px solid ${C.border}`, marginBottom: 4 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{userName}</div>
-                  <div style={{ fontSize: 11, color: C.textSecondary, marginTop: 1 }}>{session?.user?.email}</div>
-                </div>
-                <button
-                  onClick={() => setProfileOpen(false)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.textPrimary, transition: 'background 0.12s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.pageBg}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                >
-                  <User size={14} color={C.textSecondary} /> Profil
-                </button>
-                <button
-                  onClick={() => signOut()}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.error, transition: 'background 0.12s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#FEE2E2'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                >
-                  <LogOut size={14} /> Déconnexion
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </header>
-      )}
 
       {/* ══ Main Content ════════════════════════════════════════════════════════ */}
       <div style={{
-        display: 'flex', height: '100%', overflow: 'hidden',
-        paddingTop: isMobile ? 64 : 0,
+        display: 'flex', height: '100%', width: '100%', overflow: 'hidden',
         background: C.pageBg,
       }}>
 
@@ -1220,7 +1080,7 @@ export default function Messagerie() {
         </div>
 
         {/* List */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}>
           {convLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 120 }}>
               <Loader2 size={24} color={C.primary} style={{ animation: 'spin 1s linear infinite' }} />
@@ -1251,6 +1111,7 @@ export default function Messagerie() {
                     active={activeConvId === conv.id}
                     onClick={() => setActiveConvId(conv.id)}
                     repondlyStatus={repondlyStatuses.get(conv.id)}
+                    onResolve={toggleStatus}
                   />
                 </motion.div>
               ))}
@@ -1282,13 +1143,12 @@ export default function Messagerie() {
           </p>
         </div>
       ) : (
-        <div style={{ 
-          flex: 1, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          overflow: 'hidden', 
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
           position: 'relative',
-          ...(isMobile && { position: 'fixed', left: 0, right: 0, top: 0, bottom: 0, zIndex: 50, background: C.pageBg })
         }}>
 
           {/* ── Thread Header ── */}
@@ -1329,56 +1189,59 @@ export default function Messagerie() {
                 )}
               </div>
             </div>
-
-            {/* Notes button */}
-            {!isMobile && (
+            {/* Resolve Button (only for EN_ATTENTE) */}
+            {(repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'EN_ATTENTE' && (
               <button
-                onClick={() => setNotesOpen(true)}
+                onClick={() => toggleStatus()}
+                disabled={statusLoading}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '8px 14px', borderRadius: 8, border: `1px solid ${C.border}`,
-                  background: C.pageBg,
-                  color: C.textSecondary,
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: isMobile ? 36 : 40, height: isMobile ? 36 : 40,
+                  borderRadius: isMobile ? '50%' : 8,
+                  background: C.greenLight, border: `1px solid ${C.success}`,
+                  cursor: statusLoading ? 'default' : 'pointer', color: C.success,
+                  flexShrink: 0,
                   transition: 'all 0.15s',
+                  opacity: statusLoading ? 0.5 : 1,
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.blueHover }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = C.pageBg }}
+                onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = 'rgba(34, 197, 94, 0.2)' }}
+                onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.greenLight }}
               >
-                <FileText size={14} /> Notes
+                {statusLoading ? <Loader2 size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCheck size={isMobile ? 18 : 20} />}
               </button>
             )}
-
-            {/* Status button */}
+            {/* Notes Button */}
             <button
-              onClick={toggleStatus}
-              disabled={statusLoading}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: isMobile ? '8px 12px' : '8px 14px', borderRadius: 8, border: 'none',
-                background: (repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'EN_ATTENTE' ? C.greenLight : C.blueLight,
-                color: (repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'EN_ATTENTE' ? C.success : C.primary,
-                fontSize: isMobile ? 12 : 13, fontWeight: 600, cursor: 'pointer',
-                transition: 'all 0.15s',
-                opacity: statusLoading ? 0.6 : 1,
-                flexShrink: 0,
+              onClick={() => {
+                if (onNotesOpenChange) {
+                  onNotesOpenChange(true)
+                } else {
+                  setNotesOpen(true)
+                }
               }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: isMobile ? 36 : 40, height: isMobile ? 36 : 40,
+                borderRadius: isMobile ? '50%' : 8,
+                background: C.blueLight, border: `1px solid ${C.border}`,
+                cursor: 'pointer', color: C.primary,
+                flexShrink: 0,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.blueHover}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = C.blueLight}
             >
-              {statusLoading ? (
-                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-              ) : (repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'EN_ATTENTE' ? (
-                isMobile ? <><CheckCheck size={14} /></> : <><CheckCheck size={14} /> Résoudre</>
-              ) : (
-                isMobile ? <><RotateCcw size={14} /></> : <><RotateCcw size={14} /> Rouvrir</>
-              )}
+              <FileText size={isMobile ? 18 : 20} />
             </button>
           </div>
 
           {/* ── Messages ── */}
           <div style={{
-            flex: 1, overflowY: 'auto',
+            flex: 1, overflowY: 'auto', overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
             padding: isMobile ? '16px' : '20px 24px',
             display: 'flex', flexDirection: 'column',
+            scrollBehavior: 'smooth',
           }}>
             {msgLoading && messages.length === 0 ? (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1414,7 +1277,7 @@ export default function Messagerie() {
                 value={reply}
                 onChange={e => setReply(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Écrire un message… (Entrée pour envoyer)"
+                placeholder="Écrire un message…"
                 rows={1}
                 style={{
                   flex: 1, resize: 'none', border: `1px solid ${C.border}`,
@@ -1462,7 +1325,7 @@ export default function Messagerie() {
               <span style={{ fontSize: isMobile ? 12 : 13, color: C.success, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <CheckCheck size={isMobile ? 14 : 16} /> Conversation résolue
               </span>
-              <button onClick={toggleStatus} disabled={statusLoading}
+              <button onClick={() => toggleStatus()} disabled={statusLoading}
                 style={{
                   fontSize: isMobile ? 12 : 13, fontWeight: 600, color: C.success,
                   background: 'none', border: 'none', cursor: 'pointer',
@@ -1475,36 +1338,20 @@ export default function Messagerie() {
 
           {/* Notes Panel */}
           <AnimatePresence>
-            {notesOpen && activeConvId && (
-              <NotesPanel conversationId={activeConvId} isOpen={notesOpen} onClose={() => setNotesOpen(false)} />
+            {effectiveNotesOpen && activeConvId && (
+              <NotesPanel
+                conversationId={activeConvId}
+                isOpen={effectiveNotesOpen}
+                onClose={() => {
+                  if (onNotesOpenChange) {
+                    onNotesOpenChange(false)
+                  } else {
+                    setNotesOpen(false)
+                  }
+                }}
+              />
             )}
           </AnimatePresence>
-
-          {/* Mobile Notes Button */}
-          {isMobile && activeConvId && (
-            <button
-              onClick={() => setNotesOpen(true)}
-              style={{
-                position: 'fixed',
-                bottom: 100,
-                right: 16,
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
-                background: C.primary,
-                color: '#fff',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
-                zIndex: 100,
-              }}
-            >
-              <FileText size={24} />
-            </button>
-          )}
         </div>
       )}
 

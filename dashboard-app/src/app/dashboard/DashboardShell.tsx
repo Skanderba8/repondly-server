@@ -11,7 +11,7 @@ import {
   ArrowRight, Wifi, WifiOff, Zap, RefreshCw, Menu,
 } from 'lucide-react'
 import MessagerieView from './messagerie/MessagerieView'
-import ChannelsPage from '@/components/ChannelsPage'
+import { FileText, CheckCheck, RotateCcw, Loader2, Link2, Unlink, ExternalLink, Smartphone } from 'lucide-react'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -502,6 +502,8 @@ export default function DashboardShell() {
   const [hasConfiguredBot, setHasConfiguredBot] = useState(false)
   const [stats, setStats] = useState({ messages: 0, conversations: 0, openCount: 0 })
   const [recentConvs, setRecentConvs] = useState<RecentConv[]>([])
+  const [activeConversation, setActiveConversation] = useState<{ id: number | null; status: 'EN_ATTENTE' | 'RESOLUE' | null }>({ id: null, status: null })
+  const [messagerieNotesOpen, setMessagerieNotesOpen] = useState(false)
 
   const showToast = useCallback((type: 'error' | 'success', msg: string) => {
     setToast({ type, msg })
@@ -611,6 +613,17 @@ export default function DashboardShell() {
   }, [initialPageSet])
 
   useEffect(() => {
+    // Check for hash to set initial page
+    if (!initialPageSet && typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '') as PageId
+      if (hash && ['home', 'inbox', 'channels', 'calendrier', 'bot', 'settings'].includes(hash)) {
+        setActivePage(hash)
+        setInitialPageSet(true)
+      }
+    }
+  }, [initialPageSet])
+
+  useEffect(() => {
     const handle = async (e: MessageEvent) => {
       if (e.origin !== 'https://www.facebook.com') return
       try {
@@ -646,12 +659,22 @@ export default function DashboardShell() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: #0a0d1a; overflow: hidden; }
+        body {
+          font-family: 'Inter', system-ui, sans-serif;
+          background: #FFFFFF;
+          overflow: hidden;
+          padding-top: env(safe-area-inset-top);
+        }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${C.borderMid}; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: ${C.muted}; }
         button { font-family: inherit; }
+        @supports (padding: env(safe-area-inset-top)) {
+          body {
+            padding-top: env(safe-area-inset-top);
+          }
+        }
       `}</style>
 
       {/* Toast */}
@@ -682,7 +705,25 @@ export default function DashboardShell() {
         )}
       </AnimatePresence>
 
-      <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', background: 'linear-gradient(135deg, #07101f 0%, #0d1830 50%, #08111e 100%)' }}>
+      <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', background: '#FFFFFF', position: 'relative' }}>
+        {/* White status bar background for iOS PWA */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 'env(safe-area-inset-top)',
+          background: '#FFFFFF',
+          zIndex: 9999,
+        }} />
+        {/* Main content with dark gradient */}
+        <div style={{
+          display: 'flex',
+          height: '100%',
+          width: '100%',
+          background: 'linear-gradient(135deg, #07101f 0%, #0d1830 50%, #08111e 100%)',
+          position: 'relative',
+        }}>
 
         {/* ══ Mobile Sidebar Overlay ══════════════════════════════════════════════ */}
         <AnimatePresence>
@@ -720,8 +761,8 @@ export default function DashboardShell() {
                 <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
                   <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
                     <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                    <span style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-                      Répondly
+                    <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.textPrimary, letterSpacing: '-0.02em' }}>
+                      Répondly<span style={{ color: C.blue }}>.</span>
                     </span>
                   </a>
                 </div>
@@ -803,8 +844,8 @@ export default function DashboardShell() {
             <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: `1px solid ${C.sidebarHover}`, flexShrink: 0 }}>
               <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
                 <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                <span style={{ fontSize: 18, fontWeight: 700, color: C.white, letterSpacing: '-0.02em' }}>
-                  Répondly
+                <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.white, letterSpacing: '-0.02em' }}>
+                  Répondly<span style={{ color: C.blue }}>.</span>
                 </span>
               </a>
             </div>
@@ -930,8 +971,8 @@ export default function DashboardShell() {
                 {/* Repondly branding */}
                 <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 'auto' }}>
                   <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                  <span style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-                    Répondly
+                  <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.textPrimary, letterSpacing: '-0.02em' }}>
+                    Répondly<span style={{ color: C.blue }}>.</span>
                   </span>
                 </a>
 
@@ -992,8 +1033,8 @@ export default function DashboardShell() {
               <>
                 <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginRight: 8 }}>
                   <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                  <span style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-                    Répondly
+                  <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.textPrimary, letterSpacing: '-0.02em' }}>
+                    Répondly<span style={{ color: C.blue }}>.</span>
                   </span>
                 </a>
                 <div>
@@ -1092,9 +1133,18 @@ export default function DashboardShell() {
                 transition={{ duration: 0.15 }}
                 style={{ height: activePage === 'inbox' ? '100%' : 'auto' }}
               >
-                {activePage === 'inbox' && <MessagerieView />}
+                {activePage === 'inbox' && (
+                  <MessagerieView
+                    onConversationChange={(id, status) => setActiveConversation({ id, status })}
+                    externalNotesOpen={messagerieNotesOpen}
+                    onNotesOpenChange={setMessagerieNotesOpen}
+                  />
+                )}
                 {activePage === 'channels' && (
-                  <ChannelsPage waConnected={waConnected} fbConnected={fbConnected} igConnected={igConnected} onStatusChange={fetchStatus} onToast={showToast} />
+                  <ChannelsView
+                    waConnected={waConnected} fbConnected={fbConnected} igConnected={igConnected}
+                    onStatusChange={fetchStatus} onToast={showToast} isMobile={isMobile}
+                  />
                 )}
                 {activePage === 'home' && (
                   <HomeView
@@ -1176,6 +1226,7 @@ export default function DashboardShell() {
               })}
             </div>
           )}
+        </div>
         </div>
       </div>
     </>
@@ -1394,5 +1445,436 @@ function HomeView({
       {/* ── AI Bot Activity Widget ── */}
       <BotActivityWidget />
     </div>
+  )
+}
+
+// ── Channels view ────────────────────────────────────────────────────────────────
+function ChannelsView({
+  waConnected, fbConnected, igConnected, onStatusChange, onToast, isMobile,
+}: {
+  waConnected: boolean; fbConnected: boolean; igConnected: boolean
+  onStatusChange: () => void; onToast: (type: 'error' | 'success', msg: string) => void
+  isMobile: boolean
+}) {
+  const [connectingFb, setConnectingFb] = useState(false)
+  const [connectingWa, setConnectingWa] = useState(false)
+  const [showDisconnectModal, setShowDisconnectModal] = useState<{ channel: string; onConfirm: () => void } | null>(null)
+  const [disconnecting, setDisconnecting] = useState(false)
+
+  const META_APP_ID = process.env.NEXT_PUBLIC_META_APP_ID || ''
+  const META_CONFIG_ID = process.env.NEXT_PUBLIC_META_CONFIG_ID || ''
+
+  // Load FB SDK
+  useEffect(() => {
+    const loadFBSDK = () => {
+      if (typeof window !== 'undefined' && !(window as any).FB) {
+        const script = document.createElement('script')
+        script.id = 'facebook-jssdk'
+        script.src = 'https://connect.facebook.net/en_US/sdk.js'
+        script.async = true
+        script.defer = true
+        document.body.appendChild(script)
+        ;(window as any).fbAsyncInit = () => {
+          ;(window as any).FB.init({ appId: META_APP_ID, cookie: true, xfbml: false, version: 'v21.0' })
+        }
+      }
+    }
+    loadFBSDK()
+  }, [META_APP_ID])
+
+  // Handle Facebook/Instagram connect
+  const handleFbConnect = () => {
+    if (!META_APP_ID) {
+      onToast('error', 'NEXT_PUBLIC_META_APP_ID non configuré')
+      return
+    }
+    const FB = (window as any).FB
+    if (!FB) {
+      onToast('error', 'SDK Facebook pas prêt')
+      return
+    }
+    setConnectingFb(true)
+    FB.login(
+      (response: any) => {
+        if (response.status !== 'connected' || !response.authResponse?.accessToken) {
+          setConnectingFb(false)
+          return
+        }
+        connectFbWithToken(response.authResponse.accessToken)
+      },
+      { scope: 'pages_show_list,pages_messaging,pages_read_engagement,instagram_basic,instagram_manage_messages', return_scopes: true, auth_type: 'rerequest' }
+    )
+  }
+
+  const connectFbWithToken = async (token: string) => {
+    try {
+      const res = await fetch('/api/auth/meta/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fbAccessToken: token }),
+      })
+      const d = await res.json()
+      if (!res.ok || !d.success) throw new Error(d.error || 'Échec connexion')
+      onToast('success', 'Facebook & Instagram connectés !')
+      onStatusChange()
+    } catch (err: any) {
+      onToast('error', err.message)
+    } finally {
+      setConnectingFb(false)
+    }
+  }
+
+  // Handle WhatsApp connect
+  const handleWaConnect = () => {
+    if (!META_CONFIG_ID) {
+      onToast('error', 'NEXT_PUBLIC_META_CONFIG_ID non configuré')
+      return
+    }
+    const FB = (window as any).FB
+    if (!FB) {
+      onToast('error', 'SDK pas prêt')
+      return
+    }
+    setConnectingWa(true)
+    FB.login(
+      () => {},
+      { config_id: META_CONFIG_ID, response_type: 'code', override_default_response_type: true, extras: { setup: {}, featureType: '', sessionInfoVersion: '3' } }
+    )
+  }
+
+  // Listen for WA Embedded Signup
+  useEffect(() => {
+    const handle = async (e: MessageEvent) => {
+      if (e.origin !== 'https://www.facebook.com') return
+      try {
+        const data = JSON.parse(e.data)
+        if (data.type !== 'WA_EMBEDDED_SIGNUP') return
+        const res = await fetch('/api/whatsapp/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumberId: data.data.phone_number_id, wabaId: data.data.waba_id }),
+        })
+        const d = await res.json()
+        if (!res.ok) throw new Error(d.error || 'Échec')
+        onToast('success', 'WhatsApp connecté !')
+        onStatusChange()
+      } catch (err: any) {
+        onToast('error', err.message)
+      } finally {
+        setConnectingWa(false)
+      }
+    }
+    window.addEventListener('message', handle)
+    return () => window.removeEventListener('message', handle)
+  }, [onToast, onStatusChange])
+
+  // Disconnect handlers
+  const handleDisconnectFb = () => {
+    setShowDisconnectModal({
+      channel: 'Facebook & Instagram',
+      onConfirm: async () => {
+        setDisconnecting(true)
+        try {
+          const res = await fetch('/api/meta/pages')
+          if (!res.ok) throw new Error('Erreur')
+          const data = await res.json()
+          await Promise.all((data.pages || []).map((p: any) =>
+            fetch(`/api/meta/pages?pageId=${p.pageId}&channel=${p.channel}`, { method: 'DELETE' })
+          ))
+          onToast('success', 'Déconnecté')
+          onStatusChange()
+        } catch (err: any) {
+          onToast('error', err.message)
+        } finally {
+          setDisconnecting(false)
+          setShowDisconnectModal(null)
+        }
+      },
+    })
+  }
+
+  const handleDisconnectWa = () => {
+    setShowDisconnectModal({
+      channel: 'WhatsApp',
+      onConfirm: async () => {
+        setDisconnecting(true)
+        try {
+          const res = await fetch('/api/whatsapp/disconnect', { method: 'POST' })
+          if (!res.ok) throw new Error('Erreur')
+          onToast('success', 'WhatsApp déconnecté')
+          onStatusChange()
+        } catch (err: any) {
+          onToast('error', err.message)
+        } finally {
+          setDisconnecting(false)
+          setShowDisconnectModal(null)
+        }
+      },
+    })
+  }
+
+  return (
+    <>
+      <AnimatePresence>
+        {showDisconnectModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+            onClick={() => setShowDisconnectModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{ background: C.cardBg, borderRadius: 16, padding: '24px', width: isMobile ? '90%' : 360, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: `1px solid ${C.border}` }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <Unlink size={18} color={C.red} />
+              </div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary, marginBottom: 8 }}>Déconnecter {showDisconnectModal.channel} ?</h3>
+              <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.6, marginBottom: 20 }}>
+                Cela supprimera l'inbox dans Chatwoot. Vous pourrez reconnecter à tout moment.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setShowDisconnectModal(null)} style={{ flex: 1, padding: '10px', borderRadius: 8, border: `1px solid ${C.border}`, background: C.cardBg, color: C.textPrimary, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  Annuler
+                </button>
+                <button onClick={showDisconnectModal.onConfirm} disabled={disconnecting} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: C.red, color: '#fff', fontSize: 13, fontWeight: 600, cursor: disconnecting ? 'not-allowed' : 'pointer', opacity: disconnecting ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  {disconnecting ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Unlink size={13} />}
+                  Déconnecter
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div style={{
+        padding: isMobile ? '16px' : '28px 32px',
+        minHeight: '100%',
+        background: C.pageBg,
+      }}>
+        {/* Header */}
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: C.textPrimary, marginBottom: 8 }}>
+            Canaux de messagerie
+          </h2>
+          <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.6 }}>
+            Connectez vos canaux pour recevoir et répondre aux messages automatiquement.
+          </p>
+        </div>
+
+        {/* Status summary */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+          {[
+            { label: 'WhatsApp', active: waConnected, color: C.whatsapp, icon: <Smartphone size={14} /> },
+            { label: 'Facebook', active: fbConnected, color: C.facebook, icon: <MessageSquare size={14} /> },
+            { label: 'Instagram', active: igConnected, color: C.instagram, icon: <Radio size={14} /> },
+          ].map(ch => (
+            <div key={ch.label} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 16px', borderRadius: 12,
+              background: ch.active ? `${ch.color}0d` : C.cardBg,
+              border: `1px solid ${ch.active ? `${ch.color}2a` : C.border}`,
+              flex: isMobile ? '1 1 100%' : '1',
+              minWidth: isMobile ? '100%' : 0,
+            }}>
+              <span style={{ color: ch.active ? ch.color : C.muted }}>{ch.icon}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: ch.active ? C.textPrimary : C.textSecondary }}>{ch.label}</span>
+              <span style={{
+                marginLeft: 'auto',
+                width: 8, height: 8, borderRadius: '50%',
+                background: ch.active ? ch.color : C.border,
+                boxShadow: ch.active ? `0 0 8px ${ch.color}cc` : 'none',
+              }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Channel cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+          {/* WhatsApp */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}
+            style={{
+              background: C.cardBg, borderRadius: 16, border: `1px solid ${waConnected ? `${C.whatsapp}33` : C.border}`,
+              overflow: 'hidden', boxShadow: waConnected ? `0 4px 24px ${C.whatsapp}12` : '0 1px 3px rgba(0,0,0,0.08)',
+            }}
+          >
+            {waConnected && <div style={{ height: 3, background: C.whatsapp }} />}
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${C.whatsapp}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.whatsapp }}>
+                  <Smartphone size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary }}>WhatsApp Business</div>
+                  <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>
+                    {waConnected ? 'Connecté et opérationnel' : 'Non connecté'}
+                  </div>
+                </div>
+              </div>
+              {!waConnected && (
+                <button
+                  onClick={handleWaConnect} disabled={connectingWa}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '10px', borderRadius: 8, border: 'none',
+                    background: connectingWa ? C.muted : C.whatsapp, color: '#fff',
+                    fontSize: 13, fontWeight: 600, cursor: connectingWa ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {connectingWa ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Link2 size={14} />}
+                  {connectingWa ? 'Connexion...' : 'Connecter WhatsApp'}
+                </button>
+              )}
+              {waConnected && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={handleDisconnectWa}
+                    style={{
+                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      padding: '9px', borderRadius: 8, border: `1px solid ${C.red}`,
+                      background: '#fef2f2', color: C.red, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    <Unlink size={13} /> Déconnecter
+                  </button>
+                  <button
+                    onClick={() => window.open('https://inbox.repondly.com', '_blank')}
+                    style={{ padding: '9px', borderRadius: 8, border: `1px solid ${C.border}`, background: C.cardBg, cursor: 'pointer' }}
+                    title="Ouvrir dans Chatwoot"
+                  >
+                    <ExternalLink size={13} color={C.textSecondary} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Facebook */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+            style={{
+              background: C.cardBg, borderRadius: 16, border: `1px solid ${fbConnected ? `${C.facebook}33` : C.border}`,
+              overflow: 'hidden', boxShadow: fbConnected ? `0 4px 24px ${C.facebook}12` : '0 1px 3px rgba(0,0,0,0.08)',
+            }}
+          >
+            {fbConnected && <div style={{ height: 3, background: C.facebook }} />}
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${C.facebook}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.facebook }}>
+                  <MessageSquare size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary }}>Facebook Messenger</div>
+                  <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>
+                    {fbConnected ? 'Connecté et opérationnel' : 'Non connecté'}
+                  </div>
+                </div>
+              </div>
+              {!fbConnected && (
+                <button
+                  onClick={handleFbConnect} disabled={connectingFb}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '10px', borderRadius: 8, border: 'none',
+                    background: connectingFb ? C.muted : C.facebook, color: '#fff',
+                    fontSize: 13, fontWeight: 600, cursor: connectingFb ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {connectingFb ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Link2 size={14} />}
+                  {connectingFb ? 'Connexion...' : 'Connecter Facebook'}
+                </button>
+              )}
+              {fbConnected && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={handleDisconnectFb}
+                    style={{
+                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      padding: '9px', borderRadius: 8, border: `1px solid ${C.red}`,
+                      background: '#fef2f2', color: C.red, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    <Unlink size={13} /> Déconnecter
+                  </button>
+                  <button
+                    onClick={() => window.open('https://inbox.repondly.com', '_blank')}
+                    style={{ padding: '9px', borderRadius: 8, border: `1px solid ${C.border}`, background: C.cardBg, cursor: 'pointer' }}
+                    title="Ouvrir dans Chatwoot"
+                  >
+                    <ExternalLink size={13} color={C.textSecondary} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Instagram */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            style={{
+              background: C.cardBg, borderRadius: 16, border: `1px solid ${igConnected ? `${C.instagram}33` : C.border}`,
+              overflow: 'hidden', boxShadow: igConnected ? `0 4px 24px ${C.instagram}12` : '0 1px 3px rgba(0,0,0,0.08)',
+            }}
+          >
+            {igConnected && <div style={{ height: 3, background: C.instagram }} />}
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${C.instagram}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.instagram }}>
+                  <Radio size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary }}>Instagram Direct</div>
+                  <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>
+                    {igConnected ? 'Connecté et opérationnel' : 'Non connecté'}
+                  </div>
+                </div>
+              </div>
+              {!igConnected && (
+                <button
+                  onClick={handleFbConnect} disabled={connectingFb}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '10px', borderRadius: 8, border: 'none',
+                    background: connectingFb ? C.muted : C.instagram, color: '#fff',
+                    fontSize: 13, fontWeight: 600, cursor: connectingFb ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {connectingFb ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Link2 size={14} />}
+                  {connectingFb ? 'Connexion...' : 'Connecter Instagram'}
+                </button>
+              )}
+              {igConnected && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={handleDisconnectFb}
+                    style={{
+                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      padding: '9px', borderRadius: 8, border: `1px solid ${C.red}`,
+                      background: '#fef2f2', color: C.red, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    <Unlink size={13} /> Déconnecter
+                  </button>
+                  <button
+                    onClick={() => window.open('https://inbox.repondly.com', '_blank')}
+                    style={{ padding: '9px', borderRadius: 8, border: `1px solid ${C.border}`, background: C.cardBg, cursor: 'pointer' }}
+                    title="Ouvrir dans Chatwoot"
+                  >
+                    <ExternalLink size={13} color={C.textSecondary} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Info note */}
+        <div style={{ background: C.cardBg, borderRadius: 12, padding: '16px', border: `1px solid ${C.border}`, fontSize: 12, color: C.textSecondary, lineHeight: 1.6 }}>
+          <strong>Note :</strong> Répondly accède uniquement aux messages de vos pages et comptes connectés. Aucune publication n'est effectuée en votre nom.
+        </div>
+      </div>
+    </>
   )
 }
