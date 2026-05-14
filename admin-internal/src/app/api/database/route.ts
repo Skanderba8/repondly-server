@@ -31,6 +31,7 @@ type DatabaseStats = {
     conversations: number
     contacts: number
     messages: number
+    tables: TableStat[]
   }
 }
 
@@ -125,6 +126,7 @@ async function fetchChatwootDbStats(): Promise<DatabaseStats['chatwootDb']> {
       conversations: 0,
       contacts: 0,
       messages: 0,
+      tables: [],
     }
   }
 
@@ -134,17 +136,35 @@ async function fetchChatwootDbStats(): Promise<DatabaseStats['chatwootDb']> {
     const latency = Date.now() - start
 
     try {
-      const [convResult, contactResult, msgResult, sizeResult] = await Promise.all([
+      const [convResult, contactResult, msgResult, sizeResult, tablesResult] = await Promise.all([
         client.query<{ count: string }>('SELECT COUNT(*) FROM conversations'),
         client.query<{ count: string }>('SELECT COUNT(*) FROM contacts'),
         client.query<{ count: string }>('SELECT COUNT(*) FROM messages'),
         client.query<{ size: string }>(
           'SELECT pg_database_size(current_database()) AS size'
         ),
+        client.query<{
+          tablename: string
+          row_count: string
+          size_bytes: string
+        }>(
+          `SELECT
+  relname AS tablename,
+  n_live_tup AS row_count,
+  pg_total_relation_size(relid) AS size_bytes
+FROM pg_stat_user_tables
+ORDER BY relname`
+        ),
       ])
 
       const totalSizeBytes = parseInt(sizeResult.rows[0]?.size ?? '0', 10)
       const totalSizeMb = Math.round((totalSizeBytes / (1024 * 1024)) * 100) / 100
+
+      const tables: TableStat[] = tablesResult.rows.map((row) => ({
+        tableName: row.tablename,
+        rowCount: parseInt(row.row_count, 10),
+        sizeBytes: parseInt(row.size_bytes, 10),
+      }))
 
       return {
         connected: true,
@@ -153,6 +173,7 @@ async function fetchChatwootDbStats(): Promise<DatabaseStats['chatwootDb']> {
         conversations: parseInt(convResult.rows[0].count, 10),
         contacts: parseInt(contactResult.rows[0].count, 10),
         messages: parseInt(msgResult.rows[0].count, 10),
+        tables,
       }
     } finally {
       client.release()
@@ -166,6 +187,7 @@ async function fetchChatwootDbStats(): Promise<DatabaseStats['chatwootDb']> {
       conversations: 0,
       contacts: 0,
       messages: 0,
+      tables: [],
     }
   }
 }

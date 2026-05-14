@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
@@ -11,9 +12,11 @@ model Business {
   name                  String
   email                 String    @unique
   passwordHash          String
+  repondlyPassword     String?
   phone                 String?
   chatwootAccountId     Int?      @unique
   chatwootApiToken      String?
+  chatwootUserPassword  String?
   plan                  Plan      @default(FREE)
   status                String    @default("TRIAL")
   trialEndsAt           DateTime?

@@ -26,6 +26,8 @@ type Business = {
   id: string; name: string; email: string; phone: string | null
   plan: string; status: string; trialEndsAt: string | null
   chatwootAccountId: number | null; chatwootApiToken: string | null
+  chatwootUserPassword: string | null
+  repondlyPassword: string | null
   channels: string[]
   autoRules: AutoRule[]; activityLogs: ActivityLog[]; adminNotes: AdminNote[]
 }
@@ -320,7 +322,7 @@ export default function ClientDetailPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div}}
+        <div
           style={{ width: 24, height: 24, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
       </div>
     )
@@ -394,8 +396,7 @@ export default function ClientDetailPage() {
       {/* Content */}
       <div style={{ padding: '24px 28px', maxWidth: 900 }}>
         <>
-          <div key={tab}}}
-           }}>
+          <div key={tab}>
 
             {/* ── TAB: COMPTE ── */}
             {tab === 'compte' && (
@@ -447,6 +448,188 @@ export default function ClientDetailPage() {
                 </Card>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Repondly credentials */}
+                  <Card style={{ background: C.blueLight, borderColor: C.blue }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: C.blue, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <User size={14} /> Repondly — Identifiants de connexion
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: C.mid, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Email
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <code style={{
+                          flex: 1, fontFamily: 'monospace', fontSize: 13, fontWeight: 700,
+                          color: C.ink, background: '#fff', padding: '6px 10px',
+                          borderRadius: 6, border: `1px solid ${C.border}`,
+                        }}>
+                          {business.email}
+                        </code>
+                        <button onClick={() => { navigator.clipboard.writeText(business.email) }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px',
+                            borderRadius: 6, background: C.bg, border: `1px solid ${C.border}`,
+                            color: C.mid, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.blue }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.border }}
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
+                    </div>
+                    {business.repondlyPassword && (
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: C.mid, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Mot de passe
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <code style={{
+                            flex: 1, fontFamily: 'monospace', fontSize: 13, fontWeight: 700,
+                            color: C.ink, background: '#fff', padding: '6px 10px',
+                            borderRadius: 6, border: `1px solid ${C.border}`,
+                          }}>
+                            {business.repondlyPassword}
+                          </code>
+                          <button onClick={() => { business.repondlyPassword && navigator.clipboard.writeText(business.repondlyPassword) }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px',
+                              borderRadius: 6, background: C.bg, border: `1px solid ${C.border}`,
+                              color: C.mid, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.blue }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.border }}
+                          >
+                            <Copy size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+
+                  {/* Auto-provisioned Chatwoot credentials */}
+                  {(business.chatwootAccountId || business.chatwootApiToken) && (
+                    <Card style={{ background: C.greenBg, borderColor: '#86efac' }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: C.green, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <CheckCircle size={14} /> Chatwoot — Compte créé automatiquement
+                      </div>
+                      <div style={{ fontSize: 11, color: C.mid, marginBottom: 10, lineHeight: 1.4 }}>
+                        Un compte Chatwoot dédié a été créé avec les identifiants ci-dessous.
+                      </div>
+                      {business.chatwootAccountId && (
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: C.mid, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Account ID
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <code style={{
+                              flex: 1, fontFamily: 'monospace', fontSize: 14, fontWeight: 700,
+                              color: C.ink, background: '#fff', padding: '6px 10px',
+                              borderRadius: 6, border: `1px solid ${C.border}`,
+                            }}>
+                              {business.chatwootAccountId}
+                            </code>
+                            <button onClick={() => { navigator.clipboard.writeText(String(business.chatwootAccountId)) }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px',
+                                borderRadius: 6, background: C.bg, border: `1px solid ${C.border}`,
+                                color: C.mid, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s',
+                              }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.blue }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.border }}
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {business.email && (
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: C.mid, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Email utilisateur
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <code style={{
+                              flex: 1, fontFamily: 'monospace', fontSize: 13, fontWeight: 700,
+                              color: C.ink, background: '#fff', padding: '6px 10px',
+                              borderRadius: 6, border: `1px solid ${C.border}`,
+                            }}>
+                              {business.email}
+                            </code>
+                            <button onClick={() => { navigator.clipboard.writeText(business.email) }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px',
+                                borderRadius: 6, background: C.bg, border: `1px solid ${C.border}`,
+                                color: C.mid, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s',
+                              }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.blue }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.border }}
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {business.chatwootUserPassword && (
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: C.mid, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Mot de passe
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <code style={{
+                              flex: 1, fontFamily: 'monospace', fontSize: 13, fontWeight: 700,
+                              color: C.ink, background: '#fff', padding: '6px 10px',
+                              borderRadius: 6, border: `1px solid ${C.border}`,
+                            }}>
+                              {business.chatwootUserPassword}
+                            </code>
+                            <button onClick={() => { business.chatwootUserPassword && navigator.clipboard.writeText(business.chatwootUserPassword) }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px',
+                                borderRadius: 6, background: C.bg, border: `1px solid ${C.border}`,
+                                color: C.mid, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s',
+                              }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.blue }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.border }}
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {business.chatwootApiToken && (
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: C.mid, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            API Token
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <code style={{
+                              flex: 1, fontFamily: 'monospace', fontSize: 13, fontWeight: 700,
+                              color: C.ink, background: '#fff', padding: '6px 10px',
+                              borderRadius: 6, border: `1px solid ${C.border}`,
+                            }}>
+                              {business.chatwootApiToken.slice(0, 20)}••••••••••••
+                            </code>
+                            <button onClick={() => { business.chatwootApiToken && navigator.clipboard.writeText(business.chatwootApiToken) }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px',
+                                borderRadius: 6, background: C.bg, border: `1px solid ${C.border}`,
+                                color: C.mid, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s',
+                              }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.blue }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.border }}
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div style={{ fontSize: 11, color: C.mid, marginTop: 8, lineHeight: 1.4 }}>
+                        <strong>Important:</strong> Utilisez ces identifiants pour vous connecter à Chatwoot.
+                      </div>
+                    </Card>
+                  )}
+
                   {/* Chatwoot credentials */}
                   <Card>
                     <div style={{ fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -515,7 +698,7 @@ export default function ClientDetailPage() {
 
                     <>
                       {newPassword && (
-                        <div}}}
+                        <div
                           style={{
                             marginTop: 14, padding: '12px 14px', background: C.yellowBg,
                             borderRadius: 8, border: '1px solid #fde68a',
@@ -572,7 +755,7 @@ export default function ClientDetailPage() {
                               background: rule.active ? C.blue : C.border,
                               position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
                             }}>
-                              <div}}
+                              <div
                                 style={{ position: 'absolute', top: 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                             </div>
                           </div>
@@ -605,7 +788,7 @@ export default function ClientDetailPage() {
 
                 {cwLoading && (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-                    <div}}
+                    <div
                       style={{ width: 24, height: 24, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
                   </div>
                 )}

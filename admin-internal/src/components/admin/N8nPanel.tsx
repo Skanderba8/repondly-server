@@ -180,9 +180,6 @@ export default function N8nPanel() {
 
       {/* ── Header ── */}
       <div
-       }
-       }
-       }
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 28, flexWrap: 'wrap', gap: 12,
@@ -268,28 +265,22 @@ export default function N8nPanel() {
       </div>
 
       {/* ── Loading ── */}
-      <>
-        {loading && (
+      {loading && (
+        <div
+          key="loading"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            minHeight: '40vh',
+          }}
+        >
           <div
-            key="loading"
-           }
-           }
-           }
             style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              minHeight: '40vh',
+              width: 28, height: 28,
+              border: `2px solid ${C.border}`,
+              borderTopColor: C.blue,
+              borderRadius: '50%',
             }}
-          >
-            <div
-             }
-             }
-              style={{
-                width: 28, height: 28,
-                border: `2px solid ${C.border}`,
-                borderTopColor: C.blue,
-                borderRadius: '50%',
-              }}
-            />
+          />
           </div>
         )}
 
@@ -297,9 +288,6 @@ export default function N8nPanel() {
         {!loading && error && (
           <div
             key="error"
-           }
-           }
-           }
             style={{
               display: 'flex', alignItems: 'center', gap: 12,
               background: C.redBg, border: `1px solid ${C.red}30`,
@@ -316,9 +304,6 @@ export default function N8nPanel() {
         {!loading && !error && data && (
           <div
             key="content"
-           }
-           }
-           }
             style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
           >
 
@@ -437,13 +422,9 @@ export default function N8nPanel() {
                       </tr>
                     </thead>
                     <tbody>
-                      <>
                         {data.workflows.map((wf, i) => (
                           <tr
                             key={wf.id}
-                           }
-                           }
-                           }
                             style={{
                               borderBottom: i < data.workflows.length - 1
                                 ? `1px solid ${C.border}`
@@ -521,8 +502,6 @@ export default function N8nPanel() {
                               >
                                 {toggling[wf.id] ? (
                                   <span
-                                   }
-                                   }
                                     style={{ display: 'inline-flex' }}
                                   >
                                     <RefreshCw size={11} />
@@ -537,7 +516,6 @@ export default function N8nPanel() {
                             </td>
                           </tr>
                         ))}
-                      </>
                     </tbody>
                   </table>
                 )}
@@ -546,7 +524,6 @@ export default function N8nPanel() {
 
           </div>
         )}
-      </>
 
       <style>{`
         @keyframes spin {

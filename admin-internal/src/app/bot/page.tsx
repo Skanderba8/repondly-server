@@ -84,7 +84,7 @@ export default function BotMonitorPage() {
   return (
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
       {/* Header */}
-      <div}}}
+      <div
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>Monitoring Bot</h1>
         <button
@@ -178,9 +178,6 @@ export default function BotMonitorPage() {
           <>
             {showFilters && (
               <div
-               }
-               }
-               }
                 style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}
               >
                 <select
@@ -276,8 +273,6 @@ export default function BotMonitorPage() {
       <>
         {noRuleGroups.length > 0 && (
           <div
-           }
-           }
             style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}
           >
             <div style={{ padding: '14px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>

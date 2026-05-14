@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Plus, ChevronRight, CheckCircle, XCircle, Clock, Ban, RefreshCw, MessageSquare } from 'lucide-react'
+import { Search, Plus, ChevronRight, ChevronDown, CheckCircle, XCircle, Clock, Ban, RefreshCw, MessageSquare, Key, Wifi, WifiOff, AlertCircle, Copy, Eye, MessageCircle } from 'lucide-react'
 
 const C = {
   bg: '#ffffff', bgAlt: '#f4f7fb', blue: '#1a6bff', blueLight: '#e8f0ff',
@@ -32,6 +32,14 @@ type Client = {
   plan: string
   status: string
   chatwootAccountId: number | null
+  chatwootApiToken: string | null
+  repondlyPassword: string | null
+  whatsappConnected: boolean
+  facebookConnected: boolean
+  instagramConnected: boolean
+  whatsappInboxId: number | null
+  facebookInboxId: number | null
+  instagramInboxId: number | null
   createdAt: string
   _count?: { activityLogs: number }
 }
@@ -46,6 +54,8 @@ export default function ClientsPage() {
   const [creating, setCreating] = useState(false)
   const [newForm, setNewForm] = useState({ name: '', email: '', plan: 'TRIAL', status: 'TRIAL' })
   const [submitting, setSubmitting] = useState(false)
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const [showPasswords, setShowPasswords] = useState<Set<string>>(new Set())
 
   async function load() {
     setLoading(true)
@@ -78,6 +88,35 @@ export default function ClientsPage() {
     setNewForm({ name: '', email: '', plan: 'TRIAL', status: 'TRIAL' })
     setSubmitting(false)
   }
+
+  function toggleExpand(id: string) {
+    setExpandedRows(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function togglePasswordVisibility(id: string) {
+    setShowPasswords(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function getProblems(client: Client): string[] {
+    const problems: string[] = []
+    if (!client.chatwootAccountId) problems.push('Chatwoot non configuré')
+    if (!client.repondlyPassword) problems.push('Mot de passe Repondly manquant')
+    if (!client.whatsappConnected && !client.facebookConnected && !client.instagramConnected) {
+      problems.push('Aucun canal connecté')
+    }
+    return problems
+  }
+
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '8px 12px',
@@ -149,8 +188,7 @@ export default function ClientsPage() {
       {/* Create form inline */}
       <>
         {creating && (
-          <div}}
-           }}
+          <div
             style={{ overflow: 'hidden', marginBottom: 12 }}>
             <form onSubmit={handleCreate} style={{
               background: C.bg, border: `1px solid ${C.blue}`,
@@ -206,7 +244,7 @@ export default function ClientsPage() {
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-            <div}}
+            <div
               style={{ width: 22, height: 22, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
           </div>
         ) : filtered.length === 0 ? (
@@ -218,66 +256,233 @@ export default function ClientsPage() {
             {filtered.map((client, i) => {
               const sm = STATUS_META[client.status] ?? STATUS_META.TRIAL
               const pm = PLAN_META[client.plan] ?? PLAN_META.FREE
+              const expanded = expandedRows.has(client.id)
+              const problems = getProblems(client)
               return (
-                <div key={client.id}
-                 }}}>
-                  <Link href={`/clients/${client.id}`} style={{ textDecoration: 'none', display: 'block' }}>
-                    <div style={{
-                      display: 'grid', gridTemplateColumns: '2fr 2fr 100px 90px 80px 80px 36px',
-                      padding: '12px 18px', alignItems: 'center',
-                      borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : 'none',
-                      transition: 'background 0.12s', cursor: 'pointer',
-                    }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = C.bgAlt }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
-                    >
-                      {/* Name */}
-                      <div style={{ fontWeight: 600, fontSize: 13.5, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {client.name}
-                      </div>
-
-                      {/* Email */}
-                      <div style={{ fontSize: 13, color: C.mid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {client.email}
-                      </div>
-
-                      {/* Plan */}
-                      <div>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 99, background: pm.bg, color: pm.color }}>
-                          {client.plan}
+                <div key={client.id}>
+                  {/* Main row */}
+                  <div style={{
+                    display: 'grid', gridTemplateColumns: '2fr 2fr 100px 90px 80px 80px 36px',
+                    padding: '12px 18px', alignItems: 'center',
+                    borderBottom: expanded ? `1px solid ${C.border}` : i < filtered.length - 1 ? `1px solid ${C.border}` : 'none',
+                    transition: 'background 0.12s', cursor: 'pointer',
+                    background: expanded ? C.bgAlt : 'transparent',
+                  }}
+                    onClick={() => toggleExpand(client.id)}
+                    onMouseEnter={e => { if (!expanded) (e.currentTarget as HTMLDivElement).style.background = C.bgAlt }}
+                    onMouseLeave={e => { if (!expanded) (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+                  >
+                    {/* Name */}
+                    <div style={{ fontWeight: 600, fontSize: 13.5, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {client.name}
+                      {problems.length > 0 && (
+                        <span style={{ marginLeft: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <AlertCircle size={12} color={C.red} />
                         </span>
-                      </div>
+                      )}
+                    </div>
 
-                      {/* Status */}
-                      <div>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 99, background: sm.bg, color: sm.color }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: sm.dot, display: 'inline-block', flexShrink: 0 }} />
-                          {client.status}
+                    {/* Email */}
+                    <div style={{ fontSize: 13, color: C.mid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {client.email}
+                    </div>
+
+                    {/* Plan */}
+                    <div>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 99, background: pm.bg, color: pm.color }}>
+                        {client.plan}
+                      </span>
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 99, background: sm.bg, color: sm.color }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: sm.dot, display: 'inline-block', flexShrink: 0 }} />
+                        {client.status}
+                      </span>
+                    </div>
+
+                    {/* Chatwoot linked? */}
+                    <div>
+                      {client.chatwootAccountId ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: C.green }}>
+                          <MessageSquare size={12} /> #{client.chatwootAccountId}
                         </span>
+                      ) : (
+                        <span style={{ fontSize: 11, color: C.mid }}>—</span>
+                      )}
+                    </div>
+
+                    {/* Date */}
+                    <div style={{ fontSize: 11, color: C.mid }}>
+                      {new Date(client.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' })}
+                    </div>
+
+                    {/* Expand arrow */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      {expanded ? <ChevronDown size={15} color={C.blue} /> : <ChevronRight size={15} color={C.mid} />}
+                    </div>
+                  </div>
+
+                  {/* Expanded details */}
+                  {expanded && (
+                    <div style={{ background: C.bgAlt, padding: '16px 18px', borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : 'none' }}>
+                      {/* Problems warning */}
+                      {problems.length > 0 && (
+                        <div style={{ background: C.redBg, border: `1px solid ${C.red}30`, borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <AlertCircle size={14} color={C.red} />
+                          <div style={{ fontSize: 12, color: C.red }}>
+                            <strong>Problèmes:</strong> {problems.join(', ')}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Credentials grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        {/* Repondly credentials */}
+                        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, fontSize: 12, fontWeight: 700, color: C.ink }}>
+                            <Key size={13} color={C.blue} /> Identifiants Repondly
+                          </div>
+                          <div style={{ marginBottom: 10 }}>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: C.mid, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Email
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <code style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', color: C.ink, background: C.bgAlt, padding: '6px 10px', borderRadius: 6, wordBreak: 'break-all' }}>
+                                {client.email}
+                              </code>
+                              <button onClick={() => navigator.clipboard.writeText(client.email)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 5, padding: '4px 8px', cursor: 'pointer', color: C.mid, fontSize: 11 }}>
+                                <Copy size={11} />
+                              </button>
+                            </div>
+                          </div>
+                          {client.repondlyPassword && (
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 600, color: C.mid, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                Mot de passe
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <code style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', color: C.ink, background: C.bgAlt, padding: '6px 10px', borderRadius: 6, wordBreak: 'break-all' }}>
+                                  {showPasswords.has(client.id) ? client.repondlyPassword : '••••••••••••••••'}
+                                </code>
+                                <button onClick={() => togglePasswordVisibility(client.id)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 5, padding: '4px 8px', cursor: 'pointer', color: C.mid, fontSize: 11 }}>
+                                  <Eye size={11} />
+                                </button>
+                                <button onClick={() => client.repondlyPassword && navigator.clipboard.writeText(client.repondlyPassword)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 5, padding: '4px 8px', cursor: 'pointer', color: C.mid, fontSize: 11 }}>
+                                  <Copy size={11} />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Chatwoot credentials */}
+                        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, fontSize: 12, fontWeight: 700, color: C.ink }}>
+                            <MessageSquare size={13} color={C.mid} /> Connexion Chatwoot
+                          </div>
+                          {client.chatwootAccountId ? (
+                            <>
+                              <div style={{ marginBottom: 10 }}>
+                                <div style={{ fontSize: 10, fontWeight: 600, color: C.mid, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                  Account ID
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <code style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', color: C.ink, background: C.bgAlt, padding: '6px 10px', borderRadius: 6 }}>
+                                    #{client.chatwootAccountId}
+                                  </code>
+                                  <button onClick={() => navigator.clipboard.writeText(String(client.chatwootAccountId))} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 5, padding: '4px 8px', cursor: 'pointer', color: C.mid, fontSize: 11 }}>
+                                    <Copy size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.green, background: C.greenBg, padding: '6px 10px', borderRadius: 6, width: 'fit-content' }}>
+                                <Wifi size={11} /> Connecté
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.red, background: C.redBg, padding: '6px 10px', borderRadius: 6, width: 'fit-content' }}>
+                              <WifiOff size={11} /> Non configuré
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Chatwoot linked? */}
-                      <div>
-                        {client.chatwootAccountId ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: C.green }}>
-                            <MessageSquare size={12} /> #{client.chatwootAccountId}
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: 11, color: C.mid }}>—</span>
-                        )}
+                      {/* Inboxes status */}
+                      <div style={{ marginTop: 16, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, fontSize: 12, fontWeight: 700, color: C.ink }}>
+                          <MessageCircle size={13} color={C.mid} /> Canaux connectés
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                          {/* WhatsApp */}
+                          <div style={{ 
+                            display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', 
+                            background: client.whatsappConnected ? C.greenBg : C.bgAlt, 
+                            borderRadius: 6, border: `1px solid ${client.whatsappConnected ? C.green : C.border}`,
+                          }}>
+                            <MessageCircle size={14} color={client.whatsappConnected ? C.green : C.mid} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: client.whatsappConnected ? C.green : C.mid }}>WhatsApp</div>
+                              <div style={{ fontSize: 10, color: C.mid }}>
+                                {client.whatsappConnected ? `Inbox #${client.whatsappInboxId}` : 'Non connecté'}
+                              </div>
+                            </div>
+                            {client.whatsappConnected ? (
+                              <CheckCircle size={14} color={C.green} />
+                            ) : (
+                              <XCircle size={14} color={C.mid} />
+                            )}
+                          </div>
+                          {/* Facebook */}
+                          <div style={{ 
+                            display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', 
+                            background: client.facebookConnected ? C.greenBg : C.bgAlt, 
+                            borderRadius: 6, border: `1px solid ${client.facebookConnected ? C.green : C.border}`,
+                          }}>
+                            <MessageCircle size={14} color={client.facebookConnected ? C.green : C.mid} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: client.facebookConnected ? C.green : C.mid }}>Facebook</div>
+                              <div style={{ fontSize: 10, color: C.mid }}>
+                                {client.facebookConnected ? `Inbox #${client.facebookInboxId}` : 'Non connecté'}
+                              </div>
+                            </div>
+                            {client.facebookConnected ? (
+                              <CheckCircle size={14} color={C.green} />
+                            ) : (
+                              <XCircle size={14} color={C.mid} />
+                            )}
+                          </div>
+                          {/* Instagram */}
+                          <div style={{ 
+                            display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', 
+                            background: client.instagramConnected ? C.greenBg : C.bgAlt, 
+                            borderRadius: 6, border: `1px solid ${client.instagramConnected ? C.green : C.border}`,
+                          }}>
+                            <MessageCircle size={14} color={client.instagramConnected ? C.green : C.mid} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: client.instagramConnected ? C.green : C.mid }}>Instagram</div>
+                              <div style={{ fontSize: 10, color: C.mid }}>
+                                {client.instagramConnected ? `Inbox #${client.instagramInboxId}` : 'Non connecté'}
+                              </div>
+                            </div>
+                            {client.instagramConnected ? (
+                              <CheckCircle size={14} color={C.green} />
+                            ) : (
+                              <XCircle size={14} color={C.mid} />
+                            )}
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Date */}
-                      <div style={{ fontSize: 11, color: C.mid }}>
-                        {new Date(client.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' })}
-                      </div>
-
-                      {/* Arrow */}
-                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <ChevronRight size={15} color={C.mid} />
+                      {/* View details link */}
+                      <div style={{ marginTop: 12 }}>
+                        <Link href={`/clients/${client.id}`} style={{ fontSize: 12, color: C.blue, textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          Voir les détails complets <ChevronRight size={12} />
+                        </Link>
                       </div>
                     </div>
-                  </Link>
+                  )}
                 </div>
               )
             })}

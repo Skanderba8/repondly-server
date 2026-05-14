@@ -19,7 +19,7 @@ type TableStat = { tableName: string; rowCount: number; sizeBytes: number }
 type MigrationRecord = { name: string; appliedAt: string | null; status: 'applied' | 'pending' }
 type DatabaseStats = {
   prismaDb: { connected: boolean; latency: number | null; totalSizeMb: number; tables: TableStat[]; migrations: MigrationRecord[] }
-  chatwootDb: { connected: boolean; latency: number | null; totalSizeMb: number; conversations: number; contacts: number; messages: number }
+  chatwootDb: { connected: boolean; latency: number | null; totalSizeMb: number; conversations: number; contacts: number; messages: number; tables: TableStat[] }
 }
 type TableData = {
   columns: Array<{ column_name: string; data_type: string }>
@@ -67,8 +67,8 @@ function StatusBadge({ connected, latency }: { connected: boolean; latency: numb
 // ── Table Viewer Modal ────────────────────────────────────────────────────────
 
 function TableViewerModal({
-  tableName, isSuperAdmin, onClose,
-}: { tableName: string; isSuperAdmin: boolean; onClose: () => void }) {
+  tableName, isSuperAdmin, onClose, db = 'prisma',
+}: { tableName: string; isSuperAdmin: boolean; onClose: () => void; db?: 'prisma' | 'chatwoot' }) {
   const [data, setData] = useState<TableData | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -81,7 +81,8 @@ function TableViewerModal({
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/database/tables/${tableName}?page=${p}&search=${encodeURIComponent(search)}`)
+      const endpoint = db === 'chatwoot' ? `/api/database/chatwoot-tables/${tableName}` : `/api/database/tables/${tableName}`
+      const res = await fetch(`${endpoint}?page=${p}&search=${encodeURIComponent(search)}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setData(await res.json() as TableData)
     } catch (e) {
@@ -89,7 +90,7 @@ function TableViewerModal({
     } finally {
       setLoading(false)
     }
-  }, [tableName, search])
+  }, [tableName, search, db])
 
   useEffect(() => { void fetchData(page) }, [page]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setPage(1); void fetchData(1) }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -120,10 +121,6 @@ function TableViewerModal({
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(13,27,46,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', overflowY: 'auto' }}>
       <div
-       }
-       }
-       }
-       }
         style={{ background: C.bg, borderRadius: 16, width: '100%', maxWidth: 1100, boxShadow: '0 24px 80px rgba(0,0,0,0.2)', overflow: 'hidden' }}
       >
         {/* Modal header */}
@@ -153,7 +150,7 @@ function TableViewerModal({
         <div style={{ overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}>
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
-              <div}}
+              <div
                 style={{ width: 24, height: 24, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%', margin: '0 auto' }} />
             </div>
           ) : error ? (
@@ -227,9 +224,9 @@ function TableViewerModal({
       {/* Delete confirmation */}
       <>
         {deleteConfirm && (
-          <div}}}
+          <div
             style={{ position: 'fixed', inset: 0, background: 'rgba(13,27,46,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div}}
+            <div
               style={{ background: C.bg, borderRadius: 12, padding: '24px 28px', maxWidth: 380, width: '90%', boxShadow: '0 16px 48px rgba(0,0,0,0.2)' }}>
               <h3 style={{ fontSize: 15, fontWeight: 700, color: C.ink, margin: '0 0 8px' }}>Supprimer cette ligne ?</h3>
               <p style={{ fontSize: 12, color: C.mid, margin: '0 0 6px' }}>
@@ -269,6 +266,7 @@ export default function DatabaseManager() {
   const [migrating, setMigrating] = useState(false)
   const [migrateResult, setMigrateResult] = useState<MigrateResult | null>(null)
   const [selectedTable, setSelectedTable] = useState<string | null>(null)
+  const [selectedDb, setSelectedDb] = useState<'prisma' | 'chatwoot'>('prisma')
 
   const fetchData = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true)
@@ -308,7 +306,7 @@ export default function DatabaseManager() {
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
 
       {/* Header */}
-      <div}}}
+      <div
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -323,7 +321,7 @@ export default function DatabaseManager() {
           {isSuperAdmin && (
             <button onClick={() => { void handleMigrate() }} disabled={migrating || loading}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: pendingMigrations.length > 0 ? C.yellow : C.bgAlt, color: pendingMigrations.length > 0 ? '#fff' : C.mid, border: `1px solid ${pendingMigrations.length > 0 ? C.yellow : C.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: migrating || loading ? 0.6 : 1 }}>
-              {migrating ? <span}} style={{ display: 'inline-flex' }}><RefreshCw size={13} /></span> : <Play size={13} />}
+              {migrating ? <span style={{ display: 'inline-flex' }}><RefreshCw size={13} /></span> : <Play size={13} />}
               {migrating ? 'Migration…' : 'Appliquer les migrations'}
             </button>
           )}
@@ -338,7 +336,7 @@ export default function DatabaseManager() {
       {/* Migration result */}
       <>
         {migrateResult && (
-          <div}}}
+          <div
             style={{ marginBottom: 18, background: migrateResult.success ? C.greenBg : C.redBg, border: `1px solid ${migrateResult.success ? C.green : C.red}30`, borderRadius: 12, padding: '14px 18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: migrateResult.success ? C.green : C.red, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
               {migrateResult.success ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
@@ -355,31 +353,43 @@ export default function DatabaseManager() {
 
       <>
         {loading && (
-          <div key="loading"}}}
+          <div key="loading"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40vh' }}>
-            <div}}
+            <div
               style={{ width: 28, height: 28, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
           </div>
         )}
 
         {!loading && error && (
-          <div key="error"}}
+          <div key="error"
             style={{ display: 'flex', alignItems: 'center', gap: 12, background: C.redBg, border: `1px solid ${C.red}30`, borderRadius: 12, padding: '16px 20px', color: C.red, fontSize: 14 }}>
             <AlertCircle size={18} /> {error}
           </div>
         )}
 
         {!loading && !error && data && (
-          <div key="content"}} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div key="content" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
             {/* DB connection cards */}
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
-                  { label: 'Prisma DB', db: data.prismaDb },
-                  { label: 'Chatwoot DB', db: data.chatwootDb },
-                ].map(({ label, db }) => (
-                  <div key={label} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px' }}>
+                  { label: 'Prisma DB', db: data.prismaDb, key: 'prisma' },
+                  { label: 'Chatwoot DB', db: data.chatwootDb, key: 'chatwoot' },
+                ].map(({ label, db, key }) => (
+                  <div
+                    key={label}
+                    onClick={() => db.connected && setSelectedDb(key as 'prisma' | 'chatwoot')}
+                    style={{
+                      background: C.bg,
+                      border: selectedDb === key ? `2px solid ${C.blue}` : `1px solid ${C.border}`,
+                      borderRadius: 14,
+                      padding: '20px 24px',
+                      cursor: db.connected ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.15s',
+                      opacity: db.connected ? 1 : 0.6,
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                       <div style={{ width: 36, height: 36, borderRadius: 9, background: db.connected ? C.greenBg : C.redBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Activity size={16} color={db.connected ? C.green : C.red} />
@@ -390,8 +400,9 @@ export default function DatabaseManager() {
                       </div>
                     </div>
                     {db.connected && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: C.blueLight, borderRadius: 8, padding: '8px 12px', fontSize: 12, color: C.blue, fontWeight: 600 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: selectedDb === key ? C.blueLight : C.bgAlt, borderRadius: 8, padding: '8px 12px', fontSize: 12, color: selectedDb === key ? C.blue : C.mid, fontWeight: 600 }}>
                         <HardDrive size={12} /> Taille totale : {db.totalSizeMb} MB
+                        {selectedDb === key && <span style={{ marginLeft: 'auto', fontSize: 11 }}>Sélectionné</span>}
                       </div>
                     )}
                   </div>
@@ -400,7 +411,7 @@ export default function DatabaseManager() {
             </div>
 
             {/* Chatwoot stats */}
-            {data.chatwootDb.connected && (
+            {selectedDb === 'chatwoot' && data.chatwootDb.connected && (
               <div>
                 <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
                   <div style={{ padding: '14px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -429,7 +440,7 @@ export default function DatabaseManager() {
             )}
 
             {/* Prisma tables — clickable */}
-            {data.prismaDb.connected && (
+            {selectedDb === 'prisma' && data.prismaDb.connected && (
               <div>
                 <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
                   <div style={{ padding: '14px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -452,6 +463,48 @@ export default function DatabaseManager() {
                         <tr key={table.tableName}
                           onClick={() => setSelectedTable(table.tableName)}
                           style={{ borderBottom: i < data.prismaDb.tables.length - 1 ? `1px solid ${C.border}` : 'none', cursor: 'pointer', transition: 'background 0.12s' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f4ff' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent' }}>
+                          <td style={{ padding: '11px 18px', fontWeight: 600, color: C.ink, fontFamily: 'monospace' }}>{table.tableName}</td>
+                          <td style={{ padding: '11px 18px', color: C.mid }}>{table.rowCount.toLocaleString('fr-FR')}</td>
+                          <td style={{ padding: '11px 18px', color: C.mid }}>{formatBytes(table.sizeBytes)}</td>
+                          <td style={{ padding: '11px 18px' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: C.blue, fontSize: 12, fontWeight: 600 }}>
+                              <Eye size={12} /> Explorer
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Chatwoot tables — clickable */}
+            {selectedDb === 'chatwoot' && data.chatwootDb.connected && (
+              <div>
+                <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Table2 size={14} color={C.mid} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                      Tables Chatwoot DB ({data.chatwootDb.tables.length})
+                    </span>
+                    <span style={{ fontSize: 11, color: C.mid, marginLeft: 'auto' }}>Cliquer pour explorer</span>
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.bgAlt }}>
+                        {['Table', 'Lignes', 'Taille', ''].map(h => (
+                          <th key={h} style={{ padding: '9px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.chatwootDb.tables.map((table, i) => (
+                        <tr key={table.tableName}
+                          onClick={() => setSelectedTable(table.tableName)}
+                          style={{ borderBottom: i < data.chatwootDb.tables.length - 1 ? `1px solid ${C.border}` : 'none', cursor: 'pointer', transition: 'background 0.12s' }}
                           onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f4ff' }}
                           onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent' }}>
                           <td style={{ padding: '11px 18px', fontWeight: 600, color: C.ink, fontFamily: 'monospace' }}>{table.tableName}</td>
@@ -524,6 +577,7 @@ export default function DatabaseManager() {
             tableName={selectedTable}
             isSuperAdmin={isSuperAdmin}
             onClose={() => setSelectedTable(null)}
+            db={selectedDb}
           />
         )}
       </>

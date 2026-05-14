@@ -57,9 +57,6 @@ export default function KanbanBoard({ businesses }: { businesses: Business[] }) 
           return (
             <div
               key={stage}
-             }
-             }
-             }
               style={{ width: 248, flexShrink: 0 }}
             >
               {/* Column header */}
@@ -112,10 +109,6 @@ export default function KanbanBoard({ businesses }: { businesses: Business[] }) 
                     return (
                       <div
                         key={b.id}
-                       }
-                       }
-                       }
-                        whileHover={{ y: -2, boxShadow: '0 6px 20px rgba(13,27,46,0.1)' }}
                         style={{
                           background: '#ffffff',
                           border: '1px solid #e2e8f0',

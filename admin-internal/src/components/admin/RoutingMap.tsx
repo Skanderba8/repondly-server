@@ -230,9 +230,6 @@ function RoutingCard({
 
   return (
     <div
-     }
-     }
-     }
       style={{
         background: isSpecial ? C.bgAlt : C.bg,
         border: `1px solid ${C.border}`,
@@ -349,9 +346,6 @@ export default function RoutingMap({ services, ssl }: RoutingMapProps) {
     <section>
       {/* Header */}
       <div
-       }
-       }
-       }
         style={{ marginBottom: 14 }}
       >
         <h2

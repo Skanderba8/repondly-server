@@ -52,9 +52,6 @@ export default function NewClientPage() {
   return (
     <div style={{ minHeight: '100vh', background: C.bgAlt, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '48px 16px' }}>
       <div
-       }
-       }
-       }
         style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 16, padding: 32, maxWidth: 480, width: '100%', boxShadow: '0 4px 24px rgba(13,27,46,0.07)' }}
       >
         <div style={{ marginBottom: 24 }}>
@@ -130,8 +127,6 @@ export default function NewClientPage() {
 
           {error && (
             <div
-             }
-             }
               style={{ padding: '10px 14px', background: '#fef2f2', borderRadius: 8, border: '1px solid #fca5a5', color: C.red, fontSize: 13 }}
             >
               {error}

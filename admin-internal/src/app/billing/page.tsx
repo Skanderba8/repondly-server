@@ -51,7 +51,7 @@ export default function BillingPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div}}
+        <div
           style={{ width: 24, height: 24, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
       </div>
     )
@@ -60,7 +60,7 @@ export default function BillingPage() {
   return (
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
       {/* Header */}
-      <div}}}
+      <div
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: 0 }}>Suivi de facturation</h1>
@@ -116,9 +116,6 @@ export default function BillingPage() {
         </div>
         <div style={{ background: C.border, borderRadius: 99, height: 8, overflow: 'hidden' }}>
           <div
-           }
-           %` }}
-           }
             style={{ height: '100%', background: `linear-gradient(90deg, ${C.green}, #22c55e)`, borderRadius: 99 }}
           />
         </div>
@@ -188,8 +185,6 @@ export default function BillingPage() {
                           }}
                         >
                           <div
-                           }
-                           }
                             style={{ position: 'absolute', top: 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}
                           />
                         </div>

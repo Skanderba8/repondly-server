@@ -149,8 +149,7 @@ export default function ClientsPage() {
       {/* Create form inline */}
       <>
         {creating && (
-          <div}}
-           }}
+          <div
             style={{ overflow: 'hidden', marginBottom: 12 }}>
             <form onSubmit={handleCreate} style={{
               background: C.bg, border: `1px solid ${C.blue}`,
@@ -206,7 +205,7 @@ export default function ClientsPage() {
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-            <div}}
+            <div
               style={{ width: 22, height: 22, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
           </div>
         ) : filtered.length === 0 ? (
@@ -220,7 +219,7 @@ export default function ClientsPage() {
               const pm = PLAN_META[client.plan] ?? PLAN_META.FREE
               return (
                 <div key={client.id}
-                 }}}>
+                  style={{}}>
                   <Link href={`/clients/${client.id}`} style={{ textDecoration: 'none', display: 'block' }}>
                     <div style={{
                       display: 'grid', gridTemplateColumns: '2fr 2fr 100px 90px 80px 80px 36px',

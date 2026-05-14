@@ -136,7 +136,7 @@ export default function AccessManager() {
   return (
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
       {/* Header */}
-      <div}}}
+      <div
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: 9, background: C.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -155,10 +155,8 @@ export default function AccessManager() {
       </div>
 
       {/* Create form */}
-      <>
-        {showForm && (
-          <div}}}
-            style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px', marginBottom: 18 }}>
+      {showForm && (
+        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px', marginBottom: 18 }}>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: C.ink, margin: '0 0 16px' }}>Créer un administrateur</h2>
             {formError && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: C.redBg, color: C.red, borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13 }}>
@@ -210,7 +208,6 @@ export default function AccessManager() {
             </form>
           </div>
         )}
-      </>
 
       {/* Error */}
       {error && (
@@ -222,12 +219,10 @@ export default function AccessManager() {
       {/* Table */}
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-          <div}}
-            style={{ width: 28, height: 28, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
+          <div style={{ width: 28, height: 28, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }} />
         </div>
       ) : (
-        <div}}
-          style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.bgAlt }}>
@@ -297,12 +292,9 @@ export default function AccessManager() {
       )}
 
       {/* Delete confirmation modal */}
-      <>
-        {deleteConfirm && (
-          <div}}}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(13,27,46,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-            <div}}}
-              style={{ background: C.bg, borderRadius: 14, padding: '28px 32px', maxWidth: 400, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+      {deleteConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(13,27,46,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: C.bg, borderRadius: 14, padding: '28px 32px', maxWidth: 400, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: C.ink, margin: '0 0 10px' }}>Confirmer la suppression</h3>
               <p style={{ fontSize: 13, color: C.mid, margin: '0 0 20px' }}>Cette action est irréversible. L&apos;administrateur sera définitivement supprimé.</p>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -315,10 +307,9 @@ export default function AccessManager() {
                   Supprimer
                 </button>
               </div>
-            </div>
           </div>
-        )}
-      </>
+        </div>
+      )}
     </div>
   )
 }

@@ -101,9 +101,6 @@ function ProgressBar({ percent, warn = 70, danger = 90 }: { percent: number; war
   return (
     <div style={{ background: C.border, borderRadius: 99, height: 8, overflow: 'hidden', marginTop: 10 }}>
       <div
-       }
-       %` }}
-       }
         style={{ height: '100%', background: color, borderRadius: 99 }}
       />
     </div>
@@ -194,7 +191,6 @@ export default function SystemPage() {
     <div style={{ padding: '32px 36px', background: C.bgAlt, minHeight: '100vh' }}>
       {/* Header */}
       <div
-       }}}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}
       >
         <div>
@@ -231,8 +227,6 @@ export default function SystemPage() {
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40vh' }}>
           <div
-           }
-           }
             style={{ width: 28, height: 28, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%' }}
           />
         </div>
