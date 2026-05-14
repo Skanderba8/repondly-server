@@ -234,7 +234,28 @@ export default function ClientDetailPage() {
     try {
       const res = await fetch(`/api/clients/${id}/chatwoot`, { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      setCwData(await res.json())
+      const data = await res.json()
+      setCwData(data)
+
+      // Sync channel status to database based on Chatwoot inboxes
+      if (data.inboxes && data.inboxes.length > 0) {
+        const whatsappInbox = data.inboxes.find((i: ChatwootInbox) => i.channel_type === 'Channel::Whatsapp')
+        const facebookInbox = data.inboxes.find((i: ChatwootInbox) => i.channel_type === 'Channel::FacebookPage')
+        const instagramInbox = data.inboxes.find((i: ChatwootInbox) => i.channel_type === 'Channel::Instagram')
+
+        await fetch(`/api/clients/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            whatsappConnected: whatsappInbox?.enabled ?? false,
+            whatsappInboxId: whatsappInbox?.id ?? null,
+            facebookConnected: facebookInbox?.enabled ?? false,
+            facebookInboxId: facebookInbox?.id ?? null,
+            instagramConnected: instagramInbox?.enabled ?? false,
+            instagramInboxId: instagramInbox?.id ?? null,
+          }),
+        })
+      }
     } catch (e) {
       setCwError(String(e))
     } finally {

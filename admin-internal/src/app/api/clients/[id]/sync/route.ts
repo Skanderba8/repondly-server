@@ -32,15 +32,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Sync Chatwoot inbox status if credentials exist
   if (business.chatwootAccountId && business.chatwootApiToken) {
     try {
+      console.log('[sync] Fetching inboxes for account', business.chatwootAccountId)
       const inboxesData = await chatwootGet(
         `/api/v1/accounts/${business.chatwootAccountId}/inboxes`,
         business.chatwootApiToken
       )
+      console.log('[sync] Chatwoot response:', JSON.stringify(inboxesData))
       const inboxes = (inboxesData as { payload?: Array<{ id: number; channel_type: string; enabled: boolean }> })?.payload ?? []
+      console.log('[sync] Parsed inboxes:', inboxes)
 
       const whatsappInbox = inboxes.find(i => i.channel_type === 'Channel::Whatsapp')
       const facebookInbox = inboxes.find(i => i.channel_type === 'Channel::FacebookPage')
       const instagramInbox = inboxes.find(i => i.channel_type === 'Channel::Instagram')
+
+      console.log('[sync] WhatsApp inbox:', whatsappInbox)
+      console.log('[sync] Facebook inbox:', facebookInbox)
+      console.log('[sync] Instagram inbox:', instagramInbox)
 
       await prisma.business.update({
         where: { id },
