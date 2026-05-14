@@ -7,7 +7,7 @@ import Image from 'next/image'
 import {
   LayoutDashboard, Inbox, Bot, Settings, LogOut,
   AlertCircle, CheckCircle, X, TrendingUp,
-  MessageSquare, Radio, Calendar, ChevronDown, User,
+  MessageSquare, Radio, Calendar, ChevronDown, ChevronRight, User,
   ArrowRight, Wifi, WifiOff, Zap, RefreshCw, Menu,
 } from 'lucide-react'
 import MessagerieView from './messagerie/MessagerieView'
@@ -15,45 +15,55 @@ import { FileText, CheckCheck, RotateCcw, Loader2, Link2, Unlink, ExternalLink, 
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
-  // Donezo color system
-  pageBg:      '#F1F5F9',
-  cardBg:      '#FFFFFF',
-  sidebar:     '#0F172A',
-  sidebarHover:'#1E293B',
-  primary:     '#2563EB',
-  textPrimary: '#0F172A',
-  textSecondary:'#64748B',
-  border:      '#E2E8F0',
-  success:     '#22C55E',
-  inProgress:  '#3B82F6',
-  pending:     '#F59E0B',
-  // Card stat accents
-  accentConv:  '#2563EB',
-  accentMsg:   '#0D9488',
-  accentChan:  '#22C55E',
-  accentAuto:  '#7C3AED',
+  // New 2026 iOS color palette
+  primary:     '#1A56DB',
+  accentGreen: '#0EA472',
+  accentPurple:'#7C3AED',
   // Channel colors
   whatsapp:    '#22C55E',
   facebook:    '#3B82F6',
   instagram:   '#EC4899',
+  // Text colors
+  textPrimary: '#0F172A',
+  textSecondary:'#64748B',
+  textTertiary:'#94A3B8',
+  // Status colors
+  success:     '#0EA472',
+  error:       '#EF4444',
+  warning:     '#F59E0B',
+  info:        '#1A56DB',
+  // Backgrounds
+  pageBg:      '#F2F2F7',
+  cardBg:      '#FFFFFF',
+  glassLight:  'rgba(255, 255, 255, 0.7)',
+  glassMedium: 'rgba(255, 255, 255, 0.85)',
+  glassDark:   'rgba(255, 255, 255, 0.95)',
+  // Borders
+  border:      'rgba(0, 0, 0, 0.08)',
+  borderLight: 'rgba(255, 255, 255, 0.2)',
   // Utilities
   white:       '#FFFFFF',
   muted:       '#94A3B8',
   mid:         '#475569',
-  bg:          '#F1F5F9',
-  bgLight:     '#F8FAFC',
-  blueLight:   '#EFF6FF',
-  blueHover:   '#DBEAFE',
-  greenLight:  '#F0FDF4',
-  greenText:   '#16A34A',
-  pinkLight:   '#FDF2F8',
-  pinkText:    '#DB2777',
-  red:         '#EF4444',
-  // Additional colors for new design
-  ink:         '#0F172A',
-  blue:        '#2563EB',
-  purple:      '#7C3AED',
-  borderMid:   '#CBD5E1',
+  // Glass effects
+  glassShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+  glassBorder: '1px solid rgba(255, 255, 255, 0.3)',
+  // Corner radii
+  radiusSurface: 24,
+  radiusCard: 16,
+  radiusInput: 12,
+  radiusPill: 999,
+  // Gradients
+  gradientPrimary: 'linear-gradient(135deg, #1A56DB 0%, #0EA472 100%)',
+  gradientPurple: 'linear-gradient(135deg, #7C3AED 0%, #1A56DB 100%)',
+  gradientGreen: 'linear-gradient(135deg, #0EA472 0%, #1A56DB 100%)',
+  // Additional colors
+  bg: '#F2F2F7',
+  sidebar: '#FFFFFF',
+  sidebarHover: 'rgba(26, 86, 219, 0.04)',
+  red: '#EF4444',
+  greenLight: '#F0FDF4',
+  greenText: '#16A34A',
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -71,9 +81,7 @@ interface RecentConv {
 const NAV: { id: PageId; label: string; icon: React.ReactNode }[] = [
   { id: 'home',       label: 'Accueil',    icon: <LayoutDashboard size={16} /> },
   { id: 'inbox',      label: 'Messagerie', icon: <Inbox size={16} /> },
-  { id: 'channels',   label: 'Canaux',     icon: <Radio size={16} /> },
   { id: 'calendrier', label: 'Calendrier', icon: <Calendar size={16} /> },
-  { id: 'bot',        label: 'Agent IA',   icon: <Bot size={16} /> },
   { id: 'settings',   label: 'Paramètres', icon: <Settings size={16} /> },
 ]
 
@@ -87,29 +95,31 @@ function KpiCard({ label, value, sub, icon, accent, loading, actionLabel, onActi
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut', delay }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25, delay }}
       style={{
-        background: C.cardBg,
-        borderRadius: 16, overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        background: C.glassMedium,
+        backdropFilter: 'blur(20px)',
+        borderRadius: C.radiusCard,
+        boxShadow: C.glassShadow,
+        border: C.glassBorder,
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         cursor: 'default',
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement
-        el.style.transform = 'translateY(-2px)'
-        el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+        el.style.transform = 'translateY(-4px)'
+        el.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12)'
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLElement
         el.style.transform = 'translateY(0)'
-        el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'
+        el.style.boxShadow = C.glassShadow
       }}
     >
-      <div style={{ height: 3, background: accent }} />
+      <div style={{ height: 4, background: accent, borderRadius: `${C.radiusCard}px ${C.radiusCard}px 0 0` }} />
       <div style={{ padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
           <div style={{
             color: accent,
           }}>
@@ -117,21 +127,21 @@ function KpiCard({ label, value, sub, icon, accent, loading, actionLabel, onActi
           </div>
         </div>
         {loading
-          ? <div style={{ height: 48, width: 80, background: C.bg, borderRadius: 8, marginBottom: 8 }} />
-          : <div style={{ fontSize: 48, fontWeight: 800, color: C.textPrimary, lineHeight: 1, marginBottom: 4 }}>{value}</div>
+          ? <div style={{ height: 48, width: 80, background: 'rgba(0,0,0,0.05)', borderRadius: C.radiusInput, marginBottom: 8 }} />
+          : <div style={{ fontSize: 44, fontWeight: 700, color: C.textPrimary, lineHeight: 1, marginBottom: 4 }}>{value}</div>
         }
-        <div style={{ fontSize: 14, color: C.textSecondary, marginBottom: actionLabel && onAction ? 12 : 0 }}>{sub}</div>
+        <div style={{ fontSize: 13, color: C.textSecondary, marginBottom: actionLabel && onAction ? 12 : 0 }}>{sub}</div>
         {actionLabel && onAction && (
           <div>
             <button onClick={onAction} style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               fontSize: 13, fontWeight: 600, color: C.primary,
-              background: C.blueLight, border: 'none',
-              cursor: 'pointer', padding: '4px 12px', borderRadius: 999,
+              background: 'rgba(26, 86, 219, 0.1)', border: 'none',
+              cursor: 'pointer', padding: '6px 14px', borderRadius: C.radiusPill,
               transition: 'background 0.15s',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.blueHover }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = C.blueLight }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.15)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.1)' }}
             >
               {actionLabel} <ArrowRight size={12} />
             </button>
@@ -150,23 +160,25 @@ function ChannelCard({ label, desc, active, color, badgeBg, badgeText, onClick, 
     <motion.button
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut', delay }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25, delay }}
       onClick={onClick} style={{
-        flex: 1, padding: '16px', borderRadius: 12,
-        background: C.cardBg,
+        flex: 1, padding: '16px', borderRadius: C.radiusCard,
+        background: C.glassMedium,
+        backdropFilter: 'blur(20px)',
         border: `1px solid ${active ? color : C.border}`,
+        boxShadow: C.glassShadow,
         display: 'flex', flexDirection: 'column', gap: 10,
         cursor: 'pointer', transition: 'all 0.2s ease', textAlign: 'left',
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement
-        el.style.transform = 'translateY(-2px)'
-        el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+        el.style.transform = 'translateY(-4px)'
+        el.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12)'
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLElement
         el.style.transform = 'translateY(0)'
-        el.style.boxShadow = 'none'
+        el.style.boxShadow = C.glassShadow
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -177,17 +189,17 @@ function ChannelCard({ label, desc, active, color, badgeBg, badgeText, onClick, 
           transition: 'all 0.3s',
         }} />
         <span style={{
-          fontSize: 10, fontWeight: 700,
+          fontSize: 10, fontWeight: 600,
           color: active ? badgeText : C.mid,
-          background: active ? badgeBg : C.bg,
-          padding: '2px 8px', borderRadius: 999,
+          background: active ? badgeBg : 'rgba(0,0,0,0.05)',
+          padding: '2px 8px', borderRadius: C.radiusPill,
           textTransform: 'uppercase', letterSpacing: '0.08em',
         }}>
           {active ? 'ACTIF' : 'INACTIF'}
         </span>
       </div>
       <div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary, marginBottom: 2 }}>{label}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary, marginBottom: 2 }}>{label}</div>
         <div style={{ fontSize: 13, color: C.textSecondary }}>{desc}</div>
       </div>
     </motion.button>
@@ -199,7 +211,7 @@ function ActivityRow({ conv, onClick, delay = 0 }: { conv: RecentConv; onClick: 
   const chColor = conv.channel.toLowerCase().includes('whatsapp') ? '#25D366'
     : conv.channel.toLowerCase().includes('facebook') ? '#1877F2'
     : conv.channel.toLowerCase().includes('instagram') ? '#E1306C'
-    : C.blue
+    : C.primary
   const initials = conv.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
   const now = new Date()
   const d = new Date(conv.time * 1000)
@@ -210,32 +222,32 @@ function ActivityRow({ conv, onClick, delay = 0 }: { conv: RecentConv; onClick: 
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut', delay }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25, delay }}
     >
       <button onClick={onClick} style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 0', borderRadius: 8, border: 'none',
+        padding: '12px 0', borderRadius: C.radiusInput, border: 'none',
         background: 'transparent', cursor: 'pointer', transition: 'background 0.15s',
       }}
-      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8FAFF'}
+      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.05)'}
       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
       >
         <div style={{
           width: 36, height: 36, borderRadius: '50%',
-          background: C.blueLight, color: C.blue,
+          background: 'rgba(26, 86, 219, 0.1)', color: C.primary,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 700, flexShrink: 0,
+          fontSize: 13, fontWeight: 600, flexShrink: 0,
         }}>{initials}</div>
         <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.textPrimary }}>{conv.name}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary }}>{conv.name}</div>
           <div style={{ fontSize: 12, color: C.textSecondary }}>{conv.channel}</div>
         </div>
-        <div style={{ fontSize: 12, color: C.muted, flexShrink: 0 }}>{timeStr}</div>
+        <div style={{ fontSize: 12, color: C.textTertiary, flexShrink: 0 }}>{timeStr}</div>
         {conv.unread > 0 && (
           <div style={{
             width: 20, height: 20, borderRadius: '50%',
             background: C.primary, color: '#fff',
-            fontSize: 10, fontWeight: 700, flexShrink: 0,
+            fontSize: 10, fontWeight: 600, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>{conv.unread}</div>
         )}
@@ -255,10 +267,10 @@ function SetupStep({ done, step, label, cta, onClick }: {
     }}>
       <div style={{
         width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-        background: done ? C.primary : C.bg,
+        background: done ? C.primary : 'rgba(0,0,0,0.05)',
         border: `2px solid ${done ? C.primary : C.border}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 700, color: done ? '#fff' : C.textSecondary,
+        fontSize: 11, fontWeight: 600, color: done ? '#fff' : C.textSecondary,
         transition: 'all 0.25s',
       }}>
         {done ? <CheckCircle size={12} /> : step}
@@ -273,10 +285,10 @@ function SetupStep({ done, step, label, cta, onClick }: {
           display: 'flex', alignItems: 'center', gap: 4,
           fontSize: 13, fontWeight: 600, color: C.primary,
           background: 'none', border: `1px solid ${C.primary}`,
-          cursor: 'pointer', padding: '4px 12px', borderRadius: 999,
+          cursor: 'pointer', padding: '4px 12px', borderRadius: C.radiusPill,
           transition: 'background 0.15s',
         }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.blueLight}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.1)'}
         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}
         >{cta} <ArrowRight size={12} /></button>
       )}
@@ -292,16 +304,16 @@ function EmptyPage({ icon, label, sublabel }: { icon: React.ReactNode; label: st
       justifyContent: 'center', height: '100%', gap: 16, padding: 40,
     }}>
       <div style={{
-        width: 64, height: 64, borderRadius: 18,
-        background: 'linear-gradient(135deg, #e8f0ff 0%, #ede9fe 100%)',
+        width: 64, height: 64, borderRadius: 20,
+        background: C.gradientPrimary,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: C.blue, boxShadow: '0 4px 16px rgba(26,107,255,0.12)',
+        color: '#fff', boxShadow: '0 8px 32px rgba(26, 86, 219, 0.2)',
       }}>
         {icon}
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: C.ink, marginBottom: 6 }}>{label}</div>
-        <div style={{ fontSize: 13, color: C.muted, maxWidth: 320, lineHeight: 1.7 }}>{sublabel}</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary, marginBottom: 6 }}>{label}</div>
+        <div style={{ fontSize: 13, color: C.textSecondary, maxWidth: 320, lineHeight: 1.7 }}>{sublabel}</div>
       </div>
     </div>
   )
@@ -311,20 +323,22 @@ function EmptyPage({ icon, label, sublabel }: { icon: React.ReactNode; label: st
 function QuickActionsBar({ onNavigate }: { onNavigate: (p: PageId) => void }) {
   const actions = [
     { label: 'Nouvelle conversation', icon: <MessageSquare size={16} />, route: 'inbox' as PageId, exists: true },
-    { label: 'Ajouter un canal', icon: <Radio size={16} />, route: 'channels' as PageId, exists: true },
+    { label: 'Ajouter un canal', icon: <Radio size={16} />, route: 'settings' as PageId, exists: true },
     { label: 'Voir rapports', icon: <TrendingUp size={16} />, route: 'calendrier' as PageId, exists: false }, // TODO: wire route
-    { label: 'Configurer Agent IA', icon: <Bot size={16} />, route: 'bot' as PageId, exists: true },
+    { label: 'Configurer Agent IA', icon: <Bot size={16} />, route: 'settings' as PageId, exists: true },
   ]
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
+      transition={{ type: 'spring', stiffness: 200, damping: 25 }}
       style={{
-        background: C.cardBg,
-        borderRadius: 16,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        background: C.glassMedium,
+        backdropFilter: 'blur(20px)',
+        borderRadius: C.radiusCard,
+        boxShadow: C.glassShadow,
+        border: C.glassBorder,
         padding: '16px 24px',
         display: 'flex',
         gap: 16,
@@ -341,8 +355,8 @@ function QuickActionsBar({ onNavigate }: { onNavigate: (p: PageId) => void }) {
             alignItems: 'center',
             gap: 8,
             padding: '8px 20px',
-            borderRadius: 999,
-            background: C.blueLight,
+            borderRadius: C.radiusPill,
+            background: 'rgba(26, 86, 219, 0.1)',
             color: C.primary,
             border: 'none',
             fontSize: 14,
@@ -351,8 +365,8 @@ function QuickActionsBar({ onNavigate }: { onNavigate: (p: PageId) => void }) {
             opacity: action.exists ? 1 : 0.5,
             transition: 'background 0.15s ease',
           }}
-          onMouseEnter={e => { if (action.exists) (e.currentTarget as HTMLElement).style.background = C.blueHover }}
-          onMouseLeave={e => { if (action.exists) (e.currentTarget as HTMLElement).style.background = C.blueLight }}
+          onMouseEnter={e => { if (action.exists) (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.15)' }}
+          onMouseLeave={e => { if (action.exists) (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.1)' }}
         >
           {action.icon}
           {action.label}
@@ -366,31 +380,33 @@ function QuickActionsBar({ onNavigate }: { onNavigate: (p: PageId) => void }) {
 function PerformanceCard() {
   // TODO: wire to real API
   const metrics = [
-    { label: 'Taux de résolution', value: '87%', color: '#22C55E' },
-    { label: 'Temps de réponse moyen', value: '1m 24s', color: '#3B82F6' },
-    { label: 'Satisfaction client', value: '4.6/5', color: '#22C55E' },
+    { label: 'Taux de résolution', value: '87%', color: C.accentGreen },
+    { label: 'Temps de réponse moyen', value: '1m 24s', color: C.primary },
+    { label: 'Satisfaction client', value: '4.6/5', color: C.accentGreen },
   ]
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut', delay: 0.2 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.2 }}
       style={{
-        background: C.cardBg,
-        borderRadius: 16,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        background: C.glassMedium,
+        backdropFilter: 'blur(20px)',
+        borderRadius: C.radiusCard,
+        boxShadow: C.glassShadow,
+        border: C.glassBorder,
         padding: '20px',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Performance</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Performance</div>
         <div style={{ fontSize: 13, color: C.textSecondary }}>7 derniers jours</div>
       </div>
       <div style={{ display: 'flex', gap: 24, marginBottom: 20 }}>
         {metrics.map((metric) => (
           <div key={metric.label} style={{ flex: 1 }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: metric.color }}>{metric.value}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: metric.color }}>{metric.value}</div>
             <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 4 }}>{metric.label}</div>
           </div>
         ))}
@@ -399,11 +415,11 @@ function PerformanceCard() {
         {metrics.map((metric, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 12, color: C.textSecondary, width: 140, flexShrink: 0 }}>{metric.label}</span>
-            <div style={{ flex: 1, height: 6, background: C.bg, borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ flex: 1, height: 6, background: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden' }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: metric.value.includes('87') ? '87%' : metric.value.includes('4.6') ? '92%' : '75%' }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
+                transition={{ type: 'spring', stiffness: 200, damping: 25 }}
                 style={{ height: '100%', background: metric.color, borderRadius: 3 }}
               />
             </div>
@@ -433,28 +449,30 @@ function BotActivityWidget() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut', delay: 0.3 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.3 }}
       style={{
-        background: C.cardBg,
-        borderRadius: 16,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        background: C.glassMedium,
+        backdropFilter: 'blur(20px)',
+        borderRadius: C.radiusCard,
+        boxShadow: C.glassShadow,
+        border: C.glassBorder,
         padding: '20px',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Activité du Bot IA</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Activité du Bot IA</div>
         <div style={{ fontSize: 13, color: C.textSecondary }}>
           {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
         </div>
       </div>
       <div style={{ display: 'flex', gap: 32, marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: C.textPrimary }}>156</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary }}>156</div>
           <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>Messages IA</div>
           <div style={{ fontSize: 11, color: C.textSecondary }}>Traités automatiquement</div>
         </div>
         <div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: C.textPrimary }}>23</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary }}>23</div>
           <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>Intervention humaine</div>
           <div style={{ fontSize: 11, color: C.textSecondary }}>Transferts aujourd'hui</div>
         </div>
@@ -463,10 +481,10 @@ function BotActivityWidget() {
         <svg width={width} height={height} style={{ overflow: 'visible' }}>
           <motion.polygon
             points={areaPoints}
-            fill={C.blueLight}
+            fill="rgba(26, 86, 219, 0.1)"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
+            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
           />
           <motion.polyline
             points={points}
@@ -477,7 +495,7 @@ function BotActivityWidget() {
             strokeLinejoin="round"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
+            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
           />
         </svg>
       </div>
@@ -667,8 +685,8 @@ export default function DashboardShell() {
         }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${C.borderMid}; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: ${C.muted}; }
+        ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: ${C.textSecondary}; }
         button { font-family: inherit; }
         @supports (padding: env(safe-area-inset-top)) {
           body {
@@ -695,10 +713,10 @@ export default function DashboardShell() {
             }}
           >
             {toast.type === 'error'
-              ? <AlertCircle size={16} color={C.red} />
+              ? <AlertCircle size={16} color={C.error} />
               : <CheckCircle size={16} color={C.success} />}
-            <span style={{ fontSize: 13, fontWeight: 500, color: C.ink }}>{toast.msg}</span>
-            <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 0, marginLeft: 4, display: 'flex' }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: C.textPrimary }}>{toast.msg}</span>
+            <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textSecondary, padding: 0, marginLeft: 4, display: 'flex' }}>
               <X size={14} />
             </button>
           </motion.div>
@@ -706,22 +724,22 @@ export default function DashboardShell() {
       </AnimatePresence>
 
       <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', background: '#FFFFFF', position: 'relative' }}>
-        {/* White status bar background for iOS PWA */}
+        {/* Gradient status bar background for iOS PWA - blends with header */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
           height: 'env(safe-area-inset-top)',
-          background: '#FFFFFF',
+          background: C.gradientPrimary,
           zIndex: 9999,
         }} />
-        {/* Main content with dark gradient */}
+        {/* Main content with solid background */}
         <div style={{
           display: 'flex',
           height: '100%',
           width: '100%',
-          background: 'linear-gradient(135deg, #07101f 0%, #0d1830 50%, #08111e 100%)',
+          background: C.pageBg,
           position: 'relative',
         }}>
 
@@ -734,11 +752,12 @@ export default function DashboardShell() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 onClick={() => setMobileSidebarOpen(false)}
                 style={{
                   position: 'fixed', inset: 0,
-                  background: 'rgba(0, 0, 0, 0.5)',
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  backdropFilter: 'blur(4px)',
                   zIndex: 1000,
                 }}
               />
@@ -747,22 +766,24 @@ export default function DashboardShell() {
                 initial={{ x: '-100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                 style={{
                   position: 'fixed', left: 0, top: 0, bottom: 0,
                   width: 280, maxWidth: '85vw',
-                  background: '#FFFFFF',
+                  background: C.glassDark,
+                  backdropFilter: 'blur(20px)',
                   zIndex: 1001,
                   display: 'flex', flexDirection: 'column',
-                  boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
+                  boxShadow: '8px 0 32px rgba(0,0,0,0.12)',
+                  borderRight: C.glassBorder,
                 }}
               >
                 {/* Logo */}
-                <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
+                <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: C.glassBorder, flexShrink: 0 }}>
                   <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
                     <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
                     <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-                      Répondly<span style={{ color: C.blue }}>.</span>
+                      Répondly<span style={{ color: C.primary }}>.</span>
                     </span>
                   </a>
                 </div>
@@ -778,9 +799,9 @@ export default function DashboardShell() {
                         style={{
                           display: 'flex', alignItems: 'center', gap: 14,
                           width: '100%', padding: '14px 20px',
-                          background: active ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                          background: active ? 'rgba(26, 86, 219, 0.08)' : 'transparent',
                           color: active ? C.primary : C.textSecondary,
-                          fontSize: 16, fontWeight: active ? 600 : 400,
+                          fontSize: 15, fontWeight: active ? 600 : 500,
                           border: 'none', cursor: 'pointer', transition: 'background 0.2s ease', textAlign: 'left',
                           position: 'relative',
                         }}
@@ -790,7 +811,7 @@ export default function DashboardShell() {
                         <span style={{ color: active ? C.primary : 'inherit' }}>{item.icon}</span>
                         <span style={{ flex: 1 }}>{item.label}</span>
                         {item.id === 'inbox' && stats.openCount > 0 && (
-                          <span style={{ background: C.primary, color: '#fff', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>
+                          <span style={{ background: C.primary, color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: C.radiusPill }}>
                             {stats.openCount}
                           </span>
                         )}
@@ -806,20 +827,20 @@ export default function DashboardShell() {
                 </nav>
 
                 {/* User */}
-                <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(0,0,0,0.06)', background: '#FFFFFF', flexShrink: 0 }}>
+                <div style={{ padding: '16px 20px', borderTop: C.glassBorder, background: 'transparent', flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{
                       width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
                       background: C.primary,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 15, fontWeight: 700, color: '#fff',
+                      fontSize: 15, fontWeight: 600, color: '#fff',
                     }}>{initial}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
                       <div style={{ fontSize: 13, color: C.textSecondary }}>Compte actif</div>
                     </div>
                     <button onClick={() => { signOut(); setMobileSidebarOpen(false) }} title="Déconnexion" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textSecondary, padding: 8, display: 'flex', borderRadius: 8, transition: 'color 0.15s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = C.red}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = C.error}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = C.textSecondary}
                     >
                       <LogOut size={18} />
@@ -835,17 +856,17 @@ export default function DashboardShell() {
         {!isMobile && (
           <aside style={{
             width: 200, flexShrink: 0,
-            background: C.sidebar,
-            borderRight: `1px solid ${C.sidebarHover}`,
+            background: C.glassDark,
+            borderRight: C.glassBorder,
             display: 'flex', flexDirection: 'column',
             overflow: 'hidden',
           } as React.CSSProperties}>
             {/* Logo */}
-            <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: `1px solid ${C.sidebarHover}`, flexShrink: 0 }}>
+            <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: C.glassBorder, flexShrink: 0 }}>
               <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
                 <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.white, letterSpacing: '-0.02em' }}>
-                  Répondly<span style={{ color: C.blue }}>.</span>
+                <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.textPrimary, letterSpacing: '-0.02em' }}>
+                  Répondly<span style={{ color: C.primary }}>.</span>
                 </span>
               </a>
             </div>
@@ -864,14 +885,14 @@ export default function DashboardShell() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       width: '100%', padding: '10px 16px', borderRadius: 8,
-                      background: active ? C.sidebarHover : 'transparent',
-                      color: active ? C.white : C.muted,
+                      background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
+                      color: active ? C.textPrimary : C.textSecondary,
                       fontSize: 13, fontWeight: active ? 600 : 400,
                       border: 'none', cursor: 'pointer', transition: 'all 0.15s ease', textAlign: 'left',
                       borderLeft: active ? `3px solid ${C.primary}` : '3px solid transparent',
                     }}
-                    onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = C.sidebarHover; (e.currentTarget as HTMLElement).style.color = '#CBD5E1' } }}
-                    onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = C.muted } }}
+                    onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)'; (e.currentTarget as HTMLElement).style.color = C.textPrimary } }}
+                    onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = C.textSecondary } }}
                   >
                     <span style={{ color: active ? C.primary : 'inherit' }}>{item.icon}</span>
                     <span style={{ flex: 1 }}>{item.label}</span>
@@ -881,7 +902,7 @@ export default function DashboardShell() {
                       </span>
                     )}
                     {item.id === 'channels' && !anyChannel && (
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.pending, flexShrink: 0 }} />
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.warning, flexShrink: 0 }} />
                     )}
                   </button>
                 )
@@ -891,9 +912,9 @@ export default function DashboardShell() {
               <div style={{ marginTop: 24, padding: '14px 16px' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Statut des canaux</div>
                 {[
-                  { label: 'WhatsApp', active: waConnected, color: C.whatsapp, badgeBg: C.greenLight, badgeText: C.greenText },
-                  { label: 'Facebook', active: fbConnected, color: C.facebook, badgeBg: C.blueLight, badgeText: C.primary },
-                  { label: 'Instagram', active: igConnected, color: C.instagram, badgeBg: C.pinkLight, badgeText: C.pinkText },
+                  { label: 'WhatsApp', active: waConnected, color: C.whatsapp, badgeBg: 'rgba(34, 197, 94, 0.1)', badgeText: C.success },
+                  { label: 'Facebook', active: fbConnected, color: C.facebook, badgeBg: 'rgba(26, 86, 219, 0.1)', badgeText: C.primary },
+                  { label: 'Instagram', active: igConnected, color: C.instagram, badgeBg: 'rgba(236, 72, 153, 0.1)', badgeText: C.instagram },
                 ].map(ch => (
                   <div key={ch.label} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '5px 0' }}>
                     <span style={{
@@ -946,11 +967,12 @@ export default function DashboardShell() {
           {/* ── Header ── */}
           <header style={{
             height: 64, flexShrink: 0,
-            background: '#FFFFFF',
-            borderBottom: `1px solid ${C.border}`,
+            background: C.gradientPrimary,
+            borderBottom: 'none',
             display: 'flex', alignItems: 'center',
             padding: isMobile ? '0 12px' : '0 24px',
             gap: 12,
+            position: 'relative',
           } as React.CSSProperties}>
             {isMobile ? (
               <>
@@ -958,21 +980,22 @@ export default function DashboardShell() {
                 <button
                   onClick={() => setMobileSidebarOpen(true)}
                   style={{
-                    background: 'none', border: 'none',
-                    cursor: 'pointer', padding: 8,
-                    color: C.textSecondary,
-                    borderRadius: 8,
+                    background: 'rgba(255, 255, 255, 0.15)', border: 'none',
+                    cursor: 'pointer', padding: 10,
+                    color: '#fff',
+                    borderRadius: 12,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(10px)',
                   }}
                 >
-                  <Menu size={24} />
+                  <Menu size={22} />
                 </button>
 
                 {/* Repondly branding */}
                 <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 'auto' }}>
                   <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                  <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-                    Répondly<span style={{ color: C.blue }}>.</span>
+                  <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: '#fff', letterSpacing: '-0.02em' }}>
+                    Répondly<span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>.</span>
                   </span>
                 </a>
 
@@ -981,11 +1004,12 @@ export default function DashboardShell() {
                   onClick={() => setProfileOpen(!profileOpen)}
                   style={{
                     width: 40, height: 40, borderRadius: '50%',
-                    background: C.primary,
-                    border: profileOpen ? `2px solid ${C.primary}` : '2px solid transparent',
-                    color: '#fff', fontSize: 15, fontWeight: 700,
+                    background: 'rgba(255, 255, 255, 0.25)',
+                    backdropFilter: 'blur(10px)',
+                    border: profileOpen ? `2px solid rgba(255, 255, 255, 0.6)` : '2px solid rgba(255, 255, 255, 0.3)',
+                    color: '#fff', fontSize: 15, fontWeight: 600,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'border-color 0.15s',
+                    transition: 'all 0.15s',
                   }}
                 >{initial}</button>
 
@@ -1034,7 +1058,7 @@ export default function DashboardShell() {
                 <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginRight: 8 }}>
                   <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
                   <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-                    Répondly<span style={{ color: C.blue }}>.</span>
+                    Répondly<span style={{ color: C.primary }}>.</span>
                   </span>
                 </a>
                 <div>
@@ -1141,10 +1165,43 @@ export default function DashboardShell() {
                   />
                 )}
                 {activePage === 'channels' && (
-                  <ChannelsView
-                    waConnected={waConnected} fbConnected={fbConnected} igConnected={igConnected}
-                    onStatusChange={fetchStatus} onToast={showToast} isMobile={isMobile}
-                  />
+                  <div style={{ padding: isMobile ? '16px' : '28px 32px' }}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    >
+                      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <div style={{
+                          width: 64, height: 64, borderRadius: 20,
+                          background: C.gradientPrimary,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', boxShadow: '0 8px 32px rgba(26, 86, 219, 0.2)', marginBottom: 20,
+                        }}>
+                          <Radio size={28} />
+                        </div>
+                        <h2 style={{ fontSize: 20, fontWeight: 600, color: C.textPrimary, marginBottom: 8 }}>Canaux déplacés</h2>
+                        <p style={{ fontSize: 14, color: C.textSecondary, marginBottom: 24, maxWidth: 320, margin: '0 auto 24px' }}>
+                          La gestion des canaux est maintenant disponible dans les Paramètres.
+                        </p>
+                        <button
+                          onClick={() => setActivePage('settings')}
+                          style={{
+                            padding: '12px 24px',
+                            borderRadius: C.radiusPill,
+                            background: C.primary,
+                            color: '#fff',
+                            border: 'none',
+                            fontSize: 14,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Aller aux Paramètres
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
                 )}
                 {activePage === 'home' && (
                   <HomeView
@@ -1165,63 +1222,124 @@ export default function DashboardShell() {
                   />
                 )}
                 {activePage === 'bot' && (
-                  <EmptyPage
-                    icon={<Bot size={28} />}
-                    label="Agent IA"
-                    sublabel="Configurez votre assistant IA pour répondre automatiquement aux messages entrants sur tous vos canaux."
-                  />
+                  <div style={{ padding: isMobile ? '16px' : '28px 32px' }}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    >
+                      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <div style={{
+                          width: 64, height: 64, borderRadius: 20,
+                          background: C.gradientPurple,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', boxShadow: '0 8px 32px rgba(124, 58, 237, 0.2)', marginBottom: 20,
+                        }}>
+                          <Bot size={28} />
+                        </div>
+                        <h2 style={{ fontSize: 20, fontWeight: 600, color: C.textPrimary, marginBottom: 8 }}>Agent IA déplacé</h2>
+                        <p style={{ fontSize: 14, color: C.textSecondary, marginBottom: 24, maxWidth: 320, margin: '0 auto 24px' }}>
+                          La configuration de l'agent IA est maintenant disponible dans les Paramètres.
+                        </p>
+                        <button
+                          onClick={() => setActivePage('settings')}
+                          style={{
+                            padding: '12px 24px',
+                            borderRadius: C.radiusPill,
+                            background: C.accentPurple,
+                            color: '#fff',
+                            border: 'none',
+                            fontSize: 14,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Aller aux Paramètres
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
                 )}
                 {activePage === 'settings' && (
-                  <EmptyPage
-                    icon={<Settings size={28} />}
-                    label="Paramètres"
-                    sublabel="Gérez les paramètres de votre compte, notifications et préférences."
+                  <SettingsView
+                    onNavigate={setActivePage}
+                    waConnected={waConnected}
+                    fbConnected={fbConnected}
+                    igConnected={igConnected}
+                    onStatusChange={fetchStatus}
+                    isMobile={isMobile}
                   />
                 )}
               </motion.div>
             </AnimatePresence>
           </main>
 
-          {/* ── Mobile bottom navigation ── */}
+          {/* ── Mobile bottom navigation - Floating pill ── */}
           {isMobile && (
             <div style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0,
-              height: 66, background: C.white,
-              borderTop: `1px solid ${C.border}`,
+              position: 'fixed', bottom: 20, left: 16, right: 16,
+              height: 64,
+              background: C.glassMedium,
+              backdropFilter: 'blur(20px)',
+              borderRadius: 32,
+              border: C.glassBorder,
+              boxShadow: C.glassShadow,
               display: 'flex', alignItems: 'center',
-              padding: '0 4px',
+              padding: '0 8px',
               zIndex: 1000,
-              boxShadow: '0 -4px 24px rgba(15,23,42,0.07)',
+              paddingBottom: 0,
             }}>
-              {NAV.map(item => {
+              {NAV.map((item, index) => {
                 const active = activePage === item.id
                 return (
-                  <button key={item.id} onClick={() => setActivePage(item.id)} style={{
-                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: 4, padding: '8px 4px', background: 'none', border: 'none', cursor: 'pointer',
-                    position: 'relative',
-                  }}>
+                  <motion.button
+                    key={item.id}
+                    onClick={() => setActivePage(item.id)}
+                    whileTap={{ scale: 0.95 }}
+                    style={{
+                      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      gap: 4, padding: '8px 4px', background: 'none', border: 'none', cursor: 'pointer',
+                      position: 'relative',
+                    }}
+                  >
+                    {/* Active indicator pill */}
+                    {active && (
+                      <motion.div
+                        layoutId="activeNavPill"
+                        initial={false}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        style={{
+                          position: 'absolute',
+                          inset: 4,
+                          background: 'rgba(26, 86, 219, 0.1)',
+                          borderRadius: 20,
+                          zIndex: -1,
+                        }}
+                      />
+                    )}
                     <div style={{
-                      width: 40, height: 32, borderRadius: 10,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: active ? C.blueLight : 'transparent',
-                      color: active ? C.blue : C.muted,
-                      transition: 'all 0.15s',
+                      color: active ? C.primary : C.textSecondary,
+                      transition: 'color 0.2s',
                       position: 'relative',
                     }}>
                       {item.icon}
                       {item.id === 'inbox' && stats.openCount > 0 && (
                         <span style={{
-                          position: 'absolute', top: 2, right: 2,
-                          width: 8, height: 8, borderRadius: '50%',
-                          background: C.blue, border: '2px solid #fff',
-                        }} />
+                          position: 'absolute', top: -4, right: -4,
+                          width: 16, height: 16, borderRadius: '50%',
+                          background: C.error, border: '2px solid #fff',
+                          fontSize: 9, fontWeight: 600, color: '#fff',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {stats.openCount}
+                        </span>
                       )}
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: active ? 700 : 400, color: active ? C.blue : C.muted }}>
+                    <span style={{ fontSize: 10, fontWeight: active ? 600 : 500, color: active ? C.primary : C.textSecondary }}>
                       {item.label}
                     </span>
-                  </button>
+                  </motion.button>
                 )
               })}
             </div>
@@ -1230,6 +1348,159 @@ export default function DashboardShell() {
         </div>
       </div>
     </>
+  )
+}
+
+// ── Settings View ────────────────────────────────────────────────────────────────
+function SettingsView({
+  onNavigate, waConnected, fbConnected, igConnected, onStatusChange, isMobile,
+}: {
+  onNavigate: (p: PageId) => void
+  waConnected: boolean
+  fbConnected: boolean
+  igConnected: boolean
+  onStatusChange: () => void
+  isMobile: boolean
+}) {
+  const settingsSections = [
+    {
+      id: 'channels',
+      title: 'Canaux',
+      description: 'Gérez vos canaux de communication',
+      icon: <Radio size={20} />,
+      color: C.primary,
+      onClick: () => {/* Navigate to channels - for now, could be inline */},
+      connected: waConnected || fbConnected || igConnected,
+    },
+    {
+      id: 'bot',
+      title: 'Agent IA',
+      description: 'Configurez votre assistant intelligent',
+      icon: <Bot size={20} />,
+      color: C.accentPurple,
+      onClick: () => {/* Navigate to bot config - for now, could be inline */},
+      connected: false,
+    },
+    {
+      id: 'account',
+      title: 'Compte',
+      description: 'Informations du compte et sécurité',
+      icon: <User size={20} />,
+      color: C.accentGreen,
+      onClick: () => {},
+      connected: true,
+    },
+    {
+      id: 'notifications',
+      title: 'Notifications',
+      description: 'Préférences de notification',
+      icon: <MessageSquare size={20} />,
+      color: C.warning,
+      onClick: () => {},
+      connected: true,
+    },
+  ]
+
+  return (
+    <div style={{
+      padding: isMobile ? '16px' : '28px 32px',
+      minHeight: '100%',
+      background: C.pageBg,
+    }}>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      >
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: C.textPrimary, marginBottom: 8 }}>Paramètres</h1>
+          <p style={{ fontSize: 14, color: C.textSecondary }}>Gérez vos préférences et configurations</p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {settingsSections.map((section, index) => (
+            <motion.button
+              key={section.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25, delay: index * 0.05 }}
+              onClick={section.onClick}
+              style={{
+                width: '100%',
+                padding: '20px',
+                borderRadius: C.radiusCard,
+                background: C.glassMedium,
+                backdropFilter: 'blur(20px)',
+                border: C.glassBorder,
+                boxShadow: C.glassShadow,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                textAlign: 'left',
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.transform = 'translateY(-2px)'
+                el.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12)'
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.transform = 'translateY(0)'
+                el.style.boxShadow = C.glassShadow
+              }}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: 14,
+                background: `${section.color}15`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: section.color,
+              }}>
+                {section.icon}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary, marginBottom: 4 }}>{section.title}</div>
+                <div style={{ fontSize: 13, color: C.textSecondary }}>{section.description}</div>
+              </div>
+              {section.connected !== undefined && (
+                <div style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: section.connected ? C.success : C.mid,
+                  boxShadow: section.connected ? `0 0 8px ${C.success}cc` : 'none',
+                }} />
+              )}
+              <ChevronRight size={18} color={C.textSecondary} />
+            </motion.button>
+          ))}
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          style={{ marginTop: 32, padding: '20px', borderRadius: C.radiusCard, background: C.glassMedium, backdropFilter: 'blur(20px)', border: C.glassBorder }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary, marginBottom: 12 }}>Statut des canaux</div>
+          <div style={{ display: 'flex', gap: 24 }}>
+            {[
+              { label: 'WhatsApp', connected: waConnected, color: C.whatsapp },
+              { label: 'Facebook', connected: fbConnected, color: C.facebook },
+              { label: 'Instagram', connected: igConnected, color: C.instagram },
+            ].map(ch => (
+              <div key={ch.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: ch.connected ? ch.color : C.mid,
+                  boxShadow: ch.connected ? `0 0 8px ${ch.color}cc` : 'none',
+                }} />
+                <span style={{ fontSize: 13, color: ch.connected ? C.textPrimary : C.textSecondary }}>{ch.label}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </motion.div>
+    </div>
   )
 }
 
@@ -1276,7 +1547,7 @@ function HomeView({
           value={loading ? '—' : stats.openCount}
           sub="En attente de réponse"
           icon={<MessageSquare size={18} />}
-          accent={C.accentConv}
+          accent={C.primary}
           loading={loading}
           actionLabel="Messagerie →"
           onAction={() => onNavigate('inbox')}
@@ -1287,10 +1558,10 @@ function HomeView({
           value={loading ? '—' : stats.messages}
           sub="Estimation totale"
           icon={<TrendingUp size={18} />}
-          accent={C.accentMsg}
+          accent={C.accentGreen}
           loading={loading}
-          actionLabel="Canaux →"
-          onAction={() => onNavigate('channels')}
+          actionLabel="Paramètres →"
+          onAction={() => onNavigate('settings')}
           delay={0.05}
         />
         <KpiCard
@@ -1298,10 +1569,10 @@ function HomeView({
           value={loading ? '—' : activeChannels}
           sub="Sur 3 disponibles"
           icon={<Wifi size={18} />}
-          accent={C.accentChan}
+          accent={C.success}
           loading={loading}
-          actionLabel="Calendrier →"
-          onAction={() => onNavigate('calendrier')}
+          actionLabel="Paramètres →"
+          onAction={() => onNavigate('settings')}
           delay={0.1}
         />
         <KpiCard
@@ -1309,10 +1580,10 @@ function HomeView({
           value="—"
           sub="Bientôt disponible"
           icon={<Zap size={18} />}
-          accent={C.accentAuto}
+          accent={C.accentPurple}
           loading={loading}
-          actionLabel="Agent IA →"
-          onAction={() => onNavigate('bot')}
+          actionLabel="Paramètres →"
+          onAction={() => onNavigate('settings')}
           delay={0.15}
         />
       </div>
@@ -1320,33 +1591,43 @@ function HomeView({
       {/* ── Performance | Mise en Service ── */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', gap: 20, marginBottom: 24 }}>
         <PerformanceCard />
-        <div style={{ background: C.cardBg, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', padding: '20px' }}>
+        <div style={{ background: C.glassMedium, backdropFilter: 'blur(20px)', borderRadius: C.radiusCard, boxShadow: C.glassShadow, border: C.glassBorder, padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Mise en service</div>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, background: C.blueLight, padding: '4px 10px', borderRadius: 999 }}>{setupCount}/3</span>
+            <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Mise en service</div>
+            <div style={{ fontSize: 13, color: C.textSecondary }}>{setupCount}/3 étapes</div>
           </div>
-          <div style={{ height: 4, borderRadius: 4, background: C.border, overflow: 'hidden', marginBottom: 16 }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${(setupCount / 3) * 100}%` }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-              style={{ height: '100%', background: C.primary, borderRadius: 4 }}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <SetupStep
+              done={anyChannel}
+              step={1}
+              label="Connecter un canal"
+              cta="Connecter →"
+              onClick={() => onNavigate('settings')}
             />
-          </div>
-          <div style={{ padding: '4px 0 8px' }}>
-            <SetupStep step={1} done={anyChannel} label="Connecter un canal" cta="Lier →" onClick={() => onNavigate('channels')} />
-            <SetupStep step={2} done={hasAcceptedDPA} label="Accord de conformité" cta="Signer →" onClick={onSignDPA} />
-            <SetupStep step={3} done={hasConfiguredBot} label="Configurer l'agent IA" cta="Configurer →" onClick={() => onNavigate('bot')} />
+            <SetupStep
+              done={hasAcceptedDPA}
+              step={2}
+              label="Accepter les CGU"
+              cta="Accepter →"
+              onClick={onSignDPA}
+            />
+            <SetupStep
+              done={hasConfiguredBot}
+              step={3}
+              label="Configurer l'agent IA"
+              cta="Configurer →"
+              onClick={() => onNavigate('settings')}
+            />
           </div>
         </div>
       </div>
 
       {/* ── Activité Récente | Statut Système ── */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', gap: 20, marginBottom: 24 }}>
-        <div style={{ background: C.cardBg, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ background: C.glassMedium, backdropFilter: 'blur(20px)', borderRadius: C.radiusCard, boxShadow: C.glassShadow, border: C.glassBorder, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: C.glassBorder, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Activité récente</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Activité récente</div>
               <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>Dernières conversations ouvertes</div>
             </div>
             <button onClick={() => onNavigate('inbox')} style={{ fontSize: 13, fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -1360,18 +1641,18 @@ function HomeView({
                 onClick={() => setFilterTab(tab as any)}
                 style={{
                   padding: '4px 14px',
-                  borderRadius: 999,
+                  borderRadius: C.radiusPill,
                   fontSize: 13,
                   fontWeight: 600,
                   border: 'none',
                   cursor: 'pointer',
-                  background: filterTab === tab ? C.primary : C.bg,
+                  background: filterTab === tab ? C.primary : 'rgba(0,0,0,0.03)',
                   color: filterTab === tab ? '#fff' : C.textSecondary,
                   transition: 'background 0.15s',
                   whiteSpace: 'nowrap',
                 }}
-                onMouseEnter={e => { if (filterTab !== tab) (e.currentTarget as HTMLElement).style.background = C.borderMid }}
-                onMouseLeave={e => { if (filterTab !== tab) (e.currentTarget as HTMLElement).style.background = C.bg }}
+                onMouseEnter={e => { if (filterTab !== tab) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.06)' }}
+                onMouseLeave={e => { if (filterTab !== tab) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)' }}
               >
                 {tab === 'all' ? 'Tous' : tab === 'unread' ? 'Non lus' : tab === 'pending' ? 'En attente' : 'Résolus'}
               </button>
@@ -1380,11 +1661,11 @@ function HomeView({
           <div style={{ padding: '0 20px 16px' }}>
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: i < 3 ? `1px solid ${C.bg}` : 'none' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.bg, flexShrink: 0 }} />
+                <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(0,0,0,0.05)', flexShrink: 0 }} />
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
-                    <div style={{ height: 14, width: '40%', background: C.bg, borderRadius: 6 }} />
-                    <div style={{ height: 12, width: '70%', background: C.bg, borderRadius: 6 }} />
+                    <div style={{ height: 14, width: '40%', background: 'rgba(0,0,0,0.05)', borderRadius: C.radiusInput }} />
+                    <div style={{ height: 12, width: '70%', background: 'rgba(0,0,0,0.05)', borderRadius: C.radiusInput }} />
                   </div>
                 </div>
               ))
@@ -1395,7 +1676,7 @@ function HomeView({
               </div>
             ) : (
               filteredConvs.map((conv, i) => (
-                <div key={conv.id} style={{ borderBottom: i < filteredConvs.length - 1 ? `1px solid ${C.bg}` : 'none' }}>
+                <div key={conv.id} style={{ borderBottom: i < filteredConvs.length - 1 ? `1px solid ${C.border}` : 'none' }}>
                   <ActivityRow conv={conv} onClick={() => onNavigate('inbox')} delay={i * 0.03} />
                 </div>
               ))
@@ -1403,14 +1684,14 @@ function HomeView({
           </div>
         </div>
 
-        <div style={{ background: C.cardBg, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', padding: '20px' }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary, marginBottom: 16 }}>Statut système</div>
+        <div style={{ background: C.glassMedium, backdropFilter: 'blur(20px)', borderRadius: C.radiusCard, boxShadow: C.glassShadow, border: C.glassBorder, padding: '20px' }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary, marginBottom: 16 }}>Statut système</div>
           {[
             { label: 'Plateforme Répondly', ok: true },
             { label: 'Chatwoot', ok: stats.openCount >= 0 },
             { label: 'Canaux connectés', ok: anyChannel },
           ].map(item => (
-            <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: C.glassBorder }}>
               <span style={{ fontSize: 13, color: C.textPrimary }}>{item.label}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <motion.span
@@ -1418,7 +1699,7 @@ function HomeView({
                   transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                   style={{ width: 8, height: 8, borderRadius: '50%', background: item.ok ? C.success : C.textSecondary }}
                 />
-                <span style={{ fontSize: 12, fontWeight: 600, color: item.ok ? C.greenText : C.textSecondary, background: item.ok ? C.greenLight : C.bg, padding: '2px 10px', borderRadius: 999 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: item.ok ? C.success : C.textSecondary, background: item.ok ? 'rgba(14, 164, 114, 0.1)' : 'rgba(0,0,0,0.03)', padding: '2px 10px', borderRadius: C.radiusPill }}>
                   {item.ok ? 'Opérationnel' : 'Inactif'}
                 </span>
               </div>
@@ -1428,17 +1709,17 @@ function HomeView({
       </div>
 
       {/* ── Canaux de Messagerie ── */}
-      <div style={{ background: C.cardBg, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden', marginBottom: 24 }}>
-        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Canaux de messagerie</div>
-          <button onClick={() => onNavigate('channels')} style={{ fontSize: 13, fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div style={{ background: C.glassMedium, backdropFilter: 'blur(20px)', borderRadius: C.radiusCard, boxShadow: C.glassShadow, border: C.glassBorder, overflow: 'hidden', marginBottom: 24 }}>
+        <div style={{ padding: '16px 20px', borderBottom: C.glassBorder, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Canaux de messagerie</div>
+          <button onClick={() => onNavigate('settings')} style={{ fontSize: 13, fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
             Gérer <ArrowRight size={12} />
           </button>
         </div>
         <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16 }}>
-          <ChannelCard label="WhatsApp" desc="Messages & automatisation" active={waConnected} color={C.whatsapp} badgeBg={C.greenLight} badgeText={C.greenText} onClick={() => onNavigate('channels')} delay={0} />
-          <ChannelCard label="Facebook" desc="Page & discussions" active={fbConnected} color={C.facebook} badgeBg={C.blueLight} badgeText={C.primary} onClick={() => onNavigate('channels')} delay={0.04} />
-          <ChannelCard label="Instagram" desc="DMs & réponses auto" active={igConnected} color={C.instagram} badgeBg={C.pinkLight} badgeText={C.pinkText} onClick={() => onNavigate('channels')} delay={0.08} />
+          <ChannelCard label="WhatsApp" desc="Messages & automatisation" active={waConnected} color={C.whatsapp} badgeBg="rgba(34, 197, 94, 0.1)" badgeText={C.success} onClick={() => onNavigate('settings')} delay={0} />
+          <ChannelCard label="Facebook" desc="Page & discussions" active={fbConnected} color={C.facebook} badgeBg="rgba(59, 130, 246, 0.1)" badgeText={C.primary} onClick={() => onNavigate('settings')} delay={0.04} />
+          <ChannelCard label="Instagram" desc="DMs & réponses auto" active={igConnected} color={C.instagram} badgeBg="rgba(236, 72, 153, 0.1)" badgeText={C.instagram} onClick={() => onNavigate('settings')} delay={0.08} />
         </div>
       </div>
 

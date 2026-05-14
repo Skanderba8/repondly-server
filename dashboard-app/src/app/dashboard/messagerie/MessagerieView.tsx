@@ -12,18 +12,20 @@ import {
 
 // ─── Design tokens from dashboard-design-patterns.md ───────────────────────
 const C = {
-  pageBg: '#F1F5F9',
+  pageBg: '#F2F2F7',
   cardBg: '#FFFFFF',
-  sidebarBg: '#0F172A',
-  primary: '#2563EB',
+  primary: '#1A56DB',
+  accentGreen: '#0EA472',
+  accentPurple: '#7C3AED',
   textPrimary: '#0F172A',
   textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
   muted: '#94A3B8',
-  success: '#22C55E',
-  inProgress: '#3B82F6',
+  success: '#0EA472',
+  inProgress: '#1A56DB',
   pending: '#F59E0B',
   error: '#EF4444',
-  border: '#E2E8F0',
+  border: 'rgba(0, 0, 0, 0.08)',
   borderMid: '#CBD5E1',
   // Channel colors
   whatsapp: '#22C55E',
@@ -35,16 +37,25 @@ const C = {
   instagram: '#EC4899',
   instagramBg: '#FDF2F8',
   instagramText: '#DB2777',
-  // Utility
-  blueLight: '#EFF6FF',
-  blueHover: '#DBEAFE',
-  greenLight: '#F0FDF4',
-  pinkLight: '#FDF2F8',
+  // Glass effects
+  glassMedium: 'rgba(255, 255, 255, 0.85)',
+  glassLight: 'rgba(255, 255, 255, 0.7)',
+  glassDark: 'rgba(255, 255, 255, 0.95)',
+  glassShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+  glassBorder: '1px solid rgba(255, 255, 255, 0.3)',
+  // Corner radii
+  radiusCard: 16,
+  radiusInput: 12,
+  radiusPill: 999,
+  radiusBubble: 20,
+  // Gradients
+  gradientPrimary: 'linear-gradient(135deg, #1A56DB 0%, #0EA472 100%)',
+  gradientPurple: 'linear-gradient(135deg, #7C3AED 0%, #1A56DB 100%)',
   // Message bubbles
-  bubbleOut: '#2563EB',
+  bubbleOut: '#1A56DB',
   bubbleIn: '#FFFFFF',
-  listHover: 'rgba(37, 99, 235, 0.04)',
-  listActive: 'rgba(37, 99, 235, 0.08)',
+  listHover: 'rgba(26, 86, 219, 0.04)',
+  listActive: 'rgba(26, 86, 219, 0.08)',
 }
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -122,7 +133,7 @@ function channelColor(channelType: string): string {
 function channelBg(channelType: string): string {
   if (channelType === 'Channel::Whatsapp') return C.whatsappBg
   if (channelType === 'Channel::FacebookPage' || channelType === 'Channel::Instagram') return C.instagramBg
-  return C.blueLight
+  return 'rgba(26, 86, 219, 0.1)'
 }
 
 function channelText(channelType: string): string {
@@ -180,6 +191,7 @@ function ChannelIcon({ channelType, size = 20 }: { channelType: string; size?: n
 function Avatar({ contact, size = 40, showChannelBadge = false, channelType }: { contact: Contact; size?: number; showChannelBadge?: boolean; channelType?: string }) {
   const [imgError, setImgError] = useState(false)
   const badgeSize = Math.round(size * 0.35)
+  const color = channelType ? channelColor(channelType) : C.primary
 
   return (
     <div style={{ position: 'relative', flexShrink: 0, width: size, height: size }}>
@@ -193,16 +205,17 @@ function Avatar({ contact, size = 40, showChannelBadge = false, channelType }: {
       ) : (
         <div style={{
           width: size, height: size, borderRadius: '50%',
-          background: C.blueLight, color: C.primary,
+          background: `linear-gradient(135deg, ${color}20 0%, ${color}10 100%)`,
+          color: color,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: size * 0.38, fontWeight: 700,
-          border: `2px solid ${C.border}`,
+          fontSize: size * 0.38, fontWeight: 600,
+          border: `2px solid ${color}30`,
         }}>
           {initials(contact.name)}
         </div>
       )}
       {showChannelBadge && channelType && (
-        <div style={{ position: 'absolute', bottom: -2, right: -2, background: C.cardBg, borderRadius: '50%', padding: 2 }}>
+        <div style={{ position: 'absolute', bottom: -2, right: -2, background: C.cardBg, borderRadius: '50%', padding: 2, boxShadow: C.glassShadow }}>
           <ChannelIcon channelType={channelType} size={badgeSize} />
         </div>
       )}
@@ -219,10 +232,10 @@ function EmptyState({ text, icon }: { text: string; icon?: React.ReactNode }) {
       color: C.textSecondary, padding: 40,
     }}>
       <div style={{
-        width: 64, height: 64, borderRadius: 16,
-        background: C.blueLight, display: 'flex',
-        alignItems: 'center', justifyContent: 'center', color: C.primary,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        width: 64, height: 64, borderRadius: 20,
+        background: C.gradientPrimary, display: 'flex',
+        alignItems: 'center', justifyContent: 'center', color: '#fff',
+        boxShadow: C.glassShadow,
       }}>
         {icon || <MessageSquare size={28} />}
       </div>
@@ -244,11 +257,12 @@ function ConvItem({
   const color   = channelColor(conv.inbox?.channel_type)
 
   return (
-    <div
+    <motion.div
       onClick={onClick}
+      whileTap={{ scale: 0.98 }}
       style={{
         display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 16px', cursor: 'pointer',
+        padding: '14px 16px', cursor: 'pointer',
         background: active ? C.listActive : 'transparent',
         borderLeft: active ? `3px solid ${C.primary}` : '3px solid transparent',
         transition: 'background 0.12s',
@@ -261,12 +275,12 @@ function ConvItem({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <span style={{
-            fontSize: 14, fontWeight: conv.unread_count > 0 ? 700 : 600,
+            fontSize: 14, fontWeight: conv.unread_count > 0 ? 600 : 500,
             color: C.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {contact.name}
           </span>
-          <span style={{ fontSize: 11, color: C.textSecondary, flexShrink: 0, marginLeft: 8 }}>
+          <span style={{ fontSize: 11, color: C.textTertiary, flexShrink: 0, marginLeft: 8 }}>
             {formatTime(ts)}
           </span>
         </div>
@@ -277,13 +291,13 @@ function ConvItem({
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
           }}>
             {isOut && <span style={{ color: C.primary, marginRight: 4 }}>↗</span>}
-            {preview || <em style={{ color: C.muted }}>Pas de message</em>}
+            {preview || <em style={{ color: C.textTertiary }}>Pas de message</em>}
           </span>
           {conv.unread_count > 0 && (
             <span style={{
               background: C.primary, color: '#fff',
-              fontSize: 11, fontWeight: 700, padding: '2px 8px',
-              borderRadius: 999, flexShrink: 0,
+              fontSize: 11, fontWeight: 600, padding: '2px 8px',
+              borderRadius: C.radiusPill, flexShrink: 0,
             }}>
               {conv.unread_count}
             </span>
@@ -295,16 +309,16 @@ function ConvItem({
               fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em',
               color: repondlyStatus === 'RESOLUE' ? C.success : C.primary,
               background: repondlyStatus === 'RESOLUE'
-                ? 'rgba(34, 197, 94, 0.1)'
-                : 'rgba(37, 99, 235, 0.1)',
-              padding: '3px 10px', borderRadius: 999,
+                ? 'rgba(14, 164, 114, 0.1)'
+                : 'rgba(26, 86, 219, 0.1)',
+              padding: '3px 10px', borderRadius: C.radiusPill,
               backdropFilter: 'blur(8px)',
               border: repondlyStatus === 'RESOLUE'
-                ? '1px solid rgba(34, 197, 94, 0.2)'
-                : '1px solid rgba(37, 99, 235, 0.2)',
+                ? '1px solid rgba(14, 164, 114, 0.2)'
+                : '1px solid rgba(26, 86, 219, 0.2)',
               boxShadow: repondlyStatus === 'RESOLUE'
-                ? '0 2px 8px rgba(34, 197, 94, 0.15)'
-                : '0 2px 8px rgba(37, 99, 235, 0.15)',
+                ? '0 2px 8px rgba(14, 164, 114, 0.15)'
+                : '0 2px 8px rgba(26, 86, 219, 0.15)',
             }}>
               {repondlyStatus === 'RESOLUE' ? 'Résolue' : 'En attente'}
             </span>
@@ -314,20 +328,20 @@ function ConvItem({
               onClick={(e) => { e.stopPropagation(); onResolve(conv.id) }}
               style={{
                 fontSize: 11, fontWeight: 600, color: C.success,
-                background: 'rgba(34, 197, 94, 0.1)',
-                border: '1px solid rgba(34, 197, 94, 0.2)',
-                padding: '3px 8px', borderRadius: 6,
+                background: 'rgba(14, 164, 114, 0.1)',
+                border: '1px solid rgba(14, 164, 114, 0.2)',
+                padding: '3px 8px', borderRadius: C.radiusInput,
                 cursor: 'pointer', transition: 'all 0.15s',
               }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(34, 197, 94, 0.2)'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(34, 197, 94, 0.1)'}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(14, 164, 114, 0.2)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(14, 164, 114, 0.1)'}
             >
               Résoudre
             </button>
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -351,7 +365,6 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
         } catch {}
       }
       checkStatus()
-      // Check status every 10s instead of 3s for better performance
       const interval = setInterval(checkStatus, 10_000)
       return () => clearInterval(interval)
     }
@@ -362,8 +375,9 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
       <div style={{ textAlign: 'center', margin: '8px 0' }}>
         <span style={{
           fontSize: 11, color: C.textSecondary,
-          background: C.border,
-          padding: '4px 12px', borderRadius: 999,
+          background: C.glassLight,
+          backdropFilter: 'blur(10px)',
+          padding: '4px 12px', borderRadius: C.radiusPill,
         }}>
           {msg.content}
         </span>
@@ -374,19 +388,26 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
   const hasError = msg.error_message || localStatus === 'failed'
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: isOut ? 'row-reverse' : 'row',
-      alignItems: 'flex-end', gap: 8, marginBottom: 12,
-    }}>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      style={{
+        display: 'flex',
+        flexDirection: isOut ? 'row-reverse' : 'row',
+        alignItems: 'flex-end', gap: 8, marginBottom: 12,
+      }}
+    >
       <div style={{
         maxWidth: '70%',
-        background: isOut ? C.bubbleOut : C.bubbleIn,
+        background: isOut ? C.bubbleOut : C.glassMedium,
+        backdropFilter: isOut ? 'none' : 'blur(20px)',
         color: isOut ? '#fff' : C.textPrimary,
-        borderRadius: isOut ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-        padding: '10px 14px',
+        borderRadius: isOut ? `${C.radiusBubble}px ${C.radiusBubble}px 4px ${C.radiusBubble}px` : `${C.radiusBubble}px ${C.radiusBubble}px ${C.radiusBubble}px 4px`,
+        padding: '12px 16px',
         fontSize: 14, lineHeight: 1.5,
-        boxShadow: isOut ? '0 2px 8px rgba(37, 99, 235, 0.2)' : '0 1px 4px rgba(0,0,0,0.08)',
+        boxShadow: isOut ? '0 4px 16px rgba(26, 86, 219, 0.25)' : C.glassShadow,
+        border: isOut ? 'none' : C.glassBorder,
         wordBreak: 'break-word',
         position: 'relative',
       }}>
@@ -396,7 +417,7 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
             background: C.error, color: '#fff',
             borderRadius: '50%', width: 20, height: 20,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
             cursor: 'pointer',
             zIndex: 10,
           }} title={msg.error_message || 'Échec de l\'envoi'}>
@@ -408,7 +429,7 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
             {msg.attachments.map(a => (
               a.file_type === 'image' ? (
                 <img key={a.id} src={a.thumb_url || a.data_url} alt="attachment"
-                  style={{ maxWidth: 200, borderRadius: 12, display: 'block' }} />
+                  style={{ maxWidth: 200, borderRadius: C.radiusInput, display: 'block' }} />
               ) : (
                 <a key={a.id} href={a.data_url} target="_blank" rel="noreferrer"
                   style={{ color: isOut ? 'rgba(255,255,255,0.9)' : C.primary, fontSize: 13, textDecoration: 'underline' }}>
@@ -421,7 +442,7 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
         ) : msg.content}
         <div style={{
           fontSize: 11,
-          color: isOut ? 'rgba(255,255,255,0.6)' : C.textSecondary,
+          color: isOut ? 'rgba(255,255,255,0.6)' : C.textTertiary,
           textAlign: 'right', marginTop: 4,
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4,
         }}>
@@ -431,7 +452,7 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -576,7 +597,7 @@ function NotesPanel({ conversationId, isOpen, onClose }: { conversationId: numbe
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <div style={{
                     width: 24, height: 24, borderRadius: '50%',
-                    background: C.blueLight, color: C.primary,
+                    background: 'rgba(26, 86, 219, 0.1)', color: C.primary,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 11, fontWeight: 700,
                   }}>
@@ -822,7 +843,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
   // ── Mobile detection ───────────────────────────────────────────────────────────
   useEffect(() => {
     const check = () => {
-      const mobile = window.innerWidth < 768
+      const mobile = window.innerWidth < 1024 || ('ontouchstart' in window)
       setIsMobile(mobile)
     }
     check()
@@ -1002,6 +1023,18 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
       position: 'relative',
       touchAction: 'manipulation',
     }}>
+      {/* Blue safe area for iOS PWA */}
+      {isMobile && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 'env(safe-area-inset-top)',
+          background: C.gradientPrimary,
+          zIndex: 9999,
+        }} />
+      )}
 
       {/* ══ Main Content ════════════════════════════════════════════════════════ */}
       <div style={{
@@ -1132,7 +1165,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
         }}>
           <div style={{
             width: 72, height: 72, borderRadius: 20,
-            background: C.blueLight, display: 'flex',
+            background: 'rgba(26, 86, 219, 0.1)', display: 'flex',
             alignItems: 'center', justifyContent: 'center', color: C.primary,
             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           }}>
@@ -1154,8 +1187,8 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
           {/* ── Thread Header ── */}
           <div style={{
             padding: isMobile ? '12px 16px' : '16px 24px',
-            background: C.cardBg,
-            borderBottom: `1px solid ${C.border}`,
+            background: isMobile ? C.gradientPrimary : C.cardBg,
+            borderBottom: isMobile ? 'none' : `1px solid ${C.border}`,
             display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12,
           }}>
             {isMobile && (
@@ -1164,8 +1197,8 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: 36, height: 36, borderRadius: '50%',
-                  background: C.pageBg, border: `1px solid ${C.border}`,
-                  cursor: 'pointer', color: C.textSecondary,
+                  background: 'rgba(255, 255, 255, 0.2)', border: `1px solid rgba(255, 255, 255, 0.3)`,
+                  cursor: 'pointer', color: '#fff',
                   flexShrink: 0,
                 }}
               >
@@ -1179,10 +1212,10 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
               channelType={activeConv.inbox?.channel_type}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.01em' }}>
+              <div style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: isMobile ? '#fff' : C.textPrimary, letterSpacing: '-0.01em' }}>
                 {activeConv.meta.sender.name}
               </div>
-              <div style={{ fontSize: isMobile ? 11 : 12, color: C.textSecondary, display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+              <div style={{ fontSize: isMobile ? 11 : 12, color: isMobile ? 'rgba(255, 255, 255, 0.8)' : C.textSecondary, display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
                 <span>{activeConv.inbox?.name || 'Inbox'}</span>
                 {activeConv.meta.sender.phone_number && !isMobile && (
                   <span>· {activeConv.meta.sender.phone_number}</span>
@@ -1198,14 +1231,14 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: isMobile ? 36 : 40, height: isMobile ? 36 : 40,
                   borderRadius: isMobile ? '50%' : 8,
-                  background: C.greenLight, border: `1px solid ${C.success}`,
-                  cursor: statusLoading ? 'default' : 'pointer', color: C.success,
+                  background: isMobile ? 'rgba(34, 197, 94, 0.2)' : 'rgba(14, 164, 114, 0.1)', border: isMobile ? '1px solid rgba(34, 197, 94, 0.4)' : `1px solid ${C.success}`,
+                  cursor: statusLoading ? 'default' : 'pointer', color: isMobile ? '#fff' : C.success,
                   flexShrink: 0,
                   transition: 'all 0.15s',
                   opacity: statusLoading ? 0.5 : 1,
                 }}
-                onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = 'rgba(34, 197, 94, 0.2)' }}
-                onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.greenLight }}
+                onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = isMobile ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)' }}
+                onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = isMobile ? 'rgba(34, 197, 94, 0.2)' : 'rgba(14, 164, 114, 0.1)' }}
               >
                 {statusLoading ? <Loader2 size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCheck size={isMobile ? 18 : 20} />}
               </button>
@@ -1223,13 +1256,14 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: isMobile ? 36 : 40, height: isMobile ? 36 : 40,
                 borderRadius: isMobile ? '50%' : 8,
-                background: C.blueLight, border: `1px solid ${C.border}`,
-                cursor: 'pointer', color: C.primary,
+                background: isMobile ? 'rgba(255, 255, 255, 0.2)' : 'rgba(26, 86, 219, 0.1)',
+                border: isMobile ? '1px solid rgba(255, 255, 255, 0.3)' : `1px solid ${C.border}`,
+                cursor: 'pointer', color: isMobile ? '#fff' : C.primary,
                 flexShrink: 0,
                 transition: 'all 0.15s',
               }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.blueHover}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = C.blueLight}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = isMobile ? 'rgba(255, 255, 255, 0.3)' : 'rgba(26, 86, 219, 0.15)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = isMobile ? 'rgba(255, 255, 255, 0.2)' : 'rgba(26, 86, 219, 0.1)'}
             >
               <FileText size={isMobile ? 18 : 20} />
             </button>
@@ -1264,11 +1298,11 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
           </div>
 
           {/* ── Reply Box (only for EN_ATTENTE conversations) ── */}
-          {(repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'EN_ATTENTE' && (
+          {activeConv && (repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'EN_ATTENTE' && (
             <div style={{
               padding: isMobile ? '12px 16px' : '16px 24px',
               borderTop: `1px solid ${C.border}`,
-              background: C.cardBg,
+              background: isMobile ? 'linear-gradient(0deg, rgba(26, 86, 219, 0.15) 0%, rgba(26, 86, 219, 0.05) 100%)' : C.cardBg,
               display: 'flex', gap: isMobile ? 10 : 12, alignItems: 'flex-end',
               paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom))' : '16px',
             }}>
@@ -1314,11 +1348,11 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
           )}
 
           {/* Resolved banner */}
-          {(repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'RESOLUE' && (
+          {activeConv && (repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'RESOLUE' && (
             <div style={{
               padding: isMobile ? '12px 16px' : '12px 24px',
               borderTop: `1px solid ${C.border}`,
-              background: C.greenLight,
+              background: isMobile ? 'rgba(34, 197, 94, 0.08)' : 'rgba(14, 164, 114, 0.1)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom))' : '12px',
             }}>

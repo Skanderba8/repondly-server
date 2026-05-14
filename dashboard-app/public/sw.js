@@ -1,4 +1,4 @@
-const CACHE_NAME = 'repondly-v2'
+const CACHE_NAME = 'repondly-v3'
 const urlsToCache = [
   '/',
   '/manifest.json',

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     apple: '/mobile-icon.png',
   },
   manifest: '/manifest.json',
-  themeColor: '#FFFFFF',
+  themeColor: '#3B82F6',
   viewport: {
     width: 'device-width',
     initialScale: 1,
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/mobile-icon.png" />
-        <meta name="theme-color" content="#FFFFFF" />
+        <meta name="theme-color" content="#3B82F6" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Répondly" />
@@ -49,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           html, body {
             margin: 0;
             padding: 0;
-            background-color: #FFFFFF;
+            background-color: #F2F2F7;
             -webkit-tap-highlight-color: transparent;
           }
           body {
