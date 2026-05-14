@@ -7,72 +7,74 @@ datasource db {
 }
 
 model Business {
-  id                    String    @id @default(cuid())
-  name                  String
-  email                 String    @unique
-  passwordHash          String
-  phone                 String?
-  chatwootAccountId     Int?      @unique
-  chatwootApiToken      String?
-  plan                  Plan      @default(FREE)
-  status                String    @default("TRIAL")
-  trialEndsAt           DateTime?
-  lastLoginAt           DateTime?
-  paidThisMonth         Boolean   @default(false)
-  paymentMethod         String?
-  channels              String[]  @default([])
-  businessInfo          Json?
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  passwordHash      String
+  phone             String?
+  chatwootAccountId Int?      @unique
+  chatwootApiToken  String?
+  plan              Plan      @default(FREE)
+  status            String    @default("TRIAL")
+  trialEndsAt       DateTime?
+  lastLoginAt       DateTime?
+  paidThisMonth     Boolean   @default(false)
+  paymentMethod     String?
+  channels          String[]  @default([])
+  businessInfo      Json?
 
   // WhatsApp Embedded Signup
   wabaId                String?
   whatsappPhoneNumberId String?
   whatsappInboxId       Int?
-  whatsappConnected     Boolean   @default(false)
+  whatsappConnected     Boolean @default(false)
 
   // Facebook
-  facebookPageId        String?
-  facebookPageToken     String?
-  facebookInboxId       Int?
-  facebookConnected     Boolean   @default(false)
+  facebookPageId    String?
+  facebookPageToken String?
+  facebookInboxId   Int?
+  facebookConnected Boolean @default(false)
 
   // Instagram
-  instagramAccountId    String?
-  instagramInboxId      Int?
-  instagramConnected    Boolean   @default(false)
+  instagramAccountId String?
+  instagramInboxId   Int?
+  instagramConnected Boolean @default(false)
 
   // New Onboarding Milestones
-  hasAcceptedDPA        Boolean   @default(false)
-  hasSetBusinessHours   Boolean   @default(false)
-  hasConfiguredBot      Boolean   @default(false)
+  hasAcceptedDPA      Boolean @default(false)
+  hasSetBusinessHours Boolean @default(false)
+  hasConfiguredBot    Boolean @default(false)
 
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  clients               Client[]
-  autoRules             AutoRule[]
-  reminders             Reminder[]
-  bookings              Booking[]
-  adminNotes            AdminNote[]
-  onboarding            OnboardingStage?
-  activityLogs          ActivityLog[]
-  botEvents             BotEvent[]
-  connectedPages        ConnectedPage[]
+  clients              Client[]
+  autoRules            AutoRule[]
+  reminders            Reminder[]
+  bookings             Booking[]
+  adminNotes           AdminNote[]
+  onboarding           OnboardingStage?
+  activityLogs         ActivityLog[]
+  botEvents            BotEvent[]
+  connectedPages       ConnectedPage[]
+  conversationStatuses ConversationStatus[]
+  conversationViews     ConversationView[]
 }
 
 model Client {
-  id                String    @id @default(cuid())
+  id                String   @id @default(cuid())
   businessId        String
   name              String
   phone             String?
   email             String?
   channel           Channel
   chatwootContactId Int?
-  createdAt         DateTime  @default(now())
+  createdAt         DateTime @default(now())
 
-  business          Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  reminders         Reminder[]
-  bookings          Booking[]
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  reminders Reminder[]
+  bookings  Booking[]
 }
 
 model AutoRule {
@@ -87,7 +89,7 @@ model AutoRule {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model Reminder {
@@ -100,8 +102,8 @@ model Reminder {
   status      ReminderStatus @default(PENDING)
   createdAt   DateTime       @default(now())
 
-  business    Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  client      Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
@@ -115,8 +117,8 @@ model Booking {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model AdminNote {
@@ -125,7 +127,7 @@ model AdminNote {
   content    String
   createdAt  DateTime @default(now())
 
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model OnboardingStage {
@@ -134,7 +136,7 @@ model OnboardingStage {
   stage      String   @default("DEMO_BOOKED")
   updatedAt  DateTime @updatedAt
 
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model ActivityLog {
@@ -144,7 +146,7 @@ model ActivityLog {
   metadata   Json?
   createdAt  DateTime @default(now())
 
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model BotEvent {
@@ -157,7 +159,7 @@ model BotEvent {
   wasHandled  Boolean  @default(false)
   createdAt   DateTime @default(now())
 
-  business    Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
 }
 
 model ConnectedPage {
@@ -173,7 +175,7 @@ model ConnectedPage {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, pageId, channel])
 }
@@ -188,6 +190,32 @@ model AdminUser {
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+}
+
+model ConversationStatus {
+  id             String               @id @default(cuid())
+  businessId     String
+  conversationId Int                  @unique
+  status         RepondlyTicketStatus @default(EN_ATTENTE)
+  updatedAt      DateTime             @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, conversationId])
+}
+
+model ConversationView {
+  id             String   @id @default(cuid())
+  businessId     String
+  conversationId Int
+  lastViewedAt   DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, conversationId])
+  @@index([businessId, conversationId])
 }
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -234,4 +262,9 @@ enum BookingStatus {
 enum AdminRole {
   SUPER_ADMIN
   ADMIN
+}
+
+enum RepondlyTicketStatus {
+  EN_ATTENTE
+  RESOLUE
 }

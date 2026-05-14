@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   title: 'Répondly',
   description: 'Automate your business messages',
   icons: { icon: '/logo.png' },
+  manifest: '/manifest.json',
+  themeColor: '#2563EB',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -17,6 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap"
           rel="stylesheet"
         />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#2563EB" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <style>{`
           *, *::before, *::after { box-sizing: border-box; }
           body {

@@ -61,6 +61,7 @@ model Business {
   activityLogs          ActivityLog[]
   botEvents             BotEvent[]
   connectedPages        ConnectedPage[]
+  conversationStatuses  ConversationStatus[]
 }
 
 model Client {
@@ -193,6 +194,18 @@ model AdminUser {
   updatedAt    DateTime  @updatedAt
 }
 
+model ConversationStatus {
+  id             String              @id @default(cuid())
+  businessId     String
+  conversationId Int                 @unique
+  status         RepondlyTicketStatus @default(EN_ATTENTE)
+  updatedAt      DateTime            @updatedAt
+
+  business       Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, conversationId])
+}
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum Plan {
@@ -237,4 +250,9 @@ enum BookingStatus {
 enum AdminRole {
   SUPER_ADMIN
   ADMIN
+}
+
+enum RepondlyTicketStatus {
+  EN_ATTENTE
+  RESOLUE
 }

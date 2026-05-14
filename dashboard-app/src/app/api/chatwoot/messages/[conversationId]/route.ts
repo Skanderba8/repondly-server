@@ -14,10 +14,10 @@ async function getBusinessCredentials(email: string) {
   })
 }
 
-// ─── GET /api/chatwoot/messages/[id] ──────────────────────────────────────────
+// ─── GET /api/chatwoot/messages/[conversationId] ──────────────────────────────────────────
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
     const session = await auth()
@@ -31,11 +31,11 @@ export async function GET(
       return NextResponse.json({ error: 'Chatwoot not connected' }, { status: 403 })
     }
 
-    const { id } = await params
+    const { conversationId } = await params
     const data = await getMessages(
       business.chatwootAccountId,
       business.chatwootApiToken,
-      parseInt(id)
+      parseInt(conversationId)
     )
 
     return NextResponse.json(data)
@@ -45,10 +45,10 @@ export async function GET(
   }
 }
 
-// ─── POST /api/chatwoot/messages/[id] ─────────────────────────────────────────
+// ─── POST /api/chatwoot/messages/[conversationId] ─────────────────────────────────────────
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
     const session = await auth()
@@ -62,7 +62,7 @@ export async function POST(
       return NextResponse.json({ error: 'Chatwoot not connected' }, { status: 403 })
     }
 
-    const { id } = await params
+    const { conversationId } = await params
     const body = await request.json()
     const { content } = body
 
@@ -73,7 +73,7 @@ export async function POST(
     const data = await sendMessage(
       business.chatwootAccountId,
       business.chatwootApiToken,
-      parseInt(id),
+      parseInt(conversationId),
       content.trim()
     )
 

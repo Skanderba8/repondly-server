@@ -44,6 +44,7 @@ export interface CWMessage {
   status: string
   sender?: { id: number; name: string; type: string; avatar_url?: string }
   attachments?: Array<{ id: number; file_type: string; data_url: string; thumb_url: string }>
+  error_message?: string
 }
 
 export interface CWConversationListResponse {
@@ -130,4 +131,44 @@ export async function updateConversationStatus(
     method: 'POST',
     body: JSON.stringify({ status }),
   })
+}
+
+export interface CWNote {
+  id: number
+  content: string
+  created_at: number
+  user: { id: number; name: string; avatar_url?: string }
+}
+
+export interface CWNotesResponse {
+  payload: CWNote[]
+}
+
+export async function getConversationNotes(
+  accountId: number,
+  apiToken: string,
+  conversationId: number
+): Promise<CWNotesResponse> {
+  return cw<CWNotesResponse>(accountId, apiToken, `/conversations/${conversationId}/notes`)
+}
+
+export async function createConversationNote(
+  accountId: number,
+  apiToken: string,
+  conversationId: number,
+  content: string
+): Promise<CWNote> {
+  return cw<CWNote>(accountId, apiToken, `/conversations/${conversationId}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+}
+
+export async function getMessage(
+  accountId: number,
+  apiToken: string,
+  conversationId: number,
+  messageId: number
+): Promise<CWMessage> {
+  return cw<CWMessage>(accountId, apiToken, `/conversations/${conversationId}/messages/${messageId}`)
 }

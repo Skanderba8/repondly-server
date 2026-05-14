@@ -8,38 +8,52 @@ import {
   LayoutDashboard, Inbox, Bot, Settings, LogOut,
   AlertCircle, CheckCircle, X, TrendingUp,
   MessageSquare, Radio, Calendar, ChevronDown, User,
-  ArrowRight, Wifi, WifiOff, Zap, RefreshCw,
+  ArrowRight, Wifi, WifiOff, Zap, RefreshCw, Menu,
 } from 'lucide-react'
 import MessagerieView from './messagerie/MessagerieView'
 import ChannelsPage from '@/components/ChannelsPage'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
-  blue:        '#1a6bff',
-  blueDark:    '#0f4fd4',
-  blueLight:   '#e8f0ff',
-  blueMid:     '#3b82f6',
-  purple:      '#7c3aed',
-  purpleLight: '#ede9fe',
-  teal:        '#0d9488',
-  tealLight:   '#ccfbf1',
-  amber:       '#d97706',
-  amberLight:  '#fef3c7',
-  ink:         '#0f172a',
-  inkSoft:     '#1e293b',
+  // Donezo color system
+  pageBg:      '#F1F5F9',
+  cardBg:      '#FFFFFF',
+  sidebar:     '#0F172A',
+  sidebarHover:'#1E293B',
+  primary:     '#2563EB',
+  textPrimary: '#0F172A',
+  textSecondary:'#64748B',
+  border:      '#E2E8F0',
+  success:     '#22C55E',
+  inProgress:  '#3B82F6',
+  pending:     '#F59E0B',
+  // Card stat accents
+  accentConv:  '#2563EB',
+  accentMsg:   '#0D9488',
+  accentChan:  '#22C55E',
+  accentAuto:  '#7C3AED',
+  // Channel colors
+  whatsapp:    '#22C55E',
+  facebook:    '#3B82F6',
+  instagram:   '#EC4899',
+  // Utilities
+  white:       '#FFFFFF',
+  muted:       '#94A3B8',
   mid:         '#475569',
-  muted:       '#94a3b8',
-  border:      '#e2e8f0',
-  borderMid:   '#cbd5e1',
-  bg:          '#f1f5f9',
-  white:       '#ffffff',
-  sidebar:     '#0f172a',
-  sidebarHover:'#1e293b',
-  sidebarBorder:'#1e293b',
-  green:       '#059669',
-  greenLight:  '#d1fae5',
-  red:         '#dc2626',
-  redLight:    '#fee2e2',
+  bg:          '#F1F5F9',
+  bgLight:     '#F8FAFC',
+  blueLight:   '#EFF6FF',
+  blueHover:   '#DBEAFE',
+  greenLight:  '#F0FDF4',
+  greenText:   '#16A34A',
+  pinkLight:   '#FDF2F8',
+  pinkText:    '#DB2777',
+  red:         '#EF4444',
+  // Additional colors for new design
+  ink:         '#0F172A',
+  blue:        '#2563EB',
+  purple:      '#7C3AED',
+  borderMid:   '#CBD5E1',
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -64,114 +78,124 @@ const NAV: { id: PageId; label: string; icon: React.ReactNode }[] = [
 ]
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, icon, accent, loading, actionLabel, onAction }: {
+function KpiCard({ label, value, sub, icon, accent, loading, actionLabel, onAction, delay = 0 }: {
   label: string; value: string | number; sub: string
   icon: React.ReactNode; accent: string; loading?: boolean
-  actionLabel?: string; onAction?: () => void
+  actionLabel?: string; onAction?: () => void; delay?: number
 }) {
   return (
-    <div style={{
-      background: 'linear-gradient(160deg, #ffffff 0%, #f8fbff 100%)',
-      borderRadius: 16, overflow: 'hidden',
-      border: '1px solid rgba(226,232,240,0.7)',
-      boxShadow: `0 4px 16px ${accent}0d, 0 1px 3px rgba(15,23,42,0.06)`,
-      transition: 'transform 0.18s, box-shadow 0.18s',
-      cursor: 'default',
-    }}
-    onMouseEnter={e => {
-      const el = e.currentTarget as HTMLElement
-      el.style.transform = 'translateY(-4px)'
-      el.style.boxShadow = `0 18px 44px ${accent}1e, 0 4px 12px rgba(15,23,42,0.08)`
-    }}
-    onMouseLeave={e => {
-      const el = e.currentTarget as HTMLElement
-      el.style.transform = 'translateY(0)'
-      el.style.boxShadow = `0 4px 16px ${accent}0d, 0 1px 3px rgba(15,23,42,0.06)`
-    }}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut', delay }}
+      style={{
+        background: C.cardBg,
+        borderRadius: 16, overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        cursor: 'default',
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLElement
+        el.style.transform = 'translateY(-2px)'
+        el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLElement
+        el.style.transform = 'translateY(0)'
+        el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'
+      }}
     >
-      <div style={{ height: 3, background: `linear-gradient(90deg, ${accent}, ${accent}66)` }} />
-      <div style={{ padding: '18px 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</span>
+      <div style={{ height: 3, background: accent }} />
+      <div style={{ padding: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
           <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: `linear-gradient(135deg, ${accent}20 0%, ${accent}0b 100%)`,
-            boxShadow: `0 2px 8px ${accent}18`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: accent,
           }}>
             {icon}
           </div>
         </div>
         {loading
-          ? <div style={{ height: 34, width: 72, background: C.bg, borderRadius: 8, marginBottom: 8 }} />
-          : <div style={{ fontSize: 32, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 6 }}>{value}</div>
+          ? <div style={{ height: 48, width: 80, background: C.bg, borderRadius: 8, marginBottom: 8 }} />
+          : <div style={{ fontSize: 48, fontWeight: 800, color: C.textPrimary, lineHeight: 1, marginBottom: 4 }}>{value}</div>
         }
-        <div style={{ fontSize: 12, color: C.muted }}>{sub}</div>
+        <div style={{ fontSize: 14, color: C.textSecondary, marginBottom: actionLabel && onAction ? 12 : 0 }}>{sub}</div>
         {actionLabel && onAction && (
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(226,232,240,0.6)' }}>
+          <div>
             <button onClick={onAction} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 11, fontWeight: 700, color: accent,
-              background: accent + '14', border: 'none',
-              cursor: 'pointer', padding: '5px 11px', borderRadius: 6,
-              transition: 'all 0.15s',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 13, fontWeight: 600, color: C.primary,
+              background: C.blueLight, border: 'none',
+              cursor: 'pointer', padding: '4px 12px', borderRadius: 999,
+              transition: 'background 0.15s',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = accent + '28' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = accent + '14' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.blueHover }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = C.blueLight }}
             >
-              {actionLabel} <ArrowRight size={10} />
+              {actionLabel} <ArrowRight size={12} />
             </button>
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }
 
 // ── Channel Card ──────────────────────────────────────────────────────────────
-function ChannelCard({ label, desc, active, color, onClick }: {
-  label: string; desc: string; active: boolean; color: string; onClick: () => void
+function ChannelCard({ label, desc, active, color, badgeBg, badgeText, onClick, delay = 0 }: {
+  label: string; desc: string; active: boolean; color: string; badgeBg: string; badgeText: string; onClick: () => void; delay?: number
 }) {
   return (
-    <button onClick={onClick} style={{
-      flex: 1, padding: '16px', borderRadius: 12,
-      background: active ? color + '0d' : C.white,
-      border: `1.5px solid ${active ? color + '40' : C.border}`,
-      display: 'flex', flexDirection: 'column', gap: 10,
-      cursor: 'pointer', transition: 'all 0.18s', textAlign: 'left',
-      boxShadow: active ? `0 4px 16px ${color}18` : 'none',
-    }}
-    onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.borderColor = C.borderMid }}
-    onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.borderColor = C.border }}
+    <motion.button
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut', delay }}
+      onClick={onClick} style={{
+        flex: 1, padding: '16px', borderRadius: 12,
+        background: C.cardBg,
+        border: `1px solid ${active ? color : C.border}`,
+        display: 'flex', flexDirection: 'column', gap: 10,
+        cursor: 'pointer', transition: 'all 0.2s ease', textAlign: 'left',
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLElement
+        el.style.transform = 'translateY(-2px)'
+        el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLElement
+        el.style.transform = 'translateY(0)'
+        el.style.boxShadow = 'none'
+      }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{
           width: 10, height: 10, borderRadius: '50%',
-          background: active ? color : C.borderMid,
-          boxShadow: active ? `0 0 10px ${color}99` : 'none',
+          background: active ? color : C.mid,
+          boxShadow: active ? `0 0 8px ${color}cc` : 'none',
           transition: 'all 0.3s',
         }} />
         <span style={{
           fontSize: 10, fontWeight: 700,
-          color: active ? color : C.muted,
-          background: active ? color + '15' : C.bg,
-          padding: '2px 8px', borderRadius: 20,
+          color: active ? badgeText : C.mid,
+          background: active ? badgeBg : C.bg,
+          padding: '2px 8px', borderRadius: 999,
           textTransform: 'uppercase', letterSpacing: '0.08em',
         }}>
-          {active ? 'Actif' : 'Inactif'}
+          {active ? 'ACTIF' : 'INACTIF'}
         </span>
       </div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, marginBottom: 2 }}>{label}</div>
-        <div style={{ fontSize: 11, color: C.muted }}>{desc}</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary, marginBottom: 2 }}>{label}</div>
+        <div style={{ fontSize: 13, color: C.textSecondary }}>{desc}</div>
       </div>
-    </button>
+    </motion.button>
   )
 }
 
 // ── Activity row ──────────────────────────────────────────────────────────────
-function ActivityRow({ conv, onClick }: { conv: RecentConv; onClick: () => void }) {
+function ActivityRow({ conv, onClick, delay = 0 }: { conv: RecentConv; onClick: () => void; delay?: number }) {
   const chColor = conv.channel.toLowerCase().includes('whatsapp') ? '#25D366'
     : conv.channel.toLowerCase().includes('facebook') ? '#1877F2'
     : conv.channel.toLowerCase().includes('instagram') ? '#E1306C'
@@ -180,48 +204,43 @@ function ActivityRow({ conv, onClick }: { conv: RecentConv; onClick: () => void 
   const now = new Date()
   const d = new Date(conv.time * 1000)
   const diff = Math.floor((now.getTime() - d.getTime()) / 60000)
-  const timeStr = diff < 60 ? `${diff}m` : diff < 1440 ? `${Math.floor(diff / 60)}h` : d.toLocaleDateString('fr-TN', { day: '2-digit', month: '2-digit' })
+  const timeStr = diff < 60 ? `${diff}m` : diff < 1440 ? `${Math.floor(diff / 60)}h` : d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
 
   return (
-    <button onClick={onClick} style={{
-      width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-      padding: '10px 14px', borderRadius: 10, border: 'none',
-      background: 'transparent', cursor: 'pointer', transition: 'background 0.12s',
-    }}
-    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.bg}
-    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.25, ease: 'easeOut', delay }}
     >
-      <div style={{ position: 'relative', flexShrink: 0 }}>
+      <button onClick={onClick} style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 0', borderRadius: 8, border: 'none',
+        background: 'transparent', cursor: 'pointer', transition: 'background 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8FAFF'}
+      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+      >
         <div style={{
-          width: 38, height: 38, borderRadius: '50%',
+          width: 36, height: 36, borderRadius: '50%',
           background: C.blueLight, color: C.blue,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 700,
+          fontSize: 13, fontWeight: 700, flexShrink: 0,
         }}>{initials}</div>
-        <div style={{
-          position: 'absolute', bottom: -1, right: -1,
-          width: 14, height: 14, borderRadius: '50%',
-          background: chColor, border: '2px solid #fff',
-        }} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-          <span style={{ fontSize: 13, fontWeight: conv.unread > 0 ? 700 : 600, color: C.ink }}>{conv.name}</span>
-          <span style={{ fontSize: 11, color: C.muted, flexShrink: 0, marginLeft: 8 }}>{timeStr}</span>
+        <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.textPrimary }}>{conv.name}</div>
+          <div style={{ fontSize: 12, color: C.textSecondary }}>{conv.channel}</div>
         </div>
-        <div style={{ fontSize: 12, color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {conv.preview || 'Aucun message'}
-        </div>
-      </div>
-      {conv.unread > 0 && (
-        <div style={{
-          width: 20, height: 20, borderRadius: '50%',
-          background: C.blue, color: '#fff',
-          fontSize: 10, fontWeight: 700, flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>{conv.unread}</div>
-      )}
-    </button>
+        <div style={{ fontSize: 12, color: C.muted, flexShrink: 0 }}>{timeStr}</div>
+        {conv.unread > 0 && (
+          <div style={{
+            width: 20, height: 20, borderRadius: '50%',
+            background: C.primary, color: '#fff',
+            fontSize: 10, fontWeight: 700, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>{conv.unread}</div>
+        )}
+      </button>
+    </motion.div>
   )
 }
 
@@ -235,31 +254,31 @@ function SetupStep({ done, step, label, cta, onClick }: {
       padding: '12px 0', borderBottom: `1px solid ${C.border}`,
     }}>
       <div style={{
-        width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-        background: done ? C.blue : C.white,
-        border: `2px solid ${done ? C.blue : C.borderMid}`,
+        width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+        background: done ? C.primary : C.bg,
+        border: `2px solid ${done ? C.primary : C.border}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 700, color: done ? '#fff' : C.muted,
+        fontSize: 11, fontWeight: 700, color: done ? '#fff' : C.textSecondary,
         transition: 'all 0.25s',
       }}>
-        {done ? <CheckCircle size={14} /> : step}
+        {done ? <CheckCircle size={12} /> : step}
       </div>
       <span style={{
         flex: 1, fontSize: 13, fontWeight: 500,
-        color: done ? C.muted : C.ink,
+        color: done ? C.textSecondary : C.textPrimary,
         textDecoration: done ? 'line-through' : 'none',
       }}>{label}</span>
       {!done && (
         <button onClick={onClick} style={{
           display: 'flex', alignItems: 'center', gap: 4,
-          fontSize: 11, fontWeight: 700, color: C.blue,
-          background: C.blueLight, border: 'none',
-          cursor: 'pointer', padding: '5px 12px', borderRadius: 8,
+          fontSize: 13, fontWeight: 600, color: C.primary,
+          background: 'none', border: `1px solid ${C.primary}`,
+          cursor: 'pointer', padding: '4px 12px', borderRadius: 999,
           transition: 'background 0.15s',
         }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#d0e2ff'}
-        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = C.blueLight}
-        >{cta} <ArrowRight size={11} /></button>
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.blueLight}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}
+        >{cta} <ArrowRight size={12} /></button>
       )}
     </div>
   )
@@ -288,14 +307,194 @@ function EmptyPage({ icon, label, sublabel }: { icon: React.ReactNode; label: st
   )
 }
 
+// ── Quick Actions Bar ───────────────────────────────────────────────────────────
+function QuickActionsBar({ onNavigate }: { onNavigate: (p: PageId) => void }) {
+  const actions = [
+    { label: 'Nouvelle conversation', icon: <MessageSquare size={16} />, route: 'inbox' as PageId, exists: true },
+    { label: 'Ajouter un canal', icon: <Radio size={16} />, route: 'channels' as PageId, exists: true },
+    { label: 'Voir rapports', icon: <TrendingUp size={16} />, route: 'calendrier' as PageId, exists: false }, // TODO: wire route
+    { label: 'Configurer Agent IA', icon: <Bot size={16} />, route: 'bot' as PageId, exists: true },
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      style={{
+        background: C.cardBg,
+        borderRadius: 16,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        padding: '16px 24px',
+        display: 'flex',
+        gap: 16,
+        marginBottom: 24,
+      }}
+    >
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          onClick={() => action.exists ? onNavigate(action.route) : null}
+          disabled={!action.exists}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 20px',
+            borderRadius: 999,
+            background: C.blueLight,
+            color: C.primary,
+            border: 'none',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: action.exists ? 'pointer' : 'not-allowed',
+            opacity: action.exists ? 1 : 0.5,
+            transition: 'background 0.15s ease',
+          }}
+          onMouseEnter={e => { if (action.exists) (e.currentTarget as HTMLElement).style.background = C.blueHover }}
+          onMouseLeave={e => { if (action.exists) (e.currentTarget as HTMLElement).style.background = C.blueLight }}
+        >
+          {action.icon}
+          {action.label}
+        </button>
+      ))}
+    </motion.div>
+  )
+}
+
+// ── Performance Card ───────────────────────────────────────────────────────────
+function PerformanceCard() {
+  // TODO: wire to real API
+  const metrics = [
+    { label: 'Taux de résolution', value: '87%', color: '#22C55E' },
+    { label: 'Temps de réponse moyen', value: '1m 24s', color: '#3B82F6' },
+    { label: 'Satisfaction client', value: '4.6/5', color: '#22C55E' },
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut', delay: 0.2 }}
+      style={{
+        background: C.cardBg,
+        borderRadius: 16,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        padding: '20px',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Performance</div>
+        <div style={{ fontSize: 13, color: C.textSecondary }}>7 derniers jours</div>
+      </div>
+      <div style={{ display: 'flex', gap: 24, marginBottom: 20 }}>
+        {metrics.map((metric) => (
+          <div key={metric.label} style={{ flex: 1 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: metric.color }}>{metric.value}</div>
+            <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 4 }}>{metric.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {metrics.map((metric, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 12, color: C.textSecondary, width: 140, flexShrink: 0 }}>{metric.label}</span>
+            <div style={{ flex: 1, height: 6, background: C.bg, borderRadius: 3, overflow: 'hidden' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: metric.value.includes('87') ? '87%' : metric.value.includes('4.6') ? '92%' : '75%' }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                style={{ height: '100%', background: metric.color, borderRadius: 3 }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+// ── AI Bot Activity Widget ─────────────────────────────────────────────────────
+function BotActivityWidget() {
+  // TODO: wire to real API
+  const sparklineData = [12, 18, 15, 24, 20, 28, 22]
+  const max = Math.max(...sparklineData)
+  const width = 200
+  const height = 60
+  const points = sparklineData.map((val, i) => {
+    const x = (i / (sparklineData.length - 1)) * width
+    const y = height - (val / max) * height
+    return `${x},${y}`
+  }).join(' ')
+
+  const areaPoints = `0,${height} ${points} ${width},${height}`
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut', delay: 0.3 }}
+      style={{
+        background: C.cardBg,
+        borderRadius: 16,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        padding: '20px',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Activité du Bot IA</div>
+        <div style={{ fontSize: 13, color: C.textSecondary }}>
+          {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 32, marginBottom: 20 }}>
+        <div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: C.textPrimary }}>156</div>
+          <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>Messages IA</div>
+          <div style={{ fontSize: 11, color: C.textSecondary }}>Traités automatiquement</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: C.textPrimary }}>23</div>
+          <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>Intervention humaine</div>
+          <div style={{ fontSize: 11, color: C.textSecondary }}>Transferts aujourd'hui</div>
+        </div>
+      </div>
+      <div style={{ position: 'relative' }}>
+        <svg width={width} height={height} style={{ overflow: 'visible' }}>
+          <motion.polygon
+            points={areaPoints}
+            fill={C.blueLight}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+          />
+          <motion.polyline
+            points={points}
+            fill="none"
+            stroke={C.primary}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+          />
+        </svg>
+      </div>
+    </motion.div>
+  )
+}
+
 // ── Main shell ────────────────────────────────────────────────────────────────
 export default function DashboardShell() {
   const { data: session, status } = useSession()
   const [activePage, setActivePage] = useState<PageId>('home')
+  const [initialPageSet, setInitialPageSet] = useState(false)
   const [toast, setToast] = useState<{ type: 'error' | 'success'; msg: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [waConnected, setWaConnected] = useState(false)
   const [fbConnected, setFbConnected] = useState(false)
   const [igConnected, setIgConnected] = useState(false)
@@ -331,8 +530,54 @@ export default function DashboardShell() {
         const d = await resCw.json()
         const payload: any[] = d.data?.payload || []
         const openCount = payload.length
-        setStats({ conversations: openCount, messages: openCount * 4, openCount })
-        setRecentConvs(payload.slice(0, 6).map((c: any) => ({
+        
+        // Fetch conversation views to calculate actual unread counts
+        const viewsRes = await fetch('/api/chatwoot/conversation-view')
+        const viewsData = await viewsRes.json()
+        const viewsMap = new Map<number, Date>()
+        viewsData?.forEach((v: any) => {
+          viewsMap.set(v.conversationId, new Date(v.lastViewedAt))
+        })
+
+        // Calculate actual unread counts based on last viewed timestamp
+        const conversationsWithUnread = await Promise.all(
+          payload.map(async (conv: any) => {
+            const lastViewedAt = viewsMap.get(conv.id)
+            if (!lastViewedAt) {
+              // Never viewed, use Chatwoot's unread_count
+              return { ...conv, unread_count: conv.unread_count || 0 }
+            }
+
+            // Only fetch if there are potential unread messages (Chatwoot shows > 0)
+            if (conv.unread_count === 0) {
+              return { ...conv, unread_count: 0 }
+            }
+
+            // Fetch only recent messages to count unread incoming messages
+            try {
+              const msgsRes = await fetch(`/api/chatwoot/messages/${conv.id}`)
+              const msgsData = await msgsRes.json()
+              const messages: any[] = msgsData.payload || []
+              
+              // Only check last 20 messages for efficiency
+              const recentMessages = messages.slice(-20)
+              
+              // Count incoming messages (message_type = 0) created after last viewed timestamp
+              const unreadCount = recentMessages.filter(
+                (msg: any) => msg.message_type === 0 && msg.created_at > Math.floor(lastViewedAt.getTime() / 1000)
+              ).length
+
+              return { ...conv, unread_count: unreadCount }
+            } catch {
+              // On error, use Chatwoot's unread_count
+              return { ...conv, unread_count: conv.unread_count || 0 }
+            }
+          })
+        )
+
+        const totalUnread = conversationsWithUnread.reduce((sum, c) => sum + (c.unread_count || 0), 0)
+        setStats({ conversations: openCount, messages: openCount * 4, openCount: totalUnread })
+        setRecentConvs(conversationsWithUnread.slice(0, 6).map((c: any) => ({
           id: c.id,
           name: c.meta?.sender?.name || 'Contact',
           preview: c.last_non_activity_message?.content || '',
@@ -351,15 +596,19 @@ export default function DashboardShell() {
   useEffect(() => { fetchStatus() }, [fetchStatus])
 
   useEffect(() => {
-    const check = () => {
+    const checkMobile = () => {
       const mobile = window.innerWidth < 768
       setIsMobile(mobile)
-      if (mobile) setActivePage(p => p === 'home' ? 'inbox' : p)
+      // On mobile, default to messagerie
+      if (mobile && !initialPageSet) {
+        setActivePage('inbox')
+        setInitialPageSet(true)
+      }
     }
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [initialPageSet])
 
   useEffect(() => {
     const handle = async (e: MessageEvent) => {
@@ -424,7 +673,7 @@ export default function DashboardShell() {
           >
             {toast.type === 'error'
               ? <AlertCircle size={16} color={C.red} />
-              : <CheckCircle size={16} color={C.green} />}
+              : <CheckCircle size={16} color={C.success} />}
             <span style={{ fontSize: 13, fontWeight: 500, color: C.ink }}>{toast.msg}</span>
             <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 0, marginLeft: 4, display: 'flex' }}>
               <X size={14} />
@@ -435,31 +684,134 @@ export default function DashboardShell() {
 
       <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', background: 'linear-gradient(135deg, #07101f 0%, #0d1830 50%, #08111e 100%)' }}>
 
+        {/* ══ Mobile Sidebar Overlay ══════════════════════════════════════════════ */}
+        <AnimatePresence>
+          {mobileSidebarOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setMobileSidebarOpen(false)}
+                style={{
+                  position: 'fixed', inset: 0,
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  zIndex: 1000,
+                }}
+              />
+              {/* Sidebar */}
+              <motion.aside
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                style={{
+                  position: 'fixed', left: 0, top: 0, bottom: 0,
+                  width: 280, maxWidth: '85vw',
+                  background: '#FFFFFF',
+                  zIndex: 1001,
+                  display: 'flex', flexDirection: 'column',
+                  boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
+                }}
+              >
+                {/* Logo */}
+                <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
+                  <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+                    <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
+                    <span style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em' }}>
+                      Répondly
+                    </span>
+                  </a>
+                </div>
+
+                {/* Nav */}
+                <nav style={{ flex: 1, padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 0, overflowY: 'auto' }}>
+                  {NAV.map(item => {
+                    const active = activePage === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => { setActivePage(item.id); setMobileSidebarOpen(false) }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 14,
+                          width: '100%', padding: '14px 20px',
+                          background: active ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                          color: active ? C.primary : C.textSecondary,
+                          fontSize: 16, fontWeight: active ? 600 : 400,
+                          border: 'none', cursor: 'pointer', transition: 'background 0.2s ease', textAlign: 'left',
+                          position: 'relative',
+                        }}
+                        onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)' }}
+                        onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                      >
+                        <span style={{ color: active ? C.primary : 'inherit' }}>{item.icon}</span>
+                        <span style={{ flex: 1 }}>{item.label}</span>
+                        {item.id === 'inbox' && stats.openCount > 0 && (
+                          <span style={{ background: C.primary, color: '#fff', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>
+                            {stats.openCount}
+                          </span>
+                        )}
+                        {active && (
+                          <div style={{
+                            position: 'absolute', left: 0, top: 0, bottom: 0,
+                            width: 3, background: C.primary,
+                          }} />
+                        )}
+                      </button>
+                    )
+                  })}
+                </nav>
+
+                {/* User */}
+                <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(0,0,0,0.06)', background: '#FFFFFF', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                      background: C.primary,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 15, fontWeight: 700, color: '#fff',
+                    }}>{initial}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
+                      <div style={{ fontSize: 13, color: C.textSecondary }}>Compte actif</div>
+                    </div>
+                    <button onClick={() => { signOut(); setMobileSidebarOpen(false) }} title="Déconnexion" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textSecondary, padding: 8, display: 'flex', borderRadius: 8, transition: 'color 0.15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = C.red}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = C.textSecondary}
+                    >
+                      <LogOut size={18} />
+                    </button>
+                  </div>
+                </div>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+
         {/* ══ Sidebar ══════════════════════════════════════════════════════════ */}
         {!isMobile && (
           <aside style={{
-            width: 240, flexShrink: 0,
-            background: 'rgba(9, 13, 26, 0.93)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            borderRight: '1px solid rgba(255,255,255,0.07)',
-            boxShadow: '4px 0 32px rgba(0,0,0,0.4), inset -1px 0 0 rgba(255,255,255,0.04)',
+            width: 200, flexShrink: 0,
+            background: C.sidebar,
+            borderRight: `1px solid ${C.sidebarHover}`,
             display: 'flex', flexDirection: 'column',
             overflow: 'hidden',
           } as React.CSSProperties}>
             {/* Logo */}
-            <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+            <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: `1px solid ${C.sidebarHover}`, flexShrink: 0 }}>
               <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
                 <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.15rem', color: '#f8fafc', letterSpacing: '-0.02em' }}>
-                  Répondly<span style={{ color: C.blue }}>.</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: C.white, letterSpacing: '-0.02em' }}>
+                  Répondly
                 </span>
               </a>
             </div>
 
             {/* Nav */}
-            <nav style={{ flex: 1, padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase', letterSpacing: '0.14em', padding: '0 10px', marginBottom: 8 }}>
+            <nav style={{ flex: 1, padding: '16px 0', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 16px', marginTop: 24, marginBottom: 8 }}>
                 Navigation
               </div>
               {NAV.map(item => {
@@ -470,48 +822,52 @@ export default function DashboardShell() {
                     onClick={() => setActivePage(item.id)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10,
-                      width: '100%', padding: '10px 12px', borderRadius: 8,
-                      background: active ? 'rgba(26,107,255,0.18)' : 'transparent',
-                      color: active ? '#ddeeff' : '#64748b',
+                      width: '100%', padding: '10px 16px', borderRadius: 8,
+                      background: active ? C.sidebarHover : 'transparent',
+                      color: active ? C.white : C.muted,
                       fontSize: 13, fontWeight: active ? 600 : 400,
-                      border: 'none', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left',
-                      borderLeft: active ? `3px solid ${C.blue}` : '3px solid transparent',
-                      boxShadow: active ? 'inset 0 0 16px rgba(26,107,255,0.1)' : 'none',
+                      border: 'none', cursor: 'pointer', transition: 'all 0.15s ease', textAlign: 'left',
+                      borderLeft: active ? `3px solid ${C.primary}` : '3px solid transparent',
                     }}
-                    onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'; (e.currentTarget as HTMLElement).style.color = '#94a3b8' } }}
-                    onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748b' } }}
+                    onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = C.sidebarHover; (e.currentTarget as HTMLElement).style.color = '#CBD5E1' } }}
+                    onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = C.muted } }}
                   >
-                    {item.icon}
+                    <span style={{ color: active ? C.primary : 'inherit' }}>{item.icon}</span>
                     <span style={{ flex: 1 }}>{item.label}</span>
                     {item.id === 'inbox' && stats.openCount > 0 && (
-                      <span style={{ background: C.blue, color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20 }}>
+                      <span style={{ background: C.primary, color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20 }}>
                         {stats.openCount}
                       </span>
                     )}
                     {item.id === 'channels' && !anyChannel && (
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.amber, flexShrink: 0 }} />
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.pending, flexShrink: 0 }} />
                     )}
                   </button>
                 )
               })}
 
               {/* Channel status widget */}
-              <div style={{ marginTop: 24, padding: '14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 12 }}>Statut des canaux</div>
+              <div style={{ marginTop: 24, padding: '14px 16px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Statut des canaux</div>
                 {[
-                  { label: 'WhatsApp', active: waConnected, color: '#25D366' },
-                  { label: 'Facebook', active: fbConnected, color: '#1877F2' },
-                  { label: 'Instagram', active: igConnected, color: '#E1306C' },
+                  { label: 'WhatsApp', active: waConnected, color: C.whatsapp, badgeBg: C.greenLight, badgeText: C.greenText },
+                  { label: 'Facebook', active: fbConnected, color: C.facebook, badgeBg: C.blueLight, badgeText: C.primary },
+                  { label: 'Instagram', active: igConnected, color: C.instagram, badgeBg: C.pinkLight, badgeText: C.pinkText },
                 ].map(ch => (
                   <div key={ch.label} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '5px 0' }}>
                     <span style={{
-                      width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                      background: ch.active ? ch.color : '#334155',
-                      boxShadow: ch.active ? `0 0 8px ${ch.color}bb` : 'none',
+                      width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                      background: ch.active ? ch.color: C.mid,
+                      boxShadow: ch.active ? `0 0 8px ${ch.color}cc` : 'none',
                       transition: 'all 0.3s',
                     }} />
-                    <span style={{ fontSize: 12, color: ch.active ? '#94a3b8' : '#475569', flex: 1 }}>{ch.label}</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: ch.active ? '#4ade80' : '#475569' }}>
+                    <span style={{ fontSize: 12, color: ch.active ? C.muted : C.mid, flex: 1 }}>{ch.label}</span>
+                    <span style={{ 
+                      fontSize: 10, fontWeight: 700, 
+                      color: ch.active ? ch.badgeText : C.mid,
+                      background: ch.active ? ch.badgeBg : C.bg,
+                      padding: '2px 6px', borderRadius: 4,
+                    }}>
                       {ch.active ? 'ON' : 'OFF'}
                     </span>
                   </div>
@@ -520,21 +876,21 @@ export default function DashboardShell() {
             </nav>
 
             {/* User */}
-            <div style={{ padding: '14px', borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.18)', flexShrink: 0 }}>
+            <div style={{ padding: '16px', borderTop: `1px solid ${C.sidebarHover}`, background: C.sidebar, flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                  background: 'linear-gradient(135deg, #1a6bff 0%, #7c3aed 100%)',
+                  background: C.primary,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 14, fontWeight: 700, color: '#fff',
                 }}>{initial}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
-                  <div style={{ fontSize: 11, color: '#475569' }}>Compte actif</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.white, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
+                  <div style={{ fontSize: 11, color: C.muted }}>Compte actif</div>
                 </div>
-                <button onClick={() => signOut()} title="Déconnexion" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', padding: 4, display: 'flex', borderRadius: 6, transition: 'color 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#475569'}
+                <button onClick={() => signOut()} title="Déconnexion" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 4, display: 'flex', borderRadius: 6, transition: 'color 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = C.white}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = C.muted}
                 >
                   <LogOut size={15} />
                 </button>
@@ -549,62 +905,50 @@ export default function DashboardShell() {
           {/* ── Header ── */}
           <header style={{
             height: 64, flexShrink: 0,
-            background: 'rgba(248,250,255,0.90)',
-            backdropFilter: 'blur(16px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-            borderBottom: '1px solid rgba(226,232,240,0.65)',
+            background: '#FFFFFF',
+            borderBottom: `1px solid ${C.border}`,
             display: 'flex', alignItems: 'center',
-            padding: isMobile ? '0 16px' : '0 32px',
+            padding: isMobile ? '0 12px' : '0 24px',
             gap: 12,
-            boxShadow: '0 2px 16px rgba(26,107,255,0.06), 0 1px 0 rgba(226,232,240,0.5)',
           } as React.CSSProperties}>
-            {isMobile && (
-              <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 4 }}>
-                <Image src="/logo.png" alt="Répondly" width={24} height={24} style={{ objectFit: 'contain' }} priority />
-                <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1rem', color: C.ink, letterSpacing: '-0.02em' }}>
-                  Répondly<span style={{ color: C.blue }}>.</span>
-                </span>
-              </a>
-            )}
-            <div>
-              <div style={{ fontSize: 12, color: C.muted }}>
-                Bienvenu, <span style={{ fontWeight: 600, color: C.inkSoft }}>{userName}</span>
-              </div>
-              {!isMobile && (
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.ink, marginTop: 1 }}>
-                  {NAV.find(n => n.id === activePage)?.label ?? 'Tableau de bord'}
-                </div>
-              )}
-            </div>
+            {isMobile ? (
+              <>
+                {/* Hamburger menu */}
+                <button
+                  onClick={() => setMobileSidebarOpen(true)}
+                  style={{
+                    background: 'none', border: 'none',
+                    cursor: 'pointer', padding: 8,
+                    color: C.textSecondary,
+                    borderRadius: 8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <Menu size={24} />
+                </button>
 
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-              {anyChannel && !isMobile && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, background: C.greenLight, border: '1px solid #6ee7b7' }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.green, boxShadow: `0 0 6px ${C.green}` }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: C.green }}>{activeChannels} canal{activeChannels > 1 ? 'x' : ''} actif{activeChannels > 1 ? 's' : ''}</span>
-                </div>
-              )}
-              <button onClick={() => fetchStatus()} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 8, padding: 7, cursor: 'pointer', color: C.muted, display: 'flex', transition: 'all 0.15s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.blue; (e.currentTarget as HTMLElement).style.color = C.blue }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.muted }}
-              >
-                <RefreshCw size={14} />
-              </button>
+                {/* Repondly branding */}
+                <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 'auto' }}>
+                  <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
+                  <span style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em' }}>
+                    Répondly
+                  </span>
+                </a>
 
-              {/* Profile avatar + dropdown */}
-              <div style={{ position: 'relative' }}>
+                {/* User avatar */}
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
                   style={{
-                    width: 36, height: 36, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #1a6bff 0%, #7c3aed 100%)',
-                    border: profileOpen ? `2px solid ${C.blue}` : '2px solid transparent',
-                    color: '#fff', fontSize: 14, fontWeight: 700,
+                    width: 40, height: 40, borderRadius: '50%',
+                    background: C.primary,
+                    border: profileOpen ? `2px solid ${C.primary}` : '2px solid transparent',
+                    color: '#fff', fontSize: 15, fontWeight: 700,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'border-color 0.15s',
-                    boxShadow: '0 2px 8px rgba(26,107,255,0.25)',
                   }}
                 >{initial}</button>
+
+                {/* Profile dropdown */}
                 <AnimatePresence>
                   {profileOpen && (
                     <motion.div
@@ -613,29 +957,29 @@ export default function DashboardShell() {
                       exit={{ opacity: 0, scale: 0.95, y: -8 }}
                       transition={{ duration: 0.12 }}
                       style={{
-                        position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-                        background: C.white, border: `1px solid ${C.border}`,
+                        position: 'absolute', top: 72, right: 12,
+                        background: C.cardBg, border: `1px solid ${C.border}`,
                         borderRadius: 12, padding: 6,
                         minWidth: 180, boxShadow: '0 16px 40px rgba(15,23,42,0.12)',
                         zIndex: 200,
                       }}
                     >
                       <div style={{ padding: '10px 12px 8px', borderBottom: `1px solid ${C.border}`, marginBottom: 4 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{userName}</div>
-                        <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{session.user?.email}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{userName}</div>
+                        <div style={{ fontSize: 11, color: C.textSecondary, marginTop: 1 }}>{session.user?.email}</div>
                       </div>
                       <button
                         onClick={() => setProfileOpen(false)}
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.ink, transition: 'background 0.12s' }}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.textPrimary, transition: 'background 0.12s' }}
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.bg}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                       >
-                        <User size={14} color={C.muted} /> Profil
+                        <User size={14} color={C.textSecondary} /> Profil
                       </button>
                       <button
                         onClick={() => signOut()}
                         style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.red, transition: 'background 0.12s' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.redLight}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#FEE2E2'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                       >
                         <LogOut size={14} /> Déconnexion
@@ -643,8 +987,93 @@ export default function DashboardShell() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginRight: 8 }}>
+                  <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
+                  <span style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em' }}>
+                    Répondly
+                  </span>
+                </a>
+                <div>
+                  <div style={{ fontSize: 12, color: C.textSecondary }}>
+                    Bienvenu, <span style={{ fontWeight: 600, color: C.textPrimary }}>{userName}</span>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, marginTop: 1 }}>
+                    {NAV.find(n => n.id === activePage)?.label ?? 'Tableau de bord'}
+                  </div>
+                </div>
+
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {anyChannel && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20, background: C.greenLight, border: `1px solid ${C.success}` }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.success }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: C.greenText }}>{activeChannels} canaux actifs</span>
+                    </div>
+                  )}
+                  <button onClick={() => fetchStatus()} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 8, padding: 7, cursor: 'pointer', color: C.textSecondary, display: 'flex', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.primary; (e.currentTarget as HTMLElement).style.color = C.primary }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.textSecondary }}
+                  >
+                    <Settings size={14} />
+                  </button>
+
+                  {/* Profile avatar + dropdown */}
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      onClick={() => setProfileOpen(!profileOpen)}
+                      style={{
+                        width: 36, height: 36, borderRadius: '50%',
+                        background: C.primary,
+                        border: profileOpen ? `2px solid ${C.primary}` : '2px solid transparent',
+                        color: '#fff', fontSize: 14, fontWeight: 700,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'border-color 0.15s',
+                      }}
+                    >{initial}</button>
+                    <AnimatePresence>
+                      {profileOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                          transition={{ duration: 0.12 }}
+                          style={{
+                            position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+                            background: C.cardBg, border: `1px solid ${C.border}`,
+                            borderRadius: 12, padding: 6,
+                            minWidth: 180, boxShadow: '0 16px 40px rgba(15,23,42,0.12)',
+                            zIndex: 200,
+                          }}
+                        >
+                          <div style={{ padding: '10px 12px 8px', borderBottom: `1px solid ${C.border}`, marginBottom: 4 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{userName}</div>
+                            <div style={{ fontSize: 11, color: C.textSecondary, marginTop: 1 }}>{session.user?.email}</div>
+                          </div>
+                          <button
+                            onClick={() => setProfileOpen(false)}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.textPrimary, transition: 'background 0.12s' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.bg}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                          >
+                            <User size={14} color={C.textSecondary} /> Profil
+                          </button>
+                          <button
+                            onClick={() => signOut()}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.red, transition: 'background 0.12s' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#FEE2E2'}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                          >
+                            <LogOut size={14} /> Déconnexion
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </>
+            )}
           </header>
 
           {/* ── Content area ── */}
@@ -652,7 +1081,7 @@ export default function DashboardShell() {
             flex: 1, overflowY: activePage === 'inbox' ? 'hidden' : 'auto',
             position: 'relative',
             paddingBottom: isMobile ? 66 : 0,
-            background: 'linear-gradient(150deg, #edf1ff 0%, #f8fafc 45%, #eff4ff 100%)',
+            background: C.pageBg,
           }}>
             <AnimatePresence mode="wait">
               <motion.div
@@ -675,6 +1104,7 @@ export default function DashboardShell() {
                     setupCount={setupCount}
                     onNavigate={setActivePage}
                     onSignDPA={() => setHasAcceptedDPA(true)}
+                    isMobile={isMobile}
                   />
                 )}
                 {activePage === 'calendrier' && (
@@ -755,7 +1185,7 @@ export default function DashboardShell() {
 // ── Home view ─────────────────────────────────────────────────────────────────
 function HomeView({
   loading, stats, recentConvs, waConnected, fbConnected, igConnected,
-  hasAcceptedDPA, hasConfiguredBot, setupCount, onNavigate, onSignDPA,
+  hasAcceptedDPA, hasConfiguredBot, setupCount, onNavigate, onSignDPA, isMobile,
 }: {
   loading: boolean
   stats: { messages: number; conversations: number; openCount: number }
@@ -764,169 +1194,205 @@ function HomeView({
   hasAcceptedDPA: boolean; hasConfiguredBot: boolean; setupCount: number
   onNavigate: (p: PageId) => void
   onSignDPA: () => void
+  isMobile: boolean
 }) {
   const anyChannel = waConnected || fbConnected || igConnected
   const activeChannels = [waConnected, fbConnected, igConnected].filter(Boolean).length
+  const [filterTab, setFilterTab] = useState<'all' | 'unread' | 'pending' | 'resolved'>('all')
+
+  const filteredConvs = recentConvs.filter(conv => {
+    if (filterTab === 'all') return true
+    if (filterTab === 'unread') return conv.unread > 0
+    if (filterTab === 'pending') return conv.unread === 0
+    if (filterTab === 'resolved') return false // TODO: implement when status field available
+    return true
+  })
 
   return (
     <div style={{
-      padding: '28px 32px',
+      padding: isMobile ? '16px' : '28px 32px',
       minHeight: '100%',
-      background: 'linear-gradient(150deg, #edf1ff 0%, #f8fafc 45%, #eff4ff 100%)',
+      background: C.pageBg,
     }}>
 
+      {/* ── Quick Actions Bar ── */}
+      {!isMobile && <QuickActionsBar onNavigate={onNavigate} />}
+
       {/* ── KPI row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         <KpiCard
           label="Conversations ouvertes"
           value={loading ? '—' : stats.openCount}
           sub="En attente de réponse"
-          icon={<MessageSquare size={17} />}
-          accent={C.blue}
+          icon={<MessageSquare size={18} />}
+          accent={C.accentConv}
           loading={loading}
-          actionLabel="Messagerie"
+          actionLabel="Messagerie →"
           onAction={() => onNavigate('inbox')}
+          delay={0}
         />
         <KpiCard
           label="Messages traités"
           value={loading ? '—' : stats.messages}
           sub="Estimation totale"
-          icon={<TrendingUp size={17} />}
-          accent="#6366f1"
+          icon={<TrendingUp size={18} />}
+          accent={C.accentMsg}
           loading={loading}
-          actionLabel="Canaux"
+          actionLabel="Canaux →"
           onAction={() => onNavigate('channels')}
+          delay={0.05}
         />
         <KpiCard
           label="Canaux actifs"
           value={loading ? '—' : activeChannels}
           sub="Sur 3 disponibles"
-          icon={<Wifi size={17} />}
-          accent="#0284c7"
+          icon={<Wifi size={18} />}
+          accent={C.accentChan}
           loading={loading}
-          actionLabel="Calendrier"
+          actionLabel="Calendrier →"
           onAction={() => onNavigate('calendrier')}
+          delay={0.1}
         />
         <KpiCard
           label="Automatisation IA"
           value="—"
           sub="Bientôt disponible"
-          icon={<Zap size={17} />}
-          accent={C.purple}
+          icon={<Zap size={18} />}
+          accent={C.accentAuto}
           loading={loading}
-          actionLabel="Agent IA"
+          actionLabel="Agent IA →"
           onAction={() => onNavigate('bot')}
+          delay={0.15}
         />
       </div>
 
-      {/* ── Two-column layout ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
-
-        {/* ── Left column ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-          {/* Recent activity */}
-          <div style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f9fbff 100%)', borderRadius: 16, border: '1px solid rgba(226,232,240,0.7)', overflow: 'hidden', boxShadow: '0 4px 20px rgba(26,107,255,0.06), 0 1px 4px rgba(15,23,42,0.05)' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(226,232,240,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>Activité récente</div>
-                <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>Dernières conversations ouvertes</div>
-              </div>
-              <button onClick={() => onNavigate('inbox')} style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '7px 14px', borderRadius: 8,
-                background: C.blueLight, border: 'none',
-                fontSize: 12, fontWeight: 600, color: C.blue, cursor: 'pointer',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#d0e2ff'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = C.blueLight}
-              >
-                Voir tout <ArrowRight size={13} />
-              </button>
-            </div>
-            <div>
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 20px', borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
-                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: C.bg, flexShrink: 0 }} />
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
-                      <div style={{ height: 12, width: '40%', background: C.bg, borderRadius: 6 }} />
-                      <div style={{ height: 10, width: '70%', background: C.bg, borderRadius: 6 }} />
-                    </div>
-                  </div>
-                ))
-              ) : recentConvs.length === 0 ? (
-                <div style={{ padding: '40px 20px', textAlign: 'center', color: C.muted, fontSize: 13 }}>
-                  <MessageSquare size={32} style={{ margin: '0 auto 12px', opacity: 0.4, display: 'block' }} />
-                  Aucune conversation ouverte
-                </div>
-              ) : (
-                recentConvs.map((conv, i) => (
-                  <div key={conv.id} style={{ borderBottom: i < recentConvs.length - 1 ? `1px solid ${C.border}` : 'none' }}>
-                    <ActivityRow conv={conv} onClick={() => onNavigate('inbox')} />
-                  </div>
-                ))
-              )}
-            </div>
+      {/* ── Performance | Mise en Service ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', gap: 20, marginBottom: 24 }}>
+        <PerformanceCard />
+        <div style={{ background: C.cardBg, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Mise en service</div>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, background: C.blueLight, padding: '4px 10px', borderRadius: 999 }}>{setupCount}/3</span>
           </div>
-
-          {/* Channels row */}
-          <div style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f9fbff 100%)', borderRadius: 16, border: '1px solid rgba(226,232,240,0.7)', overflow: 'hidden', boxShadow: '0 4px 20px rgba(26,107,255,0.06), 0 1px 4px rgba(15,23,42,0.05)' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(226,232,240,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>Canaux de messagerie</div>
-              <button onClick={() => onNavigate('channels')} style={{ fontSize: 12, fontWeight: 600, color: C.blue, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                Gérer <ArrowRight size={12} />
-              </button>
-            </div>
-            <div style={{ padding: '16px 20px', display: 'flex', gap: 12 }}>
-              <ChannelCard label="WhatsApp" desc="Messages & automatisation" active={waConnected} color="#25D366" onClick={() => onNavigate('channels')} />
-              <ChannelCard label="Facebook" desc="Page & discussions" active={fbConnected} color="#1877F2" onClick={() => onNavigate('channels')} />
-              <ChannelCard label="Instagram" desc="DMs & réponses auto" active={igConnected} color="#E1306C" onClick={() => onNavigate('channels')} />
-            </div>
+          <div style={{ height: 4, borderRadius: 4, background: C.border, overflow: 'hidden', marginBottom: 16 }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${(setupCount / 3) * 100}%` }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              style={{ height: '100%', background: C.primary, borderRadius: 4 }}
+            />
           </div>
-        </div>
-
-        {/* ── Right column ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-          {/* Setup checklist */}
-          <div style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f9fbff 100%)', borderRadius: 16, border: '1px solid rgba(226,232,240,0.7)', overflow: 'hidden', boxShadow: '0 4px 20px rgba(26,107,255,0.06), 0 1px 4px rgba(15,23,42,0.05)' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(226,232,240,0.7)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>Mise en service</div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: C.blue }}>{setupCount}/3</span>
-              </div>
-              <div style={{ height: 6, borderRadius: 6, background: C.bg, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(setupCount / 3) * 100}%`, borderRadius: 6, background: `linear-gradient(90deg, ${C.blue}, ${C.purple})`, transition: 'width 0.5s ease' }} />
-              </div>
-            </div>
-            <div style={{ padding: '4px 20px 8px' }}>
-              <SetupStep step={1} done={anyChannel} label="Connecter un canal" cta="Lier" onClick={() => onNavigate('channels')} />
-              <SetupStep step={2} done={hasAcceptedDPA} label="Accord de conformité" cta="Signer" onClick={onSignDPA} />
-              <SetupStep step={3} done={hasConfiguredBot} label="Configurer l'agent IA" cta="Configurer" onClick={() => onNavigate('bot')} />
-            </div>
-          </div>
-
-          {/* System status */}
-          <div style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f9fbff 100%)', borderRadius: 16, border: '1px solid rgba(226,232,240,0.7)', padding: '16px 20px', boxShadow: '0 4px 20px rgba(26,107,255,0.06), 0 1px 4px rgba(15,23,42,0.05)' }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, marginBottom: 12 }}>Statut système</div>
-            {[
-              { label: 'Plateforme Répondly', ok: true },
-              { label: 'Chatwoot', ok: stats.openCount >= 0 },
-              { label: 'Canaux connectés', ok: anyChannel },
-            ].map(item => (
-              <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: 13, color: C.mid }}>{item.label}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.ok ? C.green : C.muted, boxShadow: item.ok ? `0 0 6px ${C.green}` : 'none' }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: item.ok ? C.green : C.muted }}>{item.ok ? 'Opérationnel' : 'Inactif'}</span>
-                </div>
-              </div>
-            ))}
+          <div style={{ padding: '4px 0 8px' }}>
+            <SetupStep step={1} done={anyChannel} label="Connecter un canal" cta="Lier →" onClick={() => onNavigate('channels')} />
+            <SetupStep step={2} done={hasAcceptedDPA} label="Accord de conformité" cta="Signer →" onClick={onSignDPA} />
+            <SetupStep step={3} done={hasConfiguredBot} label="Configurer l'agent IA" cta="Configurer →" onClick={() => onNavigate('bot')} />
           </div>
         </div>
       </div>
+
+      {/* ── Activité Récente | Statut Système ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', gap: 20, marginBottom: 24 }}>
+        <div style={{ background: C.cardBg, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Activité récente</div>
+              <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>Dernières conversations ouvertes</div>
+            </div>
+            <button onClick={() => onNavigate('inbox')} style={{ fontSize: 13, fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+              Voir tout <ArrowRight size={12} />
+            </button>
+          </div>
+          <div style={{ padding: '12px 20px', display: 'flex', gap: 8, overflowX: 'auto' }}>
+            {['all', 'unread', 'pending', 'resolved'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setFilterTab(tab as any)}
+                style={{
+                  padding: '4px 14px',
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: filterTab === tab ? C.primary : C.bg,
+                  color: filterTab === tab ? '#fff' : C.textSecondary,
+                  transition: 'background 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => { if (filterTab !== tab) (e.currentTarget as HTMLElement).style.background = C.borderMid }}
+                onMouseLeave={e => { if (filterTab !== tab) (e.currentTarget as HTMLElement).style.background = C.bg }}
+              >
+                {tab === 'all' ? 'Tous' : tab === 'unread' ? 'Non lus' : tab === 'pending' ? 'En attente' : 'Résolus'}
+              </button>
+            ))}
+          </div>
+          <div style={{ padding: '0 20px 16px' }}>
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: i < 3 ? `1px solid ${C.bg}` : 'none' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.bg, flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
+                    <div style={{ height: 14, width: '40%', background: C.bg, borderRadius: 6 }} />
+                    <div style={{ height: 12, width: '70%', background: C.bg, borderRadius: 6 }} />
+                  </div>
+                </div>
+              ))
+            ) : filteredConvs.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: C.textSecondary, fontSize: 13 }}>
+                <MessageSquare size={32} style={{ margin: '0 auto 12px', opacity: 0.4, display: 'block' }} />
+                Aucune conversation ouverte
+              </div>
+            ) : (
+              filteredConvs.map((conv, i) => (
+                <div key={conv.id} style={{ borderBottom: i < filteredConvs.length - 1 ? `1px solid ${C.bg}` : 'none' }}>
+                  <ActivityRow conv={conv} onClick={() => onNavigate('inbox')} delay={i * 0.03} />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div style={{ background: C.cardBg, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', padding: '20px' }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary, marginBottom: 16 }}>Statut système</div>
+          {[
+            { label: 'Plateforme Répondly', ok: true },
+            { label: 'Chatwoot', ok: stats.openCount >= 0 },
+            { label: 'Canaux connectés', ok: anyChannel },
+          ].map(item => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+              <span style={{ fontSize: 13, color: C.textPrimary }}>{item.label}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <motion.span
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{ width: 8, height: 8, borderRadius: '50%', background: item.ok ? C.success : C.textSecondary }}
+                />
+                <span style={{ fontSize: 12, fontWeight: 600, color: item.ok ? C.greenText : C.textSecondary, background: item.ok ? C.greenLight : C.bg, padding: '2px 10px', borderRadius: 999 }}>
+                  {item.ok ? 'Opérationnel' : 'Inactif'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Canaux de Messagerie ── */}
+      <div style={{ background: C.cardBg, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden', marginBottom: 24 }}>
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary }}>Canaux de messagerie</div>
+          <button onClick={() => onNavigate('channels')} style={{ fontSize: 13, fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+            Gérer <ArrowRight size={12} />
+          </button>
+        </div>
+        <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16 }}>
+          <ChannelCard label="WhatsApp" desc="Messages & automatisation" active={waConnected} color={C.whatsapp} badgeBg={C.greenLight} badgeText={C.greenText} onClick={() => onNavigate('channels')} delay={0} />
+          <ChannelCard label="Facebook" desc="Page & discussions" active={fbConnected} color={C.facebook} badgeBg={C.blueLight} badgeText={C.primary} onClick={() => onNavigate('channels')} delay={0.04} />
+          <ChannelCard label="Instagram" desc="DMs & réponses auto" active={igConnected} color={C.instagram} badgeBg={C.pinkLight} badgeText={C.pinkText} onClick={() => onNavigate('channels')} delay={0.08} />
+        </div>
+      </div>
+
+      {/* ── AI Bot Activity Widget ── */}
+      <BotActivityWidget />
     </div>
   )
 }
