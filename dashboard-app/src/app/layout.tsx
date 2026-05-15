@@ -49,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           html, body {
             margin: 0;
             padding: 0;
-            background-color: #F2F2F7;
+            background: radial-gradient(ellipse at center, #F8FAFF 0%, #E0E7FF 50%, #EEF2FF 100%);
             -webkit-tap-highlight-color: transparent;
           }
           body {

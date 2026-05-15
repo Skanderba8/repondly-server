@@ -18,9 +18,9 @@ const C = {
   accentGreen: '#0EA472',
   accentPurple: '#7C3AED',
   textPrimary: '#0F172A',
-  textSecondary: '#64748B',
-  textTertiary: '#94A3B8',
-  muted: '#94A3B8',
+  textSecondary: '#475569',
+  textTertiary: '#64748B',
+  muted: '#64748B',
   success: '#0EA472',
   inProgress: '#1A56DB',
   pending: '#F59E0B',
@@ -43,14 +43,33 @@ const C = {
   glassDark: 'rgba(255, 255, 255, 0.95)',
   glassShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
   glassBorder: '1px solid rgba(255, 255, 255, 0.3)',
+  // Depth layering system
+  depth1: 'rgba(255, 255, 255, 0.92)',
+  depth2: 'rgba(255, 255, 255, 0.85)',
+  depth3: 'rgba(255, 255, 255, 0.75)',
+  depth4: 'rgba(255, 255, 255, 0.65)',
+  innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.4)',
+  blueShadow: '0 8px 32px rgba(30, 27, 75, 0.15)',
+  recessed: 'inset 0 2px 4px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+  // Enhanced glossy liquid glass effects
+  glassSuperBlur: 'blur(48px)',
+  glassUltraBlur: 'blur(64px)',
+  shadowLayered: 'inset 0 1px 0 rgba(255,255,255,0.5), 0 4px 16px rgba(30,27,75,0.1), 0 16px 48px rgba(30,27,75,0.08)',
+  shadowGlossy: 'inset 0 2px 4px rgba(255,255,255,0.6), 0 8px 32px rgba(30,27,75,0.12), 0 0 0 1px rgba(255,255,255,0.4)',
+  glossyGradient: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%)',
+  liquidGradient: 'linear-gradient(135deg, rgba(26,86,219,0.05) 0%, rgba(124,58,237,0.05) 100%)',
+  borderGlossy: '1px solid rgba(255,255,255,0.5), inset 0 0 0 1px rgba(255,255,255,0.2)',
+  glowPrimary: '0 0 24px rgba(26,86,219,0.3)',
+  glowSuccess: '0 0 24px rgba(14,164,114,0.3)',
   // Corner radii
   radiusCard: 16,
   radiusInput: 12,
   radiusPill: 999,
   radiusBubble: 20,
   // Gradients
-  gradientPrimary: 'linear-gradient(135deg, #1A56DB 0%, #0EA472 100%)',
+  gradientPrimary: 'linear-gradient(135deg, #1A56DB 0%, #3B82F6 100%)',
   gradientPurple: 'linear-gradient(135deg, #7C3AED 0%, #1A56DB 100%)',
+  gradientBlue: 'linear-gradient(135deg, #1A56DB 0%, #60A5FA 100%)',
   // Message bubbles
   bubbleOut: '#1A56DB',
   bubbleIn: '#FFFFFF',
@@ -200,7 +219,14 @@ function Avatar({ contact, size = 40, showChannelBadge = false, channelType }: {
           src={contact.avatar_url}
           alt={contact.name}
           onError={() => setImgError(true)}
-          style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${C.border}` }}
+          style={{ 
+            width: size, 
+            height: size, 
+            borderRadius: '50%', 
+            objectFit: 'cover', 
+            border: `2px solid ${color}40`,
+            boxShadow: `0 0 12px ${color}20`,
+          }}
         />
       ) : (
         <div style={{
@@ -210,12 +236,23 @@ function Avatar({ contact, size = 40, showChannelBadge = false, channelType }: {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: size * 0.38, fontWeight: 600,
           border: `2px solid ${color}30`,
+          boxShadow: `0 0 12px ${color}20`,
         }}>
           {initials(contact.name)}
         </div>
       )}
       {showChannelBadge && channelType && (
-        <div style={{ position: 'absolute', bottom: -2, right: -2, background: C.cardBg, borderRadius: '50%', padding: 2, boxShadow: C.glassShadow }}>
+        <div style={{ 
+          position: 'absolute', 
+          bottom: -2, 
+          right: -2, 
+          background: C.depth2, 
+          borderRadius: '50%', 
+          padding: 2, 
+          backdropFilter: C.glassSuperBlur, 
+          boxShadow: C.shadowGlossy, 
+          border: C.borderGlossy,
+        }}>
           <ChannelIcon channelType={channelType} size={badgeSize} />
         </div>
       )}
@@ -263,16 +300,44 @@ function ConvItem({
       style={{
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '14px 16px', cursor: 'pointer',
-        background: active ? C.listActive : 'transparent',
+        background: active ? C.depth2 : C.depth3,
+        backdropFilter: C.glassSuperBlur,
         borderLeft: active ? `3px solid ${C.primary}` : '3px solid transparent',
-        transition: 'background 0.12s',
+        borderTop: '1px solid rgba(255, 255, 255, 0.5)',
+        boxShadow: active ? C.shadowGlossy : C.blueShadow,
+        transition: 'all 0.2s ease',
         borderBottom: `1px solid ${C.border}`,
+        position: 'relative',
+        overflow: 'hidden',
       }}
-      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = C.listHover }}
-      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+      onMouseEnter={e => { 
+        if (!active) {
+          const el = e.currentTarget as HTMLElement
+          el.style.background = C.depth2 as string
+          el.style.boxShadow = C.shadowGlossy as string
+        }
+      }}
+      onMouseLeave={e => { 
+        if (!active) {
+          const el = e.currentTarget as HTMLElement
+          el.style.background = C.depth3 as string
+          el.style.boxShadow = C.blueShadow as string
+        }
+      }}
     >
+      {/* Glossy gradient overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: C.glossyGradient,
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
       <Avatar contact={contact} size={40} showChannelBadge={true} channelType={conv.inbox?.channel_type} />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <span style={{
             fontSize: 14, fontWeight: conv.unread_count > 0 ? 600 : 500,
@@ -295,9 +360,10 @@ function ConvItem({
           </span>
           {conv.unread_count > 0 && (
             <span style={{
-              background: C.primary, color: '#fff',
+              background: C.gradientPrimary, color: '#fff',
               fontSize: 11, fontWeight: 600, padding: '2px 8px',
               borderRadius: C.radiusPill, flexShrink: 0,
+              boxShadow: C.glowPrimary,
             }}>
               {conv.unread_count}
             </span>
@@ -308,17 +374,13 @@ function ConvItem({
             <span style={{
               fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em',
               color: repondlyStatus === 'RESOLUE' ? C.success : C.primary,
-              background: repondlyStatus === 'RESOLUE'
-                ? 'rgba(14, 164, 114, 0.1)'
-                : 'rgba(26, 86, 219, 0.1)',
+              background: C.depth3,
+              backdropFilter: C.glassSuperBlur,
               padding: '3px 10px', borderRadius: C.radiusPill,
-              backdropFilter: 'blur(8px)',
+              boxShadow: C.shadowGlossy,
               border: repondlyStatus === 'RESOLUE'
-                ? '1px solid rgba(14, 164, 114, 0.2)'
-                : '1px solid rgba(26, 86, 219, 0.2)',
-              boxShadow: repondlyStatus === 'RESOLUE'
-                ? '0 2px 8px rgba(14, 164, 114, 0.15)'
-                : '0 2px 8px rgba(26, 86, 219, 0.15)',
+                ? '1px solid rgba(14, 164, 114, 0.3)'
+                : '1px solid rgba(26, 86, 219, 0.3)',
             }}>
               {repondlyStatus === 'RESOLUE' ? 'Résolue' : 'En attente'}
             </span>
@@ -328,13 +390,23 @@ function ConvItem({
               onClick={(e) => { e.stopPropagation(); onResolve(conv.id) }}
               style={{
                 fontSize: 11, fontWeight: 600, color: C.success,
-                background: 'rgba(14, 164, 114, 0.1)',
-                border: '1px solid rgba(14, 164, 114, 0.2)',
+                background: C.depth3,
+                backdropFilter: C.glassSuperBlur,
+                border: '1px solid rgba(14, 164, 114, 0.3)',
                 padding: '3px 8px', borderRadius: C.radiusInput,
-                cursor: 'pointer', transition: 'all 0.15s',
+                cursor: 'pointer', transition: 'all 0.2s ease',
+                boxShadow: C.shadowGlossy,
               }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(14, 164, 114, 0.2)'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(14, 164, 114, 0.1)'}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.background = C.depth2 as string
+                el.style.boxShadow = C.shadowLayered as string
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.background = C.depth3 as string
+                el.style.boxShadow = C.shadowGlossy as string
+              }}
             >
               Résoudre
             </button>
@@ -375,9 +447,11 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
       <div style={{ textAlign: 'center', margin: '8px 0' }}>
         <span style={{
           fontSize: 11, color: C.textSecondary,
-          background: C.glassLight,
-          backdropFilter: 'blur(10px)',
+          background: C.depth3,
+          backdropFilter: C.glassSuperBlur,
           padding: '4px 12px', borderRadius: C.radiusPill,
+          border: C.borderGlossy,
+          boxShadow: C.shadowGlossy,
         }}>
           {msg.content}
         </span>
@@ -400,17 +474,32 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
     >
       <div style={{
         maxWidth: '70%',
-        background: isOut ? C.bubbleOut : C.glassMedium,
-        backdropFilter: isOut ? 'none' : 'blur(20px)',
+        background: isOut ? C.gradientPrimary : C.depth3,
+        backdropFilter: C.glassSuperBlur,
         color: isOut ? '#fff' : C.textPrimary,
         borderRadius: isOut ? `${C.radiusBubble}px ${C.radiusBubble}px 4px ${C.radiusBubble}px` : `${C.radiusBubble}px ${C.radiusBubble}px ${C.radiusBubble}px 4px`,
         padding: '12px 16px',
         fontSize: 14, lineHeight: 1.5,
-        boxShadow: isOut ? '0 4px 16px rgba(26, 86, 219, 0.25)' : C.glassShadow,
-        border: isOut ? 'none' : C.glassBorder,
+        boxShadow: isOut ? C.glowPrimary : C.shadowGlossy,
+        border: isOut ? 'none' : C.borderGlossy,
         wordBreak: 'break-word',
         position: 'relative',
+        ...(isOut ? {} : { boxShadow: C.shadowGlossy }),
       }}>
+        {/* Glossy gradient overlay for incoming messages */}
+        {!isOut && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: C.glossyGradient,
+            pointerEvents: 'none',
+            zIndex: 0,
+            borderRadius: isOut ? `${C.radiusBubble}px ${C.radiusBubble}px 4px ${C.radiusBubble}px` : `${C.radiusBubble}px ${C.radiusBubble}px ${C.radiusBubble}px 4px`,
+          }} />
+        )}
         {hasError && (
           <div style={{
             position: 'absolute', top: -8, right: -8,
@@ -424,27 +513,31 @@ function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Mess
             <AlertCircle size={12} />
           </div>
         )}
-        {msg.attachments?.length ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {msg.attachments.map(a => (
-              a.file_type === 'image' ? (
-                <img key={a.id} src={a.thumb_url || a.data_url} alt="attachment"
-                  style={{ maxWidth: 200, borderRadius: C.radiusInput, display: 'block' }} />
-              ) : (
-                <a key={a.id} href={a.data_url} target="_blank" rel="noreferrer"
-                  style={{ color: isOut ? 'rgba(255,255,255,0.9)' : C.primary, fontSize: 13, textDecoration: 'underline' }}>
-                  📎 Pièce jointe
-                </a>
-              )
-            ))}
-            {msg.content && <span>{msg.content}</span>}
-          </div>
-        ) : msg.content}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {msg.attachments?.length ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {msg.attachments.map(a => (
+                a.file_type === 'image' ? (
+                  <img key={a.id} src={a.thumb_url || a.data_url} alt="attachment"
+                    style={{ maxWidth: 200, borderRadius: C.radiusInput, display: 'block', boxShadow: C.blueShadow }} />
+                ) : (
+                  <a key={a.id} href={a.data_url} target="_blank" rel="noreferrer"
+                    style={{ color: isOut ? 'rgba(255,255,255,0.9)' : C.primary, fontSize: 13, textDecoration: 'underline' }}>
+                    📎 Pièce jointe
+                  </a>
+                )
+              ))}
+              {msg.content && <span>{msg.content}</span>}
+            </div>
+          ) : msg.content}
+        </div>
         <div style={{
           fontSize: 11,
           color: isOut ? 'rgba(255,255,255,0.6)' : C.textTertiary,
           textAlign: 'right', marginTop: 4,
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4,
+          position: 'relative',
+          zIndex: 1,
         }}>
           {formatTime(msg.created_at)}
           {isOut && !hasError && (
@@ -487,29 +580,57 @@ function Tab({ label, active, onClick, count }: { label: string; active: boolean
     <button
       onClick={onClick}
       style={{
-        flex: 1, padding: '10px 8px', cursor: 'pointer',
-        background: active
-          ? 'rgba(37, 99, 235, 0.1)'
-          : 'transparent',
+        flex: 1, padding: '10px 12px', cursor: 'pointer',
+        background: active ? C.depth2 : C.depth3,
+        backdropFilter: C.glassSuperBlur,
         color: active ? C.primary : C.textSecondary,
-        fontSize: 13, fontWeight: active ? 700 : 500,
-        borderRadius: 12,
-        backdropFilter: active ? 'blur(10px)' : 'none',
-        boxShadow: active
-          ? '0 4px 12px rgba(37, 99, 235, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5)'
-          : 'none',
-        transition: 'all 0.2s ease',
+        fontSize: 13, fontWeight: active ? 600 : 500,
+        borderRadius: 20,
+        boxShadow: active ? C.shadowGlossy : C.recessed,
+        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        border: active ? '1px solid rgba(37, 99, 235, 0.2)' : '1px solid transparent',
+        border: active ? C.borderGlossy : '1px solid rgba(255, 255, 255, 0.3)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+      onMouseEnter={e => {
+        if (!active) {
+          const el = e.currentTarget as HTMLElement
+          el.style.background = C.depth2 as string
+          el.style.boxShadow = C.shadowGlossy as string
+        }
+      }}
+      onMouseLeave={e => {
+        if (!active) {
+          const el = e.currentTarget as HTMLElement
+          el.style.background = C.depth3 as string
+          el.style.boxShadow = C.recessed as string
+        }
       }}
     >
-      {label}
+      {/* Glossy gradient overlay */}
+      {active && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: C.glossyGradient,
+          pointerEvents: 'none',
+          zIndex: 0,
+          borderRadius: 20,
+        }} />
+      )}
+      <span style={{ position: 'relative', zIndex: 1 }}>{label}</span>
       {count !== undefined && count > 0 && (
         <span style={{
-          background: active ? C.primary : 'rgba(0,0,0,0.08)',
+          background: active ? C.gradientPrimary : 'rgba(0,0,0,0.08)',
           color: active ? '#fff' : C.textSecondary,
-          fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 999,
-          boxShadow: active ? '0 2px 4px rgba(37, 99, 235, 0.3)' : 'none',
+          fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 999,
+          boxShadow: active ? C.glowPrimary : 'none',
+          position: 'relative',
+          zIndex: 1,
         }}>
           {count}
         </span>
@@ -564,23 +685,38 @@ function NotesPanel({ conversationId, isOpen, onClose }: { conversationId: numbe
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       style={{
         position: 'fixed', right: 0, top: 0, bottom: 0,
-        width: 320, background: C.cardBg,
-        borderLeft: `1px solid ${C.border}`,
-        boxShadow: '-4px 0 20px rgba(0,0,0,0.1)',
+        width: 320, background: C.depth1,
+        backdropFilter: C.glassSuperBlur,
+        borderLeft: C.borderGlossy,
+        boxShadow: C.shadowGlossy,
         display: 'flex', flexDirection: 'column',
         zIndex: 1000,
       }}
     >
-      <div style={{ padding: '20px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Glossy gradient overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: C.glossyGradient,
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
+      <div style={{ padding: '20px', borderBottom: C.borderGlossy, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.textPrimary, display: 'flex', alignItems: 'center', gap: 8 }}>
           <FileText size={18} color={C.primary} /> Notes
         </h3>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textSecondary, padding: 4 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textSecondary, padding: 4, borderRadius: 8, transition: 'all 0.2s' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.liquidGradient}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}
+        >
           <X size={20} />
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 1 }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
             <Loader2 size={24} color={C.primary} style={{ animation: 'spin 1s linear infinite' }} />
@@ -591,15 +727,20 @@ function NotesPanel({ conversationId, isOpen, onClose }: { conversationId: numbe
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {notes.map(note => (
               <div key={note.id} style={{
-                background: C.pageBg, borderRadius: 12, padding: 12,
-                border: `1px solid ${C.border}`,
+                background: C.depth3,
+                backdropFilter: C.glassSuperBlur,
+                borderRadius: 12, padding: 12,
+                border: C.borderGlossy,
+                boxShadow: C.shadowGlossy,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <div style={{
                     width: 24, height: 24, borderRadius: '50%',
-                    background: 'rgba(26, 86, 219, 0.1)', color: C.primary,
+                    background: C.gradientPrimary,
+                    color: '#fff',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 11, fontWeight: 700,
+                    boxShadow: C.glowPrimary,
                   }}>
                     {note.user.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
                   </div>
@@ -617,19 +758,22 @@ function NotesPanel({ conversationId, isOpen, onClose }: { conversationId: numbe
         )}
       </div>
 
-      <div style={{ padding: '16px 20px', borderTop: `1px solid ${C.border}`, background: C.cardBg }}>
+      <div style={{ padding: '16px 20px', borderTop: C.borderGlossy, background: C.depth1, backdropFilter: C.glassSuperBlur, position: 'relative', zIndex: 1 }}>
         <textarea
           value={newNote}
           onChange={e => setNewNote(e.target.value)}
           placeholder="Ajouter une note..."
           rows={3}
           style={{
-            width: '100%', resize: 'none', border: `1px solid ${C.border}`,
+            width: '100%', resize: 'none', border: C.borderGlossy,
             borderRadius: 8, padding: '10px',
             fontSize: 13, color: C.textPrimary,
-            background: C.pageBg, outline: 'none',
+            background: C.depth3,
+            backdropFilter: C.glassSuperBlur,
+            outline: 'none',
             fontFamily: 'inherit', lineHeight: 1.5,
             marginBottom: 10,
+            boxShadow: C.blueShadow,
           }}
         />
         <button
@@ -637,10 +781,23 @@ function NotesPanel({ conversationId, isOpen, onClose }: { conversationId: numbe
           disabled={!newNote.trim() || submitting}
           style={{
             width: '100%', padding: '10px', borderRadius: 8, border: 'none',
-            background: newNote.trim() ? C.primary : C.border,
+            background: newNote.trim() ? C.gradientPrimary : C.depth3,
             color: newNote.trim() ? '#fff' : C.textSecondary,
             fontSize: 13, fontWeight: 600, cursor: newNote.trim() ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            backdropFilter: C.glassSuperBlur,
+            boxShadow: newNote.trim() ? C.glowPrimary : 'none',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={e => {
+            if (newNote.trim()) {
+              (e.currentTarget as HTMLElement).style.boxShadow = C.shadowLayered
+            }
+          }}
+          onMouseLeave={e => {
+            if (newNote.trim()) {
+              (e.currentTarget as HTMLElement).style.boxShadow = C.glowPrimary
+            }
           }}
         >
           {submitting ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : 'Ajouter'}
@@ -1019,11 +1176,11 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
   return (
     <div style={{
       display: 'flex', height: '100%', width: '100%', overflow: 'hidden',
-      background: C.pageBg, fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      background: '#F8F9FB', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       position: 'relative',
       touchAction: 'manipulation',
     }}>
-      {/* Blue safe area for iOS PWA */}
+      {/* Safe area for iOS PWA - matches header background */}
       {isMobile && (
         <div style={{
           position: 'absolute',
@@ -1031,7 +1188,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
           left: 0,
           right: 0,
           height: 'env(safe-area-inset-top)',
-          background: C.gradientPrimary,
+          background: C.depth1,
           zIndex: 9999,
         }} />
       )}
@@ -1039,26 +1196,30 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
       {/* ══ Main Content ════════════════════════════════════════════════════════ */}
       <div style={{
         display: 'flex', height: '100%', width: '100%', overflow: 'hidden',
-        background: C.pageBg,
+        background: C.depth1,
+        backdropFilter: 'blur(24px)',
       }}>
 
       {/* ══ LEFT: Conversation List ══════════════════════════════════════════════ */}
       <div style={{
         width: isMobile ? '100%' : 320,
         flexShrink: 0,
-        background: C.cardBg,
-        borderRight: isMobile ? 'none' : `1px solid ${C.border}`,
+        background: 'transparent',
+        borderRight: isMobile ? 'none' : `1px solid rgba(255, 255, 255, 0.2)`,
         display: isMobile && activeConvId ? 'none' : 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         height: '100%',
       }}>
         {/* Header */}
-        <div style={{ padding: isMobile ? '16px' : '20px', borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ padding: isMobile ? '16px' : '20px', borderBottom: `1px solid ${C.border}`, background: 'transparent' }}>
           {/* Tabs */}
           <div style={{
-            display: 'flex', background: C.pageBg,
-            borderRadius: 12, padding: 4, gap: 4, marginBottom: isMobile ? 12 : 16,
+            display: 'flex', background: C.depth2,
+            backdropFilter: 'blur(24px)',
+            borderRadius: 20, padding: 4, gap: 4, marginBottom: isMobile ? 12 : 16,
+            border: C.glassBorder,
+            boxShadow: C.innerGlow + ', ' + C.blueShadow,
           }}>
             <Tab label="En attente"  active={tabStatus === 'EN_ATTENTE'} onClick={() => setTabStatus('EN_ATTENTE')} count={enAttenteCount} />
             <Tab label="Résolues" active={tabStatus === 'RESOLUE'} onClick={() => setTabStatus('RESOLUE')} count={resolueCount} />
@@ -1075,12 +1236,13 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
                 key={ch.id}
                 onClick={() => setChannelFilter(ch.id as any)}
                 style={{
-                  flex: 1, padding: isMobile ? '8px 10px' : '6px 10px', borderRadius: 8,
-                  background: channelFilter === ch.id ? C.pageBg : 'transparent',
-                  color: channelFilter === ch.id ? ch.color : C.textSecondary,
+                  flex: 1, padding: isMobile ? '8px 12px' : '6px 12px', borderRadius: 16,
+                  background: channelFilter === ch.id ? C.depth2 : 'transparent',
+                  color: channelFilter === ch.id ? (ch.id === 'all' ? C.primary : ch.color) : C.textSecondary,
                   fontSize: isMobile ? 12 : 11, fontWeight: channelFilter === ch.id ? 600 : 500,
-                  cursor: 'pointer', transition: 'all 0.15s',
-                  border: channelFilter === ch.id ? `1px solid ${ch.color}33` : '1px solid transparent',
+                  cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  border: channelFilter === ch.id ? (ch.id === 'all' ? '1px solid rgba(26, 86, 219, 0.2)' : `1px solid ${ch.color}30`) : '1px solid transparent',
+                  ...(channelFilter === ch.id ? { boxShadow: C.innerGlow + ', ' + C.blueShadow } : {}),
                 }}
               >
                 {ch.label}
@@ -1091,7 +1253,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
           {/* Search */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            background: C.pageBg, border: `1px solid ${C.border}`,
+            background: C.depth1, border: `1px solid ${C.border}`,
             borderRadius: 10, padding: isMobile ? '12px 14px' : '10px 14px',
           }}>
             <Search size={isMobile ? 18 : 16} color={C.textSecondary} strokeWidth={2.5} />
@@ -1155,13 +1317,15 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
 
       {/* ══ RIGHT: Message Thread ════════════════════════════════════════════════ */}
       {!activeConv ? (
-        <div style={{ 
-          flex: 1, 
-          display: isMobile ? 'none' : 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          flexDirection: 'column', 
-          gap: 16 
+        <div style={{
+          flex: 1,
+          display: isMobile ? 'none' : 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 16,
+          background: C.depth1,
+          backdropFilter: 'blur(24px)',
         }}>
           <div style={{
             width: 72, height: 72, borderRadius: 20,
@@ -1182,43 +1346,53 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
           flexDirection: 'column',
           overflow: 'hidden',
           position: 'relative',
+          background: 'transparent',
         }}>
 
           {/* ── Thread Header ── */}
           <div style={{
-            padding: isMobile ? '12px 16px' : '16px 24px',
-            background: isMobile ? C.gradientPrimary : C.cardBg,
-            borderBottom: isMobile ? 'none' : `1px solid ${C.border}`,
-            display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12,
+            padding: isMobile ? '14px 18px' : '18px 28px',
+            background: C.depth2,
+            backdropFilter: 'blur(16px)',
+            borderBottom: `1px solid ${C.border}`,
+            display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 14,
+            boxShadow: C.innerGlow,
           }}>
             {isMobile && (
               <button
                 onClick={() => setActiveConvId(null)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: 'rgba(255, 255, 255, 0.2)', border: `1px solid rgba(255, 255, 255, 0.3)`,
-                  cursor: 'pointer', color: '#fff',
+                  width: 40, height: 40, borderRadius: 12,
+                  background: C.depth2, border: `1px solid rgba(26, 86, 219, 0.15)`,
+                  cursor: 'pointer', color: C.primary,
                   flexShrink: 0,
+                  transition: 'all 0.2s ease',
+                  boxShadow: C.innerGlow + ', ' + C.blueShadow,
                 }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.depth3}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = C.depth2}
               >
                 <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
               </button>
             )}
             <Avatar
               contact={activeConv.meta.sender}
-              size={isMobile ? 36 : 44}
+              size={isMobile ? 40 : 48}
               showChannelBadge={true}
               channelType={activeConv.inbox?.channel_type}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: isMobile ? '#fff' : C.textPrimary, letterSpacing: '-0.01em' }}>
+              <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em', marginBottom: 2 }}>
                 {activeConv.meta.sender.name}
               </div>
-              <div style={{ fontSize: isMobile ? 11 : 12, color: isMobile ? 'rgba(255, 255, 255, 0.8)' : C.textSecondary, display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+              <div style={{ fontSize: isMobile ? 12 : 13, color: C.textSecondary, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 500 }}>
                 <span>{activeConv.inbox?.name || 'Inbox'}</span>
                 {activeConv.meta.sender.phone_number && !isMobile && (
-                  <span>· {activeConv.meta.sender.phone_number}</span>
+                  <span style={{ color: C.border }}>·</span>
+                )}
+                {activeConv.meta.sender.phone_number && !isMobile && (
+                  <span>{activeConv.meta.sender.phone_number}</span>
                 )}
               </div>
             </div>
@@ -1229,16 +1403,17 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
                 disabled={statusLoading}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: isMobile ? 36 : 40, height: isMobile ? 36 : 40,
-                  borderRadius: isMobile ? '50%' : 8,
-                  background: isMobile ? 'rgba(34, 197, 94, 0.2)' : 'rgba(14, 164, 114, 0.1)', border: isMobile ? '1px solid rgba(34, 197, 94, 0.4)' : `1px solid ${C.success}`,
-                  cursor: statusLoading ? 'default' : 'pointer', color: isMobile ? '#fff' : C.success,
+                  width: isMobile ? 40 : 44, height: isMobile ? 40 : 44,
+                  borderRadius: 12,
+                  background: C.depth2, border: `1px solid rgba(14, 164, 114, 0.12)`,
+                  cursor: statusLoading ? 'default' : 'pointer', color: C.success,
                   flexShrink: 0,
-                  transition: 'all 0.15s',
+                  transition: 'all 0.2s ease',
                   opacity: statusLoading ? 0.5 : 1,
+                  boxShadow: C.innerGlow + ', ' + C.blueShadow,
                 }}
-                onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = isMobile ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)' }}
-                onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = isMobile ? 'rgba(34, 197, 94, 0.2)' : 'rgba(14, 164, 114, 0.1)' }}
+                onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth3 }}
+                onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth2 }}
               >
                 {statusLoading ? <Loader2 size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCheck size={isMobile ? 18 : 20} />}
               </button>
@@ -1254,16 +1429,17 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
               }}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: isMobile ? 36 : 40, height: isMobile ? 36 : 40,
-                borderRadius: isMobile ? '50%' : 8,
-                background: isMobile ? 'rgba(255, 255, 255, 0.2)' : 'rgba(26, 86, 219, 0.1)',
-                border: isMobile ? '1px solid rgba(255, 255, 255, 0.3)' : `1px solid ${C.border}`,
-                cursor: 'pointer', color: isMobile ? '#fff' : C.primary,
+                width: isMobile ? 40 : 44, height: isMobile ? 40 : 44,
+                borderRadius: 12,
+                background: C.depth2,
+                border: `1px solid rgba(26, 86, 219, 0.12)`,
+                cursor: 'pointer', color: C.primary,
                 flexShrink: 0,
-                transition: 'all 0.15s',
+                transition: 'all 0.2s ease',
+                boxShadow: C.innerGlow + ', ' + C.blueShadow,
               }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = isMobile ? 'rgba(255, 255, 255, 0.3)' : 'rgba(26, 86, 219, 0.15)'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = isMobile ? 'rgba(255, 255, 255, 0.2)' : 'rgba(26, 86, 219, 0.1)'}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.depth3}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = C.depth2}
             >
               <FileText size={isMobile ? 18 : 20} />
             </button>
@@ -1276,6 +1452,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
             padding: isMobile ? '16px' : '20px 24px',
             display: 'flex', flexDirection: 'column',
             scrollBehavior: 'smooth',
+            background: 'transparent',
           }}>
             {msgLoading && messages.length === 0 ? (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1300,50 +1477,62 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
           {/* ── Reply Box (only for EN_ATTENTE conversations) ── */}
           {activeConv && (repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'EN_ATTENTE' && (
             <div style={{
-              padding: isMobile ? '12px 16px' : '16px 24px',
+              padding: isMobile ? '16px' : '20px 24px',
+              background: C.depth1,
+              backdropFilter: 'blur(24px)',
               borderTop: `1px solid ${C.border}`,
-              background: isMobile ? 'linear-gradient(0deg, rgba(26, 86, 219, 0.15) 0%, rgba(26, 86, 219, 0.05) 100%)' : C.cardBg,
               display: 'flex', gap: isMobile ? 10 : 12, alignItems: 'flex-end',
-              paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom))' : '16px',
+              paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom) + 88)' : '20px',
+              boxShadow: C.innerGlow + ', ' + C.blueShadow,
             }}>
-              <textarea
-                ref={textareaRef}
-                value={reply}
-                onChange={e => setReply(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Écrire un message…"
-                rows={1}
-                style={{
-                  flex: 1, resize: 'none', border: `1px solid ${C.border}`,
-                  borderRadius: 12, padding: isMobile ? '10px 14px' : '12px 16px',
-                  fontSize: isMobile ? 16 : 14, color: C.textPrimary,
-                  background: C.pageBg, outline: 'none',
-                  fontFamily: 'inherit', lineHeight: 1.5,
-                  maxHeight: 120, overflowY: 'auto',
-                  transition: 'border-color 0.15s',
-                }}
-                onFocus={e => (e.target.style.borderColor = C.primary)}
-                onBlur={e => (e.target.style.borderColor = C.border)}
-              />
-              <button
-                onClick={handleSend}
-                disabled={!reply.trim() || sending}
-                style={{
-                  width: isMobile ? 48 : 44, height: isMobile ? 48 : 44, flexShrink: 0,
-                  borderRadius: '50%', border: 'none',
-                  background: reply.trim() ? C.primary : C.border,
-                  color: reply.trim() ? '#fff' : C.textSecondary,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: reply.trim() ? 'pointer' : 'default',
-                  transition: 'all 0.15s',
-                  boxShadow: reply.trim() ? '0 4px 12px rgba(37, 99, 235, 0.3)' : 'none',
-                }}
-              >
-                {sending
-                  ? <Loader2 size={isMobile ? 20 : 18} style={{ animation: 'spin 1s linear infinite' }} />
-                  : <Send size={isMobile ? 20 : 18} strokeWidth={2.5} />
-                }
-              </button>
+              <div style={{
+                flex: 1, display: 'flex', gap: isMobile ? 10 : 12, alignItems: 'flex-end',
+                background: C.depth2,
+                backdropFilter: 'blur(16px)',
+                borderRadius: 24,
+                padding: isMobile ? '8px 12px' : '10px 14px',
+                border: C.glassBorder,
+                boxShadow: C.innerGlow + ', ' + C.blueShadow,
+              }}>
+                <textarea
+                  ref={textareaRef}
+                  value={reply}
+                  onChange={e => setReply(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Écrire un message…"
+                  rows={1}
+                  style={{
+                    flex: 1, resize: 'none', border: 'none',
+                    fontSize: isMobile ? 16 : 14, color: C.textPrimary,
+                    background: 'transparent',
+                    outline: 'none',
+                    fontFamily: 'inherit', lineHeight: 1.5,
+                    maxHeight: 120, overflowY: 'auto',
+                    padding: 0,
+                  }}
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!reply.trim() || sending}
+                  style={{
+                    width: isMobile ? 44 : 40, height: isMobile ? 44 : 40, flexShrink: 0,
+                    borderRadius: '50%',
+                    border: reply.trim() ? 'none' : `1px solid ${C.border}`,
+                    background: reply.trim() ? C.primary : C.depth3,
+                    backdropFilter: reply.trim() ? 'none' : 'blur(16px)',
+                    color: reply.trim() ? '#fff' : C.textSecondary,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: reply.trim() ? 'pointer' : 'default',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: reply.trim() ? C.innerGlow + ', ' + C.blueShadow : 'none',
+                  }}
+                >
+                  {sending
+                    ? <Loader2 size={isMobile ? 20 : 18} style={{ animation: 'spin 1s linear infinite' }} />
+                    : <Send size={isMobile ? 20 : 18} strokeWidth={2.5} />
+                  }
+                </button>
+              </div>
             </div>
           )}
 
@@ -1352,9 +1541,9 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
             <div style={{
               padding: isMobile ? '12px 16px' : '12px 24px',
               borderTop: `1px solid ${C.border}`,
-              background: isMobile ? 'rgba(34, 197, 94, 0.08)' : 'rgba(14, 164, 114, 0.1)',
+              background: 'rgba(14, 164, 114, 0.1)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom))' : '12px',
+              paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom) + 88)' : '12px',
             }}>
               <span style={{ fontSize: isMobile ? 12 : 13, color: C.success, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <CheckCheck size={isMobile ? 14 : 16} /> Conversation résolue

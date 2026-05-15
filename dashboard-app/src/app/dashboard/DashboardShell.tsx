@@ -7,7 +7,7 @@ import Image from 'next/image'
 import {
   LayoutDashboard, Inbox, Bot, Settings, LogOut,
   AlertCircle, CheckCircle, X, TrendingUp,
-  MessageSquare, Radio, Calendar, ChevronDown, ChevronRight, User,
+  MessageSquare, Radio, Calendar, ChevronDown, ChevronRight, ChevronLeft, User,
   ArrowRight, Wifi, WifiOff, Zap, RefreshCw, Menu,
 } from 'lucide-react'
 import MessagerieView from './messagerie/MessagerieView'
@@ -25,8 +25,8 @@ const C = {
   instagram:   '#EC4899',
   // Text colors
   textPrimary: '#0F172A',
-  textSecondary:'#64748B',
-  textTertiary:'#94A3B8',
+  textSecondary:'#475569',
+  textTertiary:'#64748B',
   // Status colors
   success:     '#0EA472',
   error:       '#EF4444',
@@ -48,15 +48,33 @@ const C = {
   // Glass effects
   glassShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
   glassBorder: '1px solid rgba(255, 255, 255, 0.3)',
+  // Depth layering system
+  depth1: 'rgba(255, 255, 255, 0.92)',
+  depth2: 'rgba(255, 255, 255, 0.85)',
+  depth3: 'rgba(255, 255, 255, 0.75)',
+  depth4: 'rgba(255, 255, 255, 0.65)',
+  innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.4)',
+  blueShadow: '0 8px 32px rgba(30, 27, 75, 0.15)',
+  recessed: 'inset 0 2px 4px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+  // Enhanced glossy liquid glass effects
+  glassSuperBlur: 'blur(48px)',
+  glassUltraBlur: 'blur(64px)',
+  shadowLayered: 'inset 0 1px 0 rgba(255,255,255,0.5), 0 4px 16px rgba(30,27,75,0.1), 0 16px 48px rgba(30,27,75,0.08)',
+  shadowGlossy: 'inset 0 2px 4px rgba(255,255,255,0.6), 0 8px 32px rgba(30,27,75,0.12), 0 0 0 1px rgba(255,255,255,0.4)',
+  glossyGradient: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%)',
+  liquidGradient: 'linear-gradient(135deg, rgba(26,86,219,0.05) 0%, rgba(124,58,237,0.05) 100%)',
+  borderGlossy: '1px solid rgba(255,255,255,0.5), inset 0 0 0 1px rgba(255,255,255,0.2)',
+  glowPrimary: '0 0 24px rgba(26,86,219,0.3)',
+  glowSuccess: '0 0 24px rgba(14,164,114,0.3)',
   // Corner radii
   radiusSurface: 24,
   radiusCard: 16,
   radiusInput: 12,
   radiusPill: 999,
   // Gradients
-  gradientPrimary: 'linear-gradient(135deg, #1A56DB 0%, #0EA472 100%)',
+  gradientPrimary: 'linear-gradient(135deg, #1A56DB 0%, #3B82F6 100%)',
   gradientPurple: 'linear-gradient(135deg, #7C3AED 0%, #1A56DB 100%)',
-  gradientGreen: 'linear-gradient(135deg, #0EA472 0%, #1A56DB 100%)',
+  gradientBlue: 'linear-gradient(135deg, #1A56DB 0%, #60A5FA 100%)',
   // Additional colors
   bg: '#F2F2F7',
   sidebar: '#FFFFFF',
@@ -97,31 +115,45 @@ function KpiCard({ label, value, sub, icon, accent, loading, actionLabel, onActi
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25, delay }}
       style={{
-        background: C.glassMedium,
-        backdropFilter: 'blur(20px)',
+        background: C.depth2,
+        backdropFilter: C.glassSuperBlur,
         borderRadius: C.radiusCard,
-        boxShadow: C.glassShadow,
-        border: C.glassBorder,
+        boxShadow: C.shadowGlossy,
+        border: C.borderGlossy,
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         cursor: 'default',
+        position: 'relative',
+        overflow: 'hidden',
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement
         el.style.transform = 'translateY(-4px)'
-        el.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12)'
+        el.style.boxShadow = C.shadowLayered
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLElement
         el.style.transform = 'translateY(0)'
-        el.style.boxShadow = C.glassShadow
+        el.style.boxShadow = C.shadowGlossy
       }}
     >
-      <div style={{ height: 4, background: accent, borderRadius: `${C.radiusCard}px ${C.radiusCard}px 0 0` }} />
-      <div style={{ padding: '20px' }}>
+      {/* Glossy gradient overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: C.glossyGradient,
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
+      <div style={{ height: 4, background: accent, borderRadius: `${C.radiusCard}px ${C.radiusCard}px 0 0`, position: 'relative', zIndex: 1 }} />
+      <div style={{ padding: '20px', position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
           <div style={{
             color: accent,
+            filter: `drop-shadow(0 0 8px ${accent}40)`,
           }}>
             {icon}
           </div>
@@ -136,14 +168,26 @@ function KpiCard({ label, value, sub, icon, accent, loading, actionLabel, onActi
             <button onClick={onAction} style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               fontSize: 13, fontWeight: 600, color: C.primary,
-              background: 'rgba(26, 86, 219, 0.1)', border: 'none',
+              background: C.liquidGradient, border: C.borderGlossy,
               cursor: 'pointer', padding: '6px 14px', borderRadius: C.radiusPill,
-              transition: 'background 0.15s',
+              transition: 'all 0.2s ease',
+              backdropFilter: C.glassSuperBlur,
+              boxShadow: '0 2px 8px rgba(26, 86, 219, 0.1)',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.15)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.1)' }}
+            onMouseEnter={e => { 
+              const el = e.currentTarget as HTMLElement
+              el.style.background = C.gradientPrimary as string
+              el.style.color = '#fff'
+              el.style.boxShadow = C.glowPrimary as string
+            }}
+            onMouseLeave={e => { 
+              const el = e.currentTarget as HTMLElement
+              el.style.background = C.liquidGradient as string
+              el.style.color = C.primary
+              el.style.boxShadow = '0 2px 8px rgba(26, 86, 219, 0.1)'
+            }}
             >
-              {actionLabel} <ArrowRight size={12} />
+              {actionLabel}
             </button>
           </div>
         )}
@@ -163,42 +207,57 @@ function ChannelCard({ label, desc, active, color, badgeBg, badgeText, onClick, 
       transition={{ type: 'spring', stiffness: 300, damping: 25, delay }}
       onClick={onClick} style={{
         flex: 1, padding: '16px', borderRadius: C.radiusCard,
-        background: C.glassMedium,
-        backdropFilter: 'blur(20px)',
-        border: `1px solid ${active ? color : C.border}`,
-        boxShadow: C.glassShadow,
+        background: active ? C.depth2 : C.depth3,
+        backdropFilter: C.glassSuperBlur,
+        border: active ? `1px solid ${color}` : C.borderGlossy,
+        boxShadow: active ? C.shadowGlossy : C.blueShadow,
         display: 'flex', flexDirection: 'column', gap: 10,
         cursor: 'pointer', transition: 'all 0.2s ease', textAlign: 'left',
+        position: 'relative',
+        overflow: 'hidden',
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement
         el.style.transform = 'translateY(-4px)'
-        el.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12)'
+        el.style.boxShadow = active ? C.shadowLayered : C.shadowGlossy
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLElement
         el.style.transform = 'translateY(0)'
-        el.style.boxShadow = C.glassShadow
+        el.style.boxShadow = active ? C.shadowGlossy : C.blueShadow
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Glossy gradient overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: C.glossyGradient,
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
         <div style={{
           width: 10, height: 10, borderRadius: '50%',
           background: active ? color : C.mid,
-          boxShadow: active ? `0 0 8px ${color}cc` : 'none',
+          boxShadow: active ? `0 0 12px ${color}cc` : 'none',
           transition: 'all 0.3s',
         }} />
         <span style={{
           fontSize: 10, fontWeight: 600,
           color: active ? badgeText : C.mid,
           background: active ? badgeBg : 'rgba(0,0,0,0.05)',
-          padding: '2px 8px', borderRadius: C.radiusPill,
+          padding: '3px 10px', borderRadius: C.radiusPill,
           textTransform: 'uppercase', letterSpacing: '0.08em',
+          backdropFilter: active ? C.glassSuperBlur : 'none',
+          border: active ? `1px solid ${color}30` : 'none',
         }}>
           {active ? 'ACTIF' : 'INACTIF'}
         </span>
       </div>
-      <div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary, marginBottom: 2 }}>{label}</div>
         <div style={{ fontSize: 13, color: C.textSecondary }}>{desc}</div>
       </div>
@@ -226,29 +285,62 @@ function ActivityRow({ conv, onClick, delay = 0 }: { conv: RecentConv; onClick: 
     >
       <button onClick={onClick} style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 0', borderRadius: C.radiusInput, border: 'none',
-        background: 'transparent', cursor: 'pointer', transition: 'background 0.15s',
+        padding: '12px 16px', borderRadius: C.radiusInput, border: C.borderGlossy,
+        background: C.depth3, backdropFilter: C.glassSuperBlur,
+        cursor: 'pointer', transition: 'all 0.2s ease',
+        boxShadow: C.blueShadow,
+        position: 'relative',
+        overflow: 'hidden',
       }}
-      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.05)'}
-      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLElement
+        el.style.background = C.depth2 as string
+        el.style.boxShadow = C.shadowGlossy as string
+        el.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLElement
+        el.style.background = C.depth3 as string
+        el.style.boxShadow = C.blueShadow as string
+        el.style.transform = 'translateY(0)'
+      }}
       >
+        {/* Glossy gradient overlay */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: C.glossyGradient,
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
         <div style={{
           width: 36, height: 36, borderRadius: '50%',
-          background: 'rgba(26, 86, 219, 0.1)', color: C.primary,
+          background: `linear-gradient(135deg, ${chColor}20 0%, ${chColor}10 100%)`,
+          color: chColor,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 13, fontWeight: 600, flexShrink: 0,
+          border: `2px solid ${chColor}30`,
+          boxShadow: `0 0 12px ${chColor}20`,
+          position: 'relative',
+          zIndex: 1,
         }}>{initials}</div>
-        <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary }}>{conv.name}</div>
-          <div style={{ fontSize: 12, color: C.textSecondary }}>{conv.channel}</div>
+        <div style={{ flex: 1, minWidth: 0, textAlign: 'left', position: 'relative', zIndex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: C.textPrimary }}>{conv.name}</div>
+          <div style={{ fontSize: 12, color: C.textSecondary, fontWeight: 400 }}>{conv.channel}</div>
         </div>
-        <div style={{ fontSize: 12, color: C.textTertiary, flexShrink: 0 }}>{timeStr}</div>
+        <div style={{ fontSize: 12, color: C.textTertiary, flexShrink: 0, position: 'relative', zIndex: 1 }}>{timeStr}</div>
         {conv.unread > 0 && (
           <div style={{
             width: 20, height: 20, borderRadius: '50%',
-            background: C.primary, color: '#fff',
+            background: C.gradientPrimary, color: '#fff',
             fontSize: 10, fontWeight: 600, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: C.glowPrimary,
+            position: 'relative',
+            zIndex: 1,
           }}>{conv.unread}</div>
         )}
       </button>
@@ -283,14 +375,14 @@ function SetupStep({ done, step, label, cta, onClick }: {
       {!done && (
         <button onClick={onClick} style={{
           display: 'flex', alignItems: 'center', gap: 4,
-          fontSize: 13, fontWeight: 600, color: C.primary,
+          fontSize: 13, fontWeight: 500, color: C.primary,
           background: 'none', border: `1px solid ${C.primary}`,
           cursor: 'pointer', padding: '4px 12px', borderRadius: C.radiusPill,
           transition: 'background 0.15s',
         }}
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.1)'}
         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}
-        >{cta} <ArrowRight size={12} /></button>
+        >{cta}</button>
       )}
     </div>
   )
@@ -334,17 +426,30 @@ function QuickActionsBar({ onNavigate }: { onNavigate: (p: PageId) => void }) {
       animate={{ opacity: 1 }}
       transition={{ type: 'spring', stiffness: 200, damping: 25 }}
       style={{
-        background: C.glassMedium,
-        backdropFilter: 'blur(20px)',
+        background: C.depth2,
+        backdropFilter: C.glassSuperBlur,
         borderRadius: C.radiusCard,
-        boxShadow: C.glassShadow,
-        border: C.glassBorder,
+        boxShadow: C.shadowGlossy,
+        border: C.borderGlossy,
         padding: '16px 24px',
         display: 'flex',
         gap: 16,
         marginBottom: 24,
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      {/* Glossy gradient overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: C.glossyGradient,
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
       {actions.map((action) => (
         <button
           key={action.label}
@@ -354,22 +459,54 @@ function QuickActionsBar({ onNavigate }: { onNavigate: (p: PageId) => void }) {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            padding: '8px 20px',
+            padding: '12px 24px',
             borderRadius: C.radiusPill,
-            background: 'rgba(26, 86, 219, 0.1)',
+            background: C.depth3,
             color: C.primary,
-            border: 'none',
+            border: C.borderGlossy,
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 500,
             cursor: action.exists ? 'pointer' : 'not-allowed',
             opacity: action.exists ? 1 : 0.5,
-            transition: 'background 0.15s ease',
+            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            backdropFilter: C.glassSuperBlur,
+            boxShadow: C.shadowGlossy,
+            position: 'relative',
+            zIndex: 1,
+            overflow: 'hidden',
           }}
-          onMouseEnter={e => { if (action.exists) (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.15)' }}
-          onMouseLeave={e => { if (action.exists) (e.currentTarget as HTMLElement).style.background = 'rgba(26, 86, 219, 0.1)' }}
+          onMouseEnter={e => {
+            if (action.exists) {
+              const el = e.currentTarget as HTMLElement
+              el.style.background = C.depth2 as string
+              el.style.boxShadow = C.shadowLayered as string
+              el.style.transform = 'translateY(-2px)'
+            }
+          }}
+          onMouseLeave={e => {
+            if (action.exists) {
+              const el = e.currentTarget as HTMLElement
+              el.style.background = C.depth3 as string
+              el.style.boxShadow = C.shadowGlossy as string
+              el.style.transform = 'translateY(0)'
+            }
+          }}
         >
-          {action.icon}
-          {action.label}
+          {/* Glossy gradient overlay */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: C.glossyGradient,
+            pointerEvents: 'none',
+            zIndex: 0,
+          }} />
+          <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {action.icon}
+            {action.label}
+          </span>
         </button>
       ))}
     </motion.div>
@@ -380,9 +517,9 @@ function QuickActionsBar({ onNavigate }: { onNavigate: (p: PageId) => void }) {
 function PerformanceCard() {
   // TODO: wire to real API
   const metrics = [
-    { label: 'Taux de résolution', value: '87%', color: C.accentGreen },
+    { label: 'Taux de résolution', value: '87%', color: C.primary },
     { label: 'Temps de réponse moyen', value: '1m 24s', color: C.primary },
-    { label: 'Satisfaction client', value: '4.6/5', color: C.accentGreen },
+    { label: 'Satisfaction client', value: '4.6/5', color: C.accentPurple },
   ]
 
   return (
@@ -391,36 +528,49 @@ function PerformanceCard() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.2 }}
       style={{
-        background: C.glassMedium,
-        backdropFilter: 'blur(20px)',
+        background: C.depth2,
+        backdropFilter: C.glassSuperBlur,
         borderRadius: C.radiusCard,
-        boxShadow: C.glassShadow,
-        border: C.glassBorder,
+        boxShadow: C.shadowGlossy,
+        border: C.borderGlossy,
         padding: '20px',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      {/* Glossy gradient overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: C.glossyGradient,
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, position: 'relative', zIndex: 1 }}>
         <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Performance</div>
         <div style={{ fontSize: 13, color: C.textSecondary }}>7 derniers jours</div>
       </div>
-      <div style={{ display: 'flex', gap: 24, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 24, marginBottom: 20, position: 'relative', zIndex: 1 }}>
         {metrics.map((metric) => (
           <div key={metric.label} style={{ flex: 1 }}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: metric.color }}>{metric.value}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: metric.color, filter: `drop-shadow(0 0 8px ${metric.color}30)` }}>{metric.value}</div>
             <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 4 }}>{metric.label}</div>
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', zIndex: 1 }}>
         {metrics.map((metric, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 12, color: C.textSecondary, width: 140, flexShrink: 0 }}>{metric.label}</span>
-            <div style={{ flex: 1, height: 6, background: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ flex: 1, height: 6, background: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.3)' }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: metric.value.includes('87') ? '87%' : metric.value.includes('4.6') ? '92%' : '75%' }}
                 transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                style={{ height: '100%', background: metric.color, borderRadius: 3 }}
+                style={{ height: '100%', background: metric.color, borderRadius: 3, boxShadow: `0 0 8px ${metric.color}40` }}
               />
             </div>
           </div>
@@ -451,37 +601,50 @@ function BotActivityWidget() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.3 }}
       style={{
-        background: C.glassMedium,
-        backdropFilter: 'blur(20px)',
+        background: C.depth2,
+        backdropFilter: C.glassSuperBlur,
         borderRadius: C.radiusCard,
-        boxShadow: C.glassShadow,
-        border: C.glassBorder,
+        boxShadow: C.shadowGlossy,
+        border: C.borderGlossy,
         padding: '20px',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      {/* Glossy gradient overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: C.glossyGradient,
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, position: 'relative', zIndex: 1 }}>
         <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Activité du Bot IA</div>
         <div style={{ fontSize: 13, color: C.textSecondary }}>
           {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 32, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 32, marginBottom: 20, position: 'relative', zIndex: 1 }}>
         <div>
-          <div style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary }}>156</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, filter: 'drop-shadow(0 0 8px rgba(26, 86, 219, 0.3))' }}>156</div>
           <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>Messages IA</div>
           <div style={{ fontSize: 11, color: C.textSecondary }}>Traités automatiquement</div>
         </div>
         <div>
-          <div style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary }}>23</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, filter: 'drop-shadow(0 0 8px rgba(26, 86, 219, 0.3))' }}>23</div>
           <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>Intervention humaine</div>
           <div style={{ fontSize: 11, color: C.textSecondary }}>Transferts aujourd'hui</div>
         </div>
       </div>
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', zIndex: 1 }}>
         <svg width={width} height={height} style={{ overflow: 'visible' }}>
           <motion.polygon
             points={areaPoints}
-            fill="rgba(26, 86, 219, 0.1)"
+            fill="rgba(26, 86, 219, 0.15)"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 25 }}
@@ -496,6 +659,7 @@ function BotActivityWidget() {
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+            style={{ filter: 'drop-shadow(0 0 6px rgba(26, 86, 219, 0.4))' }}
           />
         </svg>
       </div>
@@ -507,11 +671,12 @@ function BotActivityWidget() {
 export default function DashboardShell() {
   const { data: session, status } = useSession()
   const [activePage, setActivePage] = useState<PageId>('home')
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [initialPageSet, setInitialPageSet] = useState(false)
   const [toast, setToast] = useState<{ type: 'error' | 'success'; msg: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
-  const [profileOpen, setProfileOpen] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [waConnected, setWaConnected] = useState(false)
   const [fbConnected, setFbConnected] = useState(false)
@@ -679,7 +844,7 @@ export default function DashboardShell() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
           font-family: 'Inter', system-ui, sans-serif;
-          background: #FFFFFF;
+          background: radial-gradient(ellipse at top, #F0F7FF 0%, #F8FAFC 40%, #F1F5F9 100%);
           overflow: hidden;
           padding-top: env(safe-area-inset-top);
         }
@@ -705,7 +870,7 @@ export default function DashboardShell() {
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             style={{
               position: 'fixed', top: 24, left: '50%', zIndex: 9999,
-              background: C.white, borderRadius: 12,
+              background: C.depth2, borderRadius: 12,
               border: `1px solid ${toast.type === 'error' ? '#fca5a5' : '#6ee7b7'}`,
               padding: '12px 18px',
               display: 'flex', alignItems: 'center', gap: 10,
@@ -723,15 +888,15 @@ export default function DashboardShell() {
         )}
       </AnimatePresence>
 
-      <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', background: '#FFFFFF', position: 'relative' }}>
-        {/* Gradient status bar background for iOS PWA - blends with header */}
+      <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', background: 'transparent', position: 'relative' }}>
+        {/* Safe area background for iOS PWA - blends with header */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
           height: 'env(safe-area-inset-top)',
-          background: C.gradientPrimary,
+          background: C.depth1,
           zIndex: 9999,
         }} />
         {/* Main content with solid background */}
@@ -739,7 +904,7 @@ export default function DashboardShell() {
           display: 'flex',
           height: '100%',
           width: '100%',
-          background: C.pageBg,
+          background: 'transparent',
           position: 'relative',
         }}>
 
@@ -770,11 +935,11 @@ export default function DashboardShell() {
                 style={{
                   position: 'fixed', left: 0, top: 0, bottom: 0,
                   width: 280, maxWidth: '85vw',
-                  background: C.glassDark,
-                  backdropFilter: 'blur(20px)',
+                  background: C.depth2,
+                  backdropFilter: 'blur(32px)',
                   zIndex: 1001,
                   display: 'flex', flexDirection: 'column',
-                  boxShadow: '8px 0 32px rgba(0,0,0,0.12)',
+                  boxShadow: C.innerGlow + ', ' + C.blueShadow,
                   borderRight: C.glassBorder,
                 }}
               >
@@ -855,123 +1020,252 @@ export default function DashboardShell() {
         {/* ══ Sidebar ══════════════════════════════════════════════════════════ */}
         {!isMobile && (
           <aside style={{
-            width: 200, flexShrink: 0,
-            background: C.glassDark,
-            borderRight: C.glassBorder,
+            width: sidebarCollapsed ? 72 : 220,
+            flexShrink: 0,
+            background: '#ffffff',
+            borderRight: '1px solid #e2e8f2',
             display: 'flex', flexDirection: 'column',
             overflow: 'hidden',
+            boxShadow: '4px 0 24px rgba(0, 0, 0, 0.02)',
+            transition: 'width 0.3s ease',
           } as React.CSSProperties}>
             {/* Logo */}
-            <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: C.glassBorder, flexShrink: 0 }}>
-              <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-                <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-                  Répondly<span style={{ color: C.primary }}>.</span>
-                </span>
-              </a>
+            <div style={{ 
+              height: 72, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              padding: sidebarCollapsed ? '0 12px' : '0 20px', 
+              borderBottom: '1px solid #f0f3f8',
+              flexShrink: 0,
+              gap: sidebarCollapsed ? 0 : 8,
+            }}>
+              <Image src="/logo.png" alt="Répondly" width={sidebarCollapsed ? 32 : 38} height={sidebarCollapsed ? 32 : 38} style={{ objectFit: 'contain' }} priority />
+              {!sidebarCollapsed && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: '#0d1b2e', letterSpacing: '-0.02em', fontWeight: 400 }}>
+                    Répondly
+                  </span>
+                  <span style={{ color: '#1a6bff', fontSize: 20 }}>.</span>
+                </div>
+              )}
             </div>
 
             {/* Nav */}
-            <nav style={{ flex: 1, padding: '16px 0', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 16px', marginTop: 24, marginBottom: 8 }}>
-                Navigation
-              </div>
+            <nav style={{ flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
               {NAV.map(item => {
                 const active = activePage === item.id
                 return (
                   <button
                     key={item.id}
                     onClick={() => setActivePage(item.id)}
+                    title={sidebarCollapsed ? item.label : ''}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      width: '100%', padding: '10px 16px', borderRadius: 8,
-                      background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
-                      color: active ? C.textPrimary : C.textSecondary,
-                      fontSize: 13, fontWeight: active ? 600 : 400,
-                      border: 'none', cursor: 'pointer', transition: 'all 0.15s ease', textAlign: 'left',
-                      borderLeft: active ? `3px solid ${C.primary}` : '3px solid transparent',
+                      display: 'flex', alignItems: 'center', gap: sidebarCollapsed ? 0 : 12,
+                      width: '100%', padding: sidebarCollapsed ? '11px' : '11px 14px', borderRadius: 10,
+                      background: active ? '#1a6bff' : 'transparent',
+                      color: active ? '#ffffff' : '#5a6a80',
+                      fontSize: 14, fontWeight: active ? 600 : 500,
+                      border: 'none', cursor: 'pointer', transition: 'all 0.2s ease', textAlign: 'left',
+                      position: 'relative',
+                      justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
                     }}
-                    onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)'; (e.currentTarget as HTMLElement).style.color = C.textPrimary } }}
-                    onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = C.textSecondary } }}
+                    onMouseEnter={e => { 
+                      if (!active) { 
+                        const el = e.currentTarget as HTMLElement
+                        el.style.background = '#f5f7fa'
+                        el.style.color = '#0d1b2e'
+                      }
+                    }}
+                    onMouseLeave={e => { 
+                      if (!active) { 
+                        const el = e.currentTarget as HTMLElement
+                        el.style.background = 'transparent'
+                        el.style.color = '#5a6a80'
+                      }
+                    }}
                   >
-                    <span style={{ color: active ? C.primary : 'inherit' }}>{item.icon}</span>
-                    <span style={{ flex: 1 }}>{item.label}</span>
-                    {item.id === 'inbox' && stats.openCount > 0 && (
-                      <span style={{ background: C.primary, color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20 }}>
-                        {stats.openCount}
-                      </span>
-                    )}
-                    {item.id === 'channels' && !anyChannel && (
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.warning, flexShrink: 0 }} />
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</span>
+                    {!sidebarCollapsed && (
+                      <>
+                        <span style={{ flex: 1 }}>{item.label}</span>
+                        {item.id === 'inbox' && stats.openCount > 0 && (
+                          <span style={{ 
+                            background: 'rgba(255,255,255,0.2)', 
+                            color: '#ffffff',
+                            fontSize: 11, 
+                            fontWeight: 700, 
+                            padding: '3px 9px', 
+                            borderRadius: 20,
+                          }}>
+                            {stats.openCount}
+                          </span>
+                        )}
+                        {item.id === 'channels' && !anyChannel && (
+                          <span style={{ 
+                            width: 8, 
+                            height: 8, 
+                            borderRadius: '50%', 
+                            background: '#ff5f57', 
+                            flexShrink: 0,
+                          }} />
+                        )}
+                      </>
                     )}
                   </button>
                 )
               })}
 
-              {/* Channel status widget */}
-              <div style={{ marginTop: 24, padding: '14px 16px' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.mid, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Statut des canaux</div>
-                {[
-                  { label: 'WhatsApp', active: waConnected, color: C.whatsapp, badgeBg: 'rgba(34, 197, 94, 0.1)', badgeText: C.success },
-                  { label: 'Facebook', active: fbConnected, color: C.facebook, badgeBg: 'rgba(26, 86, 219, 0.1)', badgeText: C.primary },
-                  { label: 'Instagram', active: igConnected, color: C.instagram, badgeBg: 'rgba(236, 72, 153, 0.1)', badgeText: C.instagram },
-                ].map(ch => (
-                  <div key={ch.label} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '5px 0' }}>
-                    <span style={{
-                      width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                      background: ch.active ? ch.color: C.mid,
-                      boxShadow: ch.active ? `0 0 8px ${ch.color}cc` : 'none',
-                      transition: 'all 0.3s',
-                    }} />
-                    <span style={{ fontSize: 12, color: ch.active ? C.muted : C.mid, flex: 1 }}>{ch.label}</span>
-                    <span style={{ 
-                      fontSize: 10, fontWeight: 700, 
-                      color: ch.active ? ch.badgeText : C.mid,
-                      background: ch.active ? ch.badgeBg : C.bg,
-                      padding: '2px 6px', borderRadius: 4,
-                    }}>
-                      {ch.active ? 'ON' : 'OFF'}
-                    </span>
+              {/* Canaux Section - Improved */}
+              {!sidebarCollapsed && (
+                <div style={{ marginTop: 32, padding: '0 12px' }}>
+                  <div style={{ 
+                    fontSize: 11, 
+                    fontWeight: 700, 
+                    color: '#8899aa', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.1em', 
+                    marginBottom: 12,
+                    paddingLeft: 14,
+                  }}>
+                    Canaux
                   </div>
-                ))}
-              </div>
+                  <div style={{ 
+                    background: '#f5f7fa',
+                    borderRadius: 12,
+                    padding: '16px',
+                    border: '1px solid #e8f0ff',
+                  }}>
+                    {[
+                      { label: 'WhatsApp', active: waConnected, color: '#25d366', icon: <MessageSquare size={16} /> },
+                      { label: 'Facebook', active: fbConnected, color: '#1877f2', icon: <MessageSquare size={16} /> },
+                      { label: 'Instagram', active: igConnected, color: '#e1306c', icon: <MessageSquare size={16} /> },
+                    ].map(ch => (
+                      <button
+                        key={ch.label}
+                        onClick={() => setActivePage('settings')}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          width: '100%', padding: '10px 12px', borderRadius: 8,
+                          background: 'transparent',
+                          color: ch.active ? '#0d1b2e' : '#8899aa',
+                          fontSize: 13, fontWeight: ch.active ? 600 : 500,
+                          border: 'none', cursor: 'pointer', transition: 'all 0.2s ease', textAlign: 'left',
+                          marginBottom: 4,
+                        }}
+                        onMouseEnter={e => {
+                          const el = e.currentTarget as HTMLElement
+                          el.style.background = '#ffffff'
+                          el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'
+                        }}
+                        onMouseLeave={e => {
+                          const el = e.currentTarget as HTMLElement
+                          el.style.background = 'transparent'
+                          el.style.boxShadow = 'none'
+                        }}
+                      >
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8,
+                          background: `${ch.color}15`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: ch.color,
+                        }}>
+                          {ch.icon}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: ch.active ? '#0d1b2e' : '#5a6a80' }}>{ch.label}</div>
+                          <div style={{ fontSize: 11, color: ch.active ? '#5a6a80' : '#8899aa' }}>
+                            {ch.active ? 'Connecté' : 'Non connecté'}
+                          </div>
+                        </div>
+                        <div style={{
+                          width: 6, height: 6, borderRadius: '50%',
+                          background: ch.active ? ch.color : '#e2e8f2',
+                        }} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </nav>
 
             {/* User */}
-            <div style={{ padding: '16px', borderTop: `1px solid ${C.sidebarHover}`, background: C.sidebar, flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ 
+              padding: sidebarCollapsed ? '16px 12px' : '16px 20px', 
+              borderTop: '1px solid #f0f3f8',
+              flexShrink: 0,
+            }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: sidebarCollapsed ? 0 : 12,
+                justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              }}>
                 <div style={{
-                  width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                  background: C.primary,
+                  width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                  background: 'linear-gradient(135deg, #1a6bff 0%, #0f4fd4 100%)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, fontWeight: 700, color: '#fff',
+                  fontSize: 15, fontWeight: 700, color: '#ffffff',
+                  boxShadow: '0 4px 12px rgba(26, 107, 255, 0.25)',
                 }}>{initial}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.white, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
-                  <div style={{ fontSize: 11, color: C.muted }}>Compte actif</div>
-                </div>
-                <button onClick={() => signOut()} title="Déconnexion" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 4, display: 'flex', borderRadius: 6, transition: 'color 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = C.white}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = C.muted}
-                >
-                  <LogOut size={15} />
-                </button>
+                {!sidebarCollapsed && (
+                  <>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#0d1b2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
+                      <div style={{ fontSize: 12, color: '#8899aa' }}>Compte actif</div>
+                    </div>
+                    <button 
+                      onClick={() => signOut()} 
+                      title="Déconnexion" 
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        cursor: 'pointer', 
+                        color: '#8899aa', 
+                        padding: 8, 
+                        display: 'flex', 
+                        borderRadius: 8, 
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={e => {
+                        const el = e.currentTarget as HTMLElement
+                        el.style.background = '#f5f7fa'
+                        el.style.color = '#1a6bff'
+                      }}
+                      onMouseLeave={e => {
+                        const el = e.currentTarget as HTMLElement
+                        el.style.background = 'none'
+                        el.style.color = '#8899aa'
+                      }}
+                    >
+                      <LogOut size={16} />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </aside>
         )}
 
         {/* ══ Main area ════════════════════════════════════════════════════════ */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          minWidth: 0, 
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #f0f7ff 50%, #f8fafc 100%)',
+        } as React.CSSProperties}>
 
           {/* ── Header ── */}
           <header style={{
             height: 64, flexShrink: 0,
-            background: C.gradientPrimary,
-            borderBottom: 'none',
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(20px)',
+            borderBottom: '1px solid #e2e8f2',
             display: 'flex', alignItems: 'center',
-            padding: isMobile ? '0 12px' : '0 24px',
-            gap: 12,
+            padding: isMobile ? '0 16px' : '0 32px',
+            gap: 16,
             position: 'relative',
           } as React.CSSProperties}>
             {isMobile ? (
@@ -980,36 +1274,51 @@ export default function DashboardShell() {
                 <button
                   onClick={() => setMobileSidebarOpen(true)}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.15)', border: 'none',
-                    cursor: 'pointer', padding: 10,
-                    color: '#fff',
+                    width: 40, height: 40,
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    border: '1px solid rgba(26, 107, 255, 0.15)',
+                    cursor: 'pointer',
+                    color: '#1a6bff',
                     borderRadius: 12,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.borderColor = '#1a6bff'
+                    el.style.boxShadow = '0 4px 12px rgba(26, 107, 255, 0.15)'
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.borderColor = 'rgba(26, 107, 255, 0.15)'
+                    el.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)'
                   }}
                 >
-                  <Menu size={22} />
+                  <Menu size={18} strokeWidth={2.5} />
                 </button>
-
-                {/* Repondly branding */}
-                <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 'auto' }}>
-                  <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                  <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: '#fff', letterSpacing: '-0.02em' }}>
-                    Répondly<span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>.</span>
-                  </span>
-                </a>
 
                 {/* User avatar */}
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
                   style={{
-                    width: 40, height: 40, borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.25)',
-                    backdropFilter: 'blur(10px)',
-                    border: profileOpen ? `2px solid rgba(255, 255, 255, 0.6)` : '2px solid rgba(255, 255, 255, 0.3)',
-                    color: '#fff', fontSize: 15, fontWeight: 600,
+                    width: 38, height: 38, borderRadius: 12,
+                    background: 'linear-gradient(135deg, #1a6bff 0%, #0f4fd4 100%)',
+                    border: '2px solid rgba(255, 255, 255, 0.5)',
+                    color: '#ffffff', fontSize: 14, fontWeight: 700,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.15s',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 4px 12px rgba(26, 107, 255, 0.25)',
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.transform = 'scale(1.05)'
+                    el.style.boxShadow = '0 6px 16px rgba(26, 107, 255, 0.35)'
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.transform = 'scale(1)'
+                    el.style.boxShadow = '0 4px 12px rgba(26, 107, 255, 0.25)'
                   }}
                 >{initial}</button>
 
@@ -1022,29 +1331,29 @@ export default function DashboardShell() {
                       exit={{ opacity: 0, scale: 0.95, y: -8 }}
                       transition={{ duration: 0.12 }}
                       style={{
-                        position: 'absolute', top: 72, right: 12,
-                        background: C.cardBg, border: `1px solid ${C.border}`,
+                        position: 'absolute', top: 64, right: 12,
+                        background: '#ffffff', border: '1px solid #e2e8f2',
                         borderRadius: 12, padding: 6,
-                        minWidth: 180, boxShadow: '0 16px 40px rgba(15,23,42,0.12)',
+                        minWidth: 180, boxShadow: '0 16px 40px rgba(0,0,0,0.08)',
                         zIndex: 200,
                       }}
                     >
-                      <div style={{ padding: '10px 12px 8px', borderBottom: `1px solid ${C.border}`, marginBottom: 4 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{userName}</div>
-                        <div style={{ fontSize: 11, color: C.textSecondary, marginTop: 1 }}>{session.user?.email}</div>
+                      <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #f0f3f8', marginBottom: 4 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0d1b2e' }}>{userName}</div>
+                        <div style={{ fontSize: 11, color: '#8899aa', marginTop: 1 }}>{session.user?.email}</div>
                       </div>
                       <button
                         onClick={() => setProfileOpen(false)}
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.textPrimary, transition: 'background 0.12s' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.bg}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: '#0d1b2e', transition: 'background 0.12s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f5f7fa'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                       >
-                        <User size={14} color={C.textSecondary} /> Profil
+                        <User size={14} color='#8899aa' /> Profil
                       </button>
                       <button
                         onClick={() => signOut()}
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.red, transition: 'background 0.12s' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#FEE2E2'}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: '#ef4444', transition: 'background 0.12s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fef2f2'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                       >
                         <LogOut size={14} /> Déconnexion
@@ -1055,46 +1364,31 @@ export default function DashboardShell() {
               </>
             ) : (
               <>
-                <a href="https://repondly.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginRight: 8 }}>
-                  <Image src="/logo.png" alt="Répondly" width={28} height={28} style={{ objectFit: 'contain' }} priority />
-                  <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.textPrimary, letterSpacing: '-0.02em' }}>
-                    Répondly<span style={{ color: C.primary }}>.</span>
-                  </span>
-                </a>
-                <div>
-                  <div style={{ fontSize: 12, color: C.textSecondary }}>
-                    Bienvenu, <span style={{ fontWeight: 600, color: C.textPrimary }}>{userName}</span>
-                  </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: C.textPrimary, marginTop: 1 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 24, fontWeight: 600, color: '#0d1b2e', letterSpacing: '-0.01em' }}>
                     {NAV.find(n => n.id === activePage)?.label ?? 'Tableau de bord'}
                   </div>
                 </div>
 
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   {anyChannel && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20, background: C.greenLight, border: `1px solid ${C.success}` }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.success }} />
-                      <span style={{ fontSize: 12, fontWeight: 600, color: C.greenText }}>{activeChannels} canaux actifs</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 10, background: '#ffffff', border: '1px solid #e2e8f2' }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1a6bff' }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#0d1b2e' }}>{activeChannels} canaux actifs</span>
                     </div>
                   )}
-                  <button onClick={() => fetchStatus()} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 8, padding: 7, cursor: 'pointer', color: C.textSecondary, display: 'flex', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.primary; (e.currentTarget as HTMLElement).style.color = C.primary }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.textSecondary }}
-                  >
-                    <Settings size={14} />
-                  </button>
 
                   {/* Profile avatar + dropdown */}
                   <div style={{ position: 'relative' }}>
                     <button
                       onClick={() => setProfileOpen(!profileOpen)}
                       style={{
-                        width: 36, height: 36, borderRadius: '50%',
-                        background: C.primary,
-                        border: profileOpen ? `2px solid ${C.primary}` : '2px solid transparent',
-                        color: '#fff', fontSize: 14, fontWeight: 700,
+                        width: 40, height: 40, borderRadius: 10,
+                        background: 'linear-gradient(135deg, #1a6bff 0%, #0f4fd4 100%)',
+                        border: 'none',
+                        color: '#ffffff', fontSize: 15, fontWeight: 700,
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'border-color 0.15s',
+                        transition: 'all 0.2s ease',
                       }}
                     >{initial}</button>
                     <AnimatePresence>
@@ -1105,29 +1399,29 @@ export default function DashboardShell() {
                           exit={{ opacity: 0, scale: 0.95, y: -8 }}
                           transition={{ duration: 0.12 }}
                           style={{
-                            position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-                            background: C.cardBg, border: `1px solid ${C.border}`,
+                            position: 'absolute', top: 52, right: 0,
+                            background: '#ffffff', border: '1px solid #e2e8f2',
                             borderRadius: 12, padding: 6,
-                            minWidth: 180, boxShadow: '0 16px 40px rgba(15,23,42,0.12)',
+                            minWidth: 180, boxShadow: '0 16px 40px rgba(0,0,0,0.08)',
                             zIndex: 200,
                           }}
                         >
-                          <div style={{ padding: '10px 12px 8px', borderBottom: `1px solid ${C.border}`, marginBottom: 4 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{userName}</div>
-                            <div style={{ fontSize: 11, color: C.textSecondary, marginTop: 1 }}>{session.user?.email}</div>
+                          <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #f0f3f8', marginBottom: 4 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#0d1b2e' }}>{userName}</div>
+                            <div style={{ fontSize: 11, color: '#8899aa', marginTop: 1 }}>{session.user?.email}</div>
                           </div>
                           <button
                             onClick={() => setProfileOpen(false)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.textPrimary, transition: 'background 0.12s' }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.bg}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: '#0d1b2e', transition: 'background 0.12s' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f5f7fa'}
                             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                           >
-                            <User size={14} color={C.textSecondary} /> Profil
+                            <User size={14} color='#8899aa' /> Profil
                           </button>
                           <button
                             onClick={() => signOut()}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: C.red, transition: 'background 0.12s' }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#FEE2E2'}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: '#ef4444', transition: 'background 0.12s' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fef2f2'}
                             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                           >
                             <LogOut size={14} /> Déconnexion
@@ -1145,8 +1439,8 @@ export default function DashboardShell() {
           <main style={{
             flex: 1, overflowY: activePage === 'inbox' ? 'hidden' : 'auto',
             position: 'relative',
-            paddingBottom: isMobile ? 66 : 0,
-            background: C.pageBg,
+            paddingBottom: isMobile ? 88 : 0,
+            background: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
           }}>
             <AnimatePresence mode="wait">
               <motion.div
@@ -1429,37 +1723,53 @@ function SettingsView({
                 width: '100%',
                 padding: '20px',
                 borderRadius: C.radiusCard,
-                background: C.glassMedium,
-                backdropFilter: 'blur(20px)',
-                border: C.glassBorder,
-                boxShadow: C.glassShadow,
+                background: C.depth2,
+                backdropFilter: C.glassSuperBlur,
+                border: C.borderGlossy,
+                boxShadow: C.shadowGlossy,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 16,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 textAlign: 'left',
+                position: 'relative',
+                overflow: 'hidden',
               }}
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLElement
                 el.style.transform = 'translateY(-2px)'
-                el.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12)'
+                el.style.boxShadow = C.shadowLayered
               }}
               onMouseLeave={e => {
                 const el = e.currentTarget as HTMLElement
                 el.style.transform = 'translateY(0)'
-                el.style.boxShadow = C.glassShadow
+                el.style.boxShadow = C.shadowGlossy
               }}
             >
+              {/* Glossy gradient overlay */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: C.glossyGradient,
+                pointerEvents: 'none',
+                zIndex: 0,
+              }} />
               <div style={{
                 width: 48, height: 48, borderRadius: 14,
                 background: `${section.color}15`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: section.color,
+                boxShadow: `0 0 12px ${section.color}20`,
+                position: 'relative',
+                zIndex: 1,
               }}>
                 {section.icon}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
                 <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary, marginBottom: 4 }}>{section.title}</div>
                 <div style={{ fontSize: 13, color: C.textSecondary }}>{section.description}</div>
               </div>
@@ -1467,10 +1777,12 @@ function SettingsView({
                 <div style={{
                   width: 8, height: 8, borderRadius: '50%',
                   background: section.connected ? C.success : C.mid,
-                  boxShadow: section.connected ? `0 0 8px ${C.success}cc` : 'none',
+                  boxShadow: section.connected ? `0 0 12px ${C.success}cc` : 'none',
+                  position: 'relative',
+                  zIndex: 1,
                 }} />
               )}
-              <ChevronRight size={18} color={C.textSecondary} />
+              <ChevronRight size={18} color={C.textSecondary} style={{ position: 'relative', zIndex: 1 }} />
             </motion.button>
           ))}
         </div>
@@ -1479,10 +1791,31 @@ function SettingsView({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          style={{ marginTop: 32, padding: '20px', borderRadius: C.radiusCard, background: C.glassMedium, backdropFilter: 'blur(20px)', border: C.glassBorder }}
+          style={{ 
+            marginTop: 32, 
+            padding: '20px', 
+            borderRadius: C.radiusCard, 
+            background: C.depth2,
+            backdropFilter: C.glassSuperBlur,
+            border: C.borderGlossy,
+            boxShadow: C.shadowGlossy,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
         >
-          <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary, marginBottom: 12 }}>Statut des canaux</div>
-          <div style={{ display: 'flex', gap: 24 }}>
+          {/* Glossy gradient overlay */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: C.glossyGradient,
+            pointerEvents: 'none',
+            zIndex: 0,
+          }} />
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary, marginBottom: 12, position: 'relative', zIndex: 1 }}>Statut des canaux</div>
+          <div style={{ display: 'flex', gap: 24, position: 'relative', zIndex: 1 }}>
             {[
               { label: 'WhatsApp', connected: waConnected, color: C.whatsapp },
               { label: 'Facebook', connected: fbConnected, color: C.facebook },
@@ -1492,9 +1825,9 @@ function SettingsView({
                 <div style={{
                   width: 10, height: 10, borderRadius: '50%',
                   background: ch.connected ? ch.color : C.mid,
-                  boxShadow: ch.connected ? `0 0 8px ${ch.color}cc` : 'none',
+                  boxShadow: ch.connected ? `0 0 12px ${ch.color}cc` : 'none',
                 }} />
-                <span style={{ fontSize: 13, color: ch.connected ? C.textPrimary : C.textSecondary }}>{ch.label}</span>
+                <span style={{ fontSize: 13, color: ch.connected ? C.textPrimary : C.textSecondary, fontWeight: ch.connected ? 500 : 400 }}>{ch.label}</span>
               </div>
             ))}
           </div>
@@ -1549,7 +1882,7 @@ function HomeView({
           icon={<MessageSquare size={18} />}
           accent={C.primary}
           loading={loading}
-          actionLabel="Messagerie →"
+          actionLabel="Messagerie"
           onAction={() => onNavigate('inbox')}
           delay={0}
         />
@@ -1558,9 +1891,9 @@ function HomeView({
           value={loading ? '—' : stats.messages}
           sub="Estimation totale"
           icon={<TrendingUp size={18} />}
-          accent={C.accentGreen}
+          accent={C.primary}
           loading={loading}
-          actionLabel="Paramètres →"
+          actionLabel="Paramètres"
           onAction={() => onNavigate('settings')}
           delay={0.05}
         />
@@ -1569,9 +1902,9 @@ function HomeView({
           value={loading ? '—' : activeChannels}
           sub="Sur 3 disponibles"
           icon={<Wifi size={18} />}
-          accent={C.success}
+          accent={C.primary}
           loading={loading}
-          actionLabel="Paramètres →"
+          actionLabel="Paramètres"
           onAction={() => onNavigate('settings')}
           delay={0.1}
         />
@@ -1588,9 +1921,9 @@ function HomeView({
         />
       </div>
 
-      {/* ── Performance | Mise en Service ── */}
+      {/* ── Bot Activity | Mise en Service ── */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', gap: 20, marginBottom: 24 }}>
-        <PerformanceCard />
+        <BotActivityWidget />
         <div style={{ background: C.glassMedium, backdropFilter: 'blur(20px)', borderRadius: C.radiusCard, boxShadow: C.glassShadow, border: C.glassBorder, padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Mise en service</div>
@@ -1622,50 +1955,93 @@ function HomeView({
         </div>
       </div>
 
-      {/* ── Activité Récente | Statut Système ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', gap: 20, marginBottom: 24 }}>
-        <div style={{ background: C.glassMedium, backdropFilter: 'blur(20px)', borderRadius: C.radiusCard, boxShadow: C.glassShadow, border: C.glassBorder, overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: C.glassBorder, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* ── Activité Récente ── */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ background: C.depth2, backdropFilter: C.glassSuperBlur, borderRadius: C.radiusCard, boxShadow: C.shadowGlossy, border: C.borderGlossy, overflow: 'hidden', position: 'relative' }}>
+          {/* Glossy gradient overlay */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: C.glossyGradient,
+            pointerEvents: 'none',
+            zIndex: 0,
+          }} />
+          <div style={{ padding: '16px 20px', borderBottom: C.borderGlossy, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Activité récente</div>
+              <div style={{ fontSize: 15, fontWeight: 500, color: C.textPrimary }}>Activité récente</div>
               <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>Dernières conversations ouvertes</div>
             </div>
-            <button onClick={() => onNavigate('inbox')} style={{ fontSize: 13, fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button onClick={() => onNavigate('inbox')} style={{ fontSize: 13, fontWeight: 500, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
               Voir tout <ArrowRight size={12} />
             </button>
           </div>
-          <div style={{ padding: '12px 20px', display: 'flex', gap: 8, overflowX: 'auto' }}>
+          <div style={{ padding: '12px 20px', display: 'flex', gap: 8, overflowX: 'auto', position: 'relative', zIndex: 1 }}>
             {['all', 'unread', 'pending', 'resolved'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setFilterTab(tab as any)}
                 style={{
-                  padding: '4px 14px',
-                  borderRadius: C.radiusPill,
+                  padding: '8px 16px',
+                  borderRadius: 20,
                   fontSize: 13,
-                  fontWeight: 600,
-                  border: 'none',
+                  fontWeight: 500,
                   cursor: 'pointer',
-                  background: filterTab === tab ? C.primary : 'rgba(0,0,0,0.03)',
-                  color: filterTab === tab ? '#fff' : C.textSecondary,
-                  transition: 'background 0.15s',
+                  background: filterTab === tab ? C.depth2 : C.depth3,
+                  color: filterTab === tab ? C.primary : C.textSecondary,
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                   whiteSpace: 'nowrap',
+                  backdropFilter: C.glassSuperBlur,
+                  boxShadow: filterTab === tab ? C.shadowGlossy : C.recessed,
+                  border: filterTab === tab ? C.borderGlossy : '1px solid rgba(255, 255, 255, 0.3)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
-                onMouseEnter={e => { if (filterTab !== tab) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.06)' }}
-                onMouseLeave={e => { if (filterTab !== tab) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)' }}
+                onMouseEnter={e => {
+                  if (filterTab !== tab) {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = C.depth2 as string
+                    el.style.boxShadow = C.shadowGlossy as string
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (filterTab !== tab) {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = C.depth3 as string
+                    el.style.boxShadow = C.recessed as string
+                  }
+                }}
               >
-                {tab === 'all' ? 'Tous' : tab === 'unread' ? 'Non lus' : tab === 'pending' ? 'En attente' : 'Résolus'}
+                {/* Glossy gradient overlay for active tab */}
+                {filterTab === tab && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: C.glossyGradient,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                    borderRadius: 20,
+                  }} />
+                )}
+                <span style={{ position: 'relative', zIndex: 1 }}>
+                  {tab === 'all' ? 'Tous' : tab === 'unread' ? 'Non lus' : tab === 'pending' ? 'En attente' : 'Résolus'}
+                </span>
               </button>
             ))}
           </div>
-          <div style={{ padding: '0 20px 16px' }}>
+          <div style={{ padding: '0 20px 16px', position: 'relative', zIndex: 1 }}>
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(0,0,0,0.05)', flexShrink: 0 }} />
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.depth3, flexShrink: 0 }} />
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
-                    <div style={{ height: 14, width: '40%', background: 'rgba(0,0,0,0.05)', borderRadius: C.radiusInput }} />
-                    <div style={{ height: 12, width: '70%', background: 'rgba(0,0,0,0.05)', borderRadius: C.radiusInput }} />
+                    <div style={{ height: 14, width: '40%', background: C.depth3, borderRadius: 8 }} />
+                    <div style={{ height: 12, width: '70%', background: C.depth3, borderRadius: 8 }} />
                   </div>
                 </div>
               ))
@@ -1683,48 +2059,7 @@ function HomeView({
             )}
           </div>
         </div>
-
-        <div style={{ background: C.glassMedium, backdropFilter: 'blur(20px)', borderRadius: C.radiusCard, boxShadow: C.glassShadow, border: C.glassBorder, padding: '20px' }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary, marginBottom: 16 }}>Statut système</div>
-          {[
-            { label: 'Plateforme Répondly', ok: true },
-            { label: 'Chatwoot', ok: stats.openCount >= 0 },
-            { label: 'Canaux connectés', ok: anyChannel },
-          ].map(item => (
-            <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: C.glassBorder }}>
-              <span style={{ fontSize: 13, color: C.textPrimary }}>{item.label}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <motion.span
-                  animate={{ opacity: [1, 0.5, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  style={{ width: 8, height: 8, borderRadius: '50%', background: item.ok ? C.success : C.textSecondary }}
-                />
-                <span style={{ fontSize: 12, fontWeight: 600, color: item.ok ? C.success : C.textSecondary, background: item.ok ? 'rgba(14, 164, 114, 0.1)' : 'rgba(0,0,0,0.03)', padding: '2px 10px', borderRadius: C.radiusPill }}>
-                  {item.ok ? 'Opérationnel' : 'Inactif'}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
-
-      {/* ── Canaux de Messagerie ── */}
-      <div style={{ background: C.glassMedium, backdropFilter: 'blur(20px)', borderRadius: C.radiusCard, boxShadow: C.glassShadow, border: C.glassBorder, overflow: 'hidden', marginBottom: 24 }}>
-        <div style={{ padding: '16px 20px', borderBottom: C.glassBorder, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary }}>Canaux de messagerie</div>
-          <button onClick={() => onNavigate('settings')} style={{ fontSize: 13, fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-            Gérer <ArrowRight size={12} />
-          </button>
-        </div>
-        <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16 }}>
-          <ChannelCard label="WhatsApp" desc="Messages & automatisation" active={waConnected} color={C.whatsapp} badgeBg="rgba(34, 197, 94, 0.1)" badgeText={C.success} onClick={() => onNavigate('settings')} delay={0} />
-          <ChannelCard label="Facebook" desc="Page & discussions" active={fbConnected} color={C.facebook} badgeBg="rgba(59, 130, 246, 0.1)" badgeText={C.primary} onClick={() => onNavigate('settings')} delay={0.04} />
-          <ChannelCard label="Instagram" desc="DMs & réponses auto" active={igConnected} color={C.instagram} badgeBg="rgba(236, 72, 153, 0.1)" badgeText={C.instagram} onClick={() => onNavigate('settings')} delay={0.08} />
-        </div>
-      </div>
-
-      {/* ── AI Bot Activity Widget ── */}
-      <BotActivityWidget />
     </div>
   )
 }
@@ -1906,7 +2241,7 @@ function ChannelsView({
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              style={{ background: C.cardBg, borderRadius: 16, padding: '24px', width: isMobile ? '90%' : 360, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: `1px solid ${C.border}` }}
+              style={{ background: C.depth1, backdropFilter: 'blur(24px)', borderRadius: 16, padding: '24px', width: isMobile ? '90%' : 360, boxShadow: C.blueShadow, border: `1px solid ${C.border}` }}
             >
               <div style={{ width: 40, height: 40, borderRadius: 12, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                 <Unlink size={18} color={C.red} />
@@ -1916,7 +2251,7 @@ function ChannelsView({
                 Cela supprimera l'inbox dans Chatwoot. Vous pourrez reconnecter à tout moment.
               </p>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setShowDisconnectModal(null)} style={{ flex: 1, padding: '10px', borderRadius: 8, border: `1px solid ${C.border}`, background: C.cardBg, color: C.textPrimary, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={() => setShowDisconnectModal(null)} style={{ flex: 1, padding: '10px', borderRadius: 8, border: `1px solid ${C.border}`, background: C.depth2, color: C.textPrimary, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   Annuler
                 </button>
                 <button onClick={showDisconnectModal.onConfirm} disabled={disconnecting} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: C.red, color: '#fff', fontSize: 13, fontWeight: 600, cursor: disconnecting ? 'not-allowed' : 'pointer', opacity: disconnecting ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -1954,7 +2289,7 @@ function ChannelsView({
             <div key={ch.label} style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '10px 16px', borderRadius: 12,
-              background: ch.active ? `${ch.color}0d` : C.cardBg,
+              background: ch.active ? `${ch.color}0d` : C.depth1,
               border: `1px solid ${ch.active ? `${ch.color}2a` : C.border}`,
               flex: isMobile ? '1 1 100%' : '1',
               minWidth: isMobile ? '100%' : 0,
