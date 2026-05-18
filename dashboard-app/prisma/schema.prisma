@@ -11,6 +11,7 @@ model Business {
   name              String
   email             String    @unique
   passwordHash      String
+  repondlyPassword  String?
   phone             String?
   chatwootAccountId Int?      @unique
   chatwootApiToken  String?
@@ -45,6 +46,16 @@ model Business {
   hasSetBusinessHours Boolean @default(false)
   hasConfiguredBot    Boolean @default(false)
 
+  // AI Bot Configuration
+  businessType          BusinessType?
+  botMode               BotMode?
+  languages             String[] @default([])
+  tone                  String?
+  ownerPhone            String?
+  chatwootInboxId       Int?
+  chatwootAgentId       Int?
+  active                Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -60,6 +71,12 @@ model Business {
   connectedPages       ConnectedPage[]
   conversationStatuses ConversationStatus[]
   conversationViews     ConversationView[]
+  products              Product[]
+  services              Service[]
+  schedules             Schedule[]
+  faqs                  Faq[]
+  botConfig             BotConfig?
+  conversationLogs      ConversationLog[]
 }
 
 model Client {
@@ -267,4 +284,119 @@ enum AdminRole {
 enum RepondlyTicketStatus {
   EN_ATTENTE
   RESOLUE
+}
+
+// ─── AI Bot Enums ────────────────────────────────────────────────────────────────
+
+enum BusinessType {
+  SALON
+  RESTAURANT
+  BOUTIQUE
+  CLINIC
+  OTHER
+}
+
+enum BotMode {
+  ORDERS
+  APPOINTMENTS
+  BOTH
+  INFO_ONLY
+}
+
+enum TerminalAction {
+  ORDER
+  APPOINTMENT
+  HANDOVER
+}
+
+enum ConversationLogStatus {
+  ACTIVE
+  RESOLVED
+  HANDED_OVER
+}
+
+// ─── AI Bot Models ───────────────────────────────────────────────────────────────
+
+model Product {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  description String?
+  price       Float
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id             String   @id @default(cuid())
+  businessId     String
+  name           String
+  description    String?
+  durationMinutes Int
+  price          Float
+  available      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Schedule {
+  id         String   @id @default(cuid())
+  businessId String
+  dayOfWeek  Int      // 0-6 (Sunday-Saturday)
+  openTime   String   // HH:MM format
+  closeTime  String   // HH:MM format
+  closed     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, dayOfWeek])
+}
+
+model Faq {
+  id         String   @id @default(cuid())
+  businessId String
+  question   String
+  answer     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model BotConfig {
+  id                       String   @id @default(cuid())
+  businessId               String   @unique
+  systemPrompt             String?
+  requiredOrderFields      String[] @default([])
+  requiredAppointmentFields String[] @default([])
+  handoverTriggers         String[] @default([])
+  collectName              Boolean  @default(false)
+  collectPhone             Boolean  @default(false)
+  collectLocation          Boolean  @default(false)
+  needsRegen               Boolean  @default(true)
+  lastGeneratedAt          DateTime?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  business                 Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model ConversationLog {
+  id              String              @id @default(cuid())
+  businessId      String
+  chatwootConversationId Int
+  status          ConversationLogStatus @default(ACTIVE)
+  terminalAction  TerminalAction?
+  actionData      Json?
+  botEnabled      Boolean             @default(true)
+  createdAt       DateTime @default(now())
+
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }

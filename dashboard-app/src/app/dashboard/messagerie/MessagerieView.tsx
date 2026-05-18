@@ -7,7 +7,7 @@ import { useSession, signOut } from 'next-auth/react'
 import {
   Search, CheckCheck, RotateCcw, Send, Loader2,
   MessageSquare, WifiOff, X, FileText, ChevronRight,
-  AlertCircle, Check, CheckCircle2, Clock, Smartphone, Menu, LayoutDashboard, Radio, Calendar, Bot, Settings, LogOut, User, ArrowRight, TrendingUp,
+  AlertCircle, Check, CheckCircle2, Clock, Smartphone, Menu, LayoutDashboard, Radio, Calendar, Bot, Settings, LogOut, User, ArrowRight, TrendingUp, Trash2, Pause, Play,
 } from 'lucide-react'
 
 // ─── Design tokens from dashboard-design-patterns.md ───────────────────────
@@ -100,6 +100,7 @@ interface Conversation {
     created_at: number
     message_type: number
   }
+  botEnabled?: boolean
 }
 
 interface Message {
@@ -285,13 +286,32 @@ function EmptyState({ text, icon }: { text: string; icon?: React.ReactNode }) {
 
 // ─── Conversation List Item ─────────────────────────────────────────────────────
 function ConvItem({
-  conv, active, onClick, repondlyStatus, onResolve,
-}: { conv: Conversation; active: boolean; onClick: () => void; repondlyStatus?: RepondlyStatus; onResolve?: (convId: number) => void }) {
+  conv, active, onClick, repondlyStatus, onResolve, onToggleBot,
+}: { 
+  conv: Conversation; 
+  active: boolean; 
+  onClick: () => void; 
+  repondlyStatus?: RepondlyStatus; 
+  onResolve?: (convId: number) => void;
+  onToggleBot?: (convId: number, botEnabled: boolean) => void;
+}) {
   const contact = conv.meta.sender
   const preview = conv.last_non_activity_message?.content || ''
   const ts      = conv.last_non_activity_message?.created_at || conv.last_activity_at
   const isOut   = conv.last_non_activity_message?.message_type === 1
   const color   = channelColor(conv.inbox?.channel_type)
+  const [toggling, setToggling] = useState(false)
+
+  const handleToggleBot = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (toggling || !onToggleBot) return
+    setToggling(true)
+    try {
+      await onToggleBot(conv.id, !conv.botEnabled)
+    } finally {
+      setToggling(false)
+    }
+  }
 
   return (
     <motion.div
@@ -385,32 +405,99 @@ function ConvItem({
               {repondlyStatus === 'RESOLUE' ? 'Résolue' : 'En attente'}
             </span>
           )}
-          {onResolve && repondlyStatus === 'EN_ATTENTE' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onResolve(conv.id) }}
-              style={{
-                fontSize: 11, fontWeight: 600, color: C.success,
-                background: C.depth3,
-                backdropFilter: C.glassSuperBlur,
-                border: '1px solid rgba(14, 164, 114, 0.3)',
-                padding: '3px 8px', borderRadius: C.radiusInput,
-                cursor: 'pointer', transition: 'all 0.2s ease',
-                boxShadow: C.shadowGlossy,
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLElement
-                el.style.background = C.depth2 as string
-                el.style.boxShadow = C.shadowLayered as string
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLElement
-                el.style.background = C.depth3 as string
-                el.style.boxShadow = C.shadowGlossy as string
-              }}
-            >
-              Résoudre
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {onToggleBot && (
+              <button
+                onClick={handleToggleBot}
+                disabled={toggling}
+                style={{
+                  fontSize: 10, fontWeight: 600,
+                  color: conv.botEnabled ? C.success : C.textSecondary,
+                  background: conv.botEnabled 
+                    ? 'rgba(14, 164, 114, 0.1)' 
+                    : C.depth3,
+                  backdropFilter: C.glassSuperBlur,
+                  border: conv.botEnabled
+                    ? '1px solid rgba(14, 164, 114, 0.3)'
+                    : '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '3px 8px', borderRadius: C.radiusPill,
+                  cursor: toggling ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: conv.botEnabled ? C.glowSuccess : C.shadowGlossy,
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}
+                onMouseEnter={e => {
+                  if (!toggling) {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = conv.botEnabled ? 'rgba(14, 164, 114, 0.2)' : C.depth2 as string
+                    el.style.boxShadow = C.shadowLayered as string
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!toggling) {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = conv.botEnabled ? 'rgba(14, 164, 114, 0.1)' : C.depth3 as string
+                    el.style.boxShadow = conv.botEnabled ? C.glowSuccess : C.shadowGlossy as string
+                  }
+                }}
+              >
+                {conv.botEnabled ? (
+                  <>
+                    <motion.div
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                      style={{
+                        width: 14, height: 14, borderRadius: '50%',
+                        background: C.success,
+                        boxShadow: '0 0 8px rgba(14, 164, 114, 0.6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <Bot size={10} color="#fff" strokeWidth={3} />
+                    </motion.div>
+                    Actif
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      width: 14, height: 14, borderRadius: '50%',
+                      background: C.textSecondary,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Bot size={10} color="#fff" strokeWidth={3} />
+                    </div>
+                    Pause
+                  </>
+                )}
+              </button>
+            )}
+            {onResolve && repondlyStatus === 'EN_ATTENTE' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onResolve(conv.id) }}
+                style={{
+                  fontSize: 11, fontWeight: 600, color: C.success,
+                  background: C.depth3,
+                  backdropFilter: C.glassSuperBlur,
+                  border: '1px solid rgba(14, 164, 114, 0.3)',
+                  padding: '3px 8px', borderRadius: C.radiusInput,
+                  cursor: 'pointer', transition: 'all 0.2s ease',
+                  boxShadow: C.shadowGlossy,
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget as HTMLElement
+                  el.style.background = C.depth2 as string
+                  el.style.boxShadow = C.shadowLayered as string
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget as HTMLElement
+                  el.style.background = C.depth3 as string
+                  el.style.boxShadow = C.shadowGlossy as string
+                }}
+              >
+                Résoudre
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
@@ -843,6 +930,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
   const textareaRef     = useRef<HTMLTextAreaElement>(null)
   const convPollRef     = useRef<ReturnType<typeof setInterval> | null>(null)
   const msgPollRef      = useRef<ReturnType<typeof setInterval> | null>(null)
+  const eventSourceRef  = useRef<EventSource | null>(null)
 
   const activeConv = conversations.find(c => c.id === activeConvId) || null
 
@@ -904,21 +992,31 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
             // Only check last 20 messages for efficiency
             const recentMessages = messages.slice(-20)
             
-            // Count incoming messages (message_type = 0) created after last viewed timestamp
-            const unreadCount = recentMessages.filter(
-              (msg: Message) => msg.message_type === 0 && msg.created_at > Math.floor(lastViewedAt.getTime() / 1000)
+            const unreadCount = recentMessages.filter(m => 
+              m.message_type === 0 && new Date(m.created_at * 1000) > lastViewedAt
             ).length
-
+            
             return { ...conv, unread_count: unreadCount }
           } catch {
-            // On error, use Chatwoot's unread_count
             return conv
           }
         })
       )
-      
-      console.log('[Messagerie] Conversations fetched:', conversationsWithUnread.map(c => ({ id: c.id, channelType: c.inbox?.channel_type, sender: c.meta.sender.name, unread: c.unread_count })))
-      setConversations(conversationsWithUnread)
+      // Fetch bot enabled status for all conversations
+      const conversationsWithBotStatus = await Promise.all(
+        conversationsWithUnread.map(async (conv) => {
+          try {
+            const res = await fetch(`/api/conversation-bot?conversationId=${conv.id}`)
+            const data = await res.json()
+            return { ...conv, botEnabled: data.success ? data.data.botEnabled : true }
+          } catch {
+            return { ...conv, botEnabled: true }
+          }
+        })
+      )
+
+      console.log('[Messagerie] Conversations fetched:', conversationsWithBotStatus.map((c: Conversation) => ({ id: c.id, channelType: c.inbox?.channel_type, sender: c.meta.sender.name, unread: c.unread_count, botEnabled: c.botEnabled })))
+      setConversations(conversationsWithBotStatus)
       setConvError(null)
 
       // Fetch Repondly statuses for all conversations
@@ -932,16 +1030,18 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
       let enAttente = 0
       let resolue = 0
 
-      statuses.forEach((status, idx) => {
-        if (status) {
-          statusMap.set(list[idx].id, status.status)
-          if (status.status === 'EN_ATTENTE') enAttente++
-          if (status.status === 'RESOLUE') resolue++
-        } else {
-          statusMap.set(list[idx].id, 'EN_ATTENTE')
-          enAttente++
-        }
-      })
+      if (Array.isArray(statuses)) {
+        statuses.forEach((status, idx) => {
+          if (status) {
+            statusMap.set(list[idx].id, status.status)
+            if (status.status === 'EN_ATTENTE') enAttente++
+            if (status.status === 'RESOLUE') resolue++
+          } else {
+            statusMap.set(list[idx].id, 'EN_ATTENTE')
+            enAttente++
+          }
+        })
+      }
 
       setRepondlyStatuses(statusMap)
       
@@ -1008,28 +1108,106 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
     return () => window.removeEventListener('resize', check)
   }, [])
 
+  // ── SSE subscription for real-time updates ───────────────────────────────────────
+  useEffect(() => {
+    const eventSource = new EventSource('/api/sse')
+    eventSourceRef.current = eventSource
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        
+        if (data.type === 'message_created' && data.data?.conversationId) {
+          const msgConvId = data.data.conversationId
+          
+          // If it's the active conversation, append the message
+          if (msgConvId === activeConvId) {
+            const newMessage: Message = {
+              id: data.data.messageId,
+              content: data.data.content,
+              content_type: 'text',
+              created_at: data.data.timestamp || Math.floor(Date.now() / 1000),
+              message_type: data.data.messageType === 0 ? 0 : data.data.messageType === 1 ? 1 : 2,
+              sender: data.data.sender,
+            }
+            setMessages(prev => [...prev, newMessage])
+            
+            // Mark as read if it's the active conversation
+            if (newMessage.message_type === 0) {
+              fetch('/api/chatwoot/conversation-view', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ conversationId: msgConvId }),
+              }).catch(() => {})
+            }
+          } else {
+            // Not active conversation, refresh list to update unread counts
+            fetchConversations()
+          }
+        }
+        
+        if (data.type === 'conversation_created' || data.type === 'conversation_status_changed') {
+          // Refresh conversations list
+          fetchConversations()
+        }
+      } catch (err) {
+        console.error('[SSE] Failed to parse event:', err)
+      }
+    }
+
+    eventSource.onerror = (err) => {
+      console.error('[SSE] Connection error:', err)
+      eventSource.close()
+    }
+
+    return () => {
+      eventSource.close()
+      eventSourceRef.current = null
+    }
+  }, [activeConvId, fetchConversations])
+
   // ── Pause polling when tab is not visible ───────────────────────────────────────
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // Pause polling when tab is hidden
         if (convPollRef.current) clearInterval(convPollRef.current)
-        if (msgPollRef.current) clearInterval(msgPollRef.current)
+        if (eventSourceRef.current) eventSourceRef.current.close()
       } else {
         // Resume polling when tab is visible
         fetchConversations()
         if (convPollRef.current) clearInterval(convPollRef.current)
         convPollRef.current = setInterval(fetchConversations, 30_000)
-        if (activeConvId) {
-          fetchMessages(activeConvId)
-          if (msgPollRef.current) clearInterval(msgPollRef.current)
-          msgPollRef.current = setInterval(() => fetchMessages(activeConvId), 10_000)
+        // Reconnect SSE
+        if (!eventSourceRef.current || eventSourceRef.current.readyState === EventSource.CLOSED) {
+          const eventSource = new EventSource('/api/sse')
+          eventSourceRef.current = eventSource
+          eventSource.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data)
+              if (data.type === 'message_created' && data.data?.conversationId === activeConvId) {
+                const newMessage: Message = {
+                  id: data.data.messageId,
+                  content: data.data.content,
+                  content_type: 'text',
+                  created_at: data.data.timestamp || Math.floor(Date.now() / 1000),
+                  message_type: data.data.messageType === 0 ? 0 : data.data.messageType === 1 ? 1 : 2,
+                  sender: data.data.sender,
+                }
+                setMessages(prev => [...prev, newMessage])
+              } else if (data.type === 'conversation_created' || data.type === 'conversation_status_changed') {
+                fetchConversations()
+              }
+            } catch (err) {
+              console.error('[SSE] Failed to parse event:', err)
+            }
+          }
         }
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [fetchConversations, fetchMessages, activeConvId])
+  }, [fetchConversations, activeConvId])
 
   // ── Initial load ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1038,9 +1216,9 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
     setActiveConvId(null)
     fetchConversations()
 
-    // Poll conversation list every 10s
+    // Poll conversation list every 30s as fallback (SSE handles real-time updates)
     if (convPollRef.current) clearInterval(convPollRef.current)
-    convPollRef.current = setInterval(fetchConversations, 10_000)
+    convPollRef.current = setInterval(fetchConversations, 30_000)
     return () => { if (convPollRef.current) clearInterval(convPollRef.current) }
   }, [fetchConversations])
 
@@ -1049,11 +1227,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
     if (!activeConvId) { setMessages([]); return }
     setMsgLoading(true)
     fetchMessages(activeConvId).finally(() => setMsgLoading(false))
-
-    // Poll messages every 10s (reduced from 3s for better performance)
-    if (msgPollRef.current) clearInterval(msgPollRef.current)
-    msgPollRef.current = setInterval(() => fetchMessages(activeConvId), 10_000)
-    return () => { if (msgPollRef.current) clearInterval(msgPollRef.current) }
+    // No polling - SSE handles real-time message updates
   }, [activeConvId, fetchMessages])
 
   // ── Scroll to bottom ──────────────────────────────────────────────────────────
@@ -1113,17 +1287,51 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
         body: JSON.stringify({ conversationId: targetConv.id, status: newStatus }),
       })
       setRepondlyStatuses(prev => new Map(prev).set(targetConv.id, newStatus))
-      // Notify parent of status change
-      if (onConversationChange) {
-        onConversationChange(targetConv.id, newStatus)
+      if (newStatus === 'RESOLUE') setResolueCount(prev => prev + 1)
+      else setEnAttenteCount(prev => prev + 1)
+    } catch (err) {
+      console.error('[Messagerie] Failed to toggle status:', err)
+    } finally {
+      setStatusLoading(false)
+    }
+  }
+
+  const handleToggleBot = async (convId: number, botEnabled: boolean) => {
+    try {
+      const res = await fetch('/api/conversation-bot', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: convId, botEnabled }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setConversations(prev => prev.map(c => 
+          c.id === convId ? { ...c, botEnabled } : c
+        ))
       }
-      if (newStatus === 'RESOLUE') {
-        setResolueCount(prev => prev + 1)
-        setEnAttenteCount(prev => Math.max(0, prev - 1))
+    } catch (err) {
+      console.error('[Messagerie] Failed to toggle bot:', err)
+    }
+  }
+
+  const handleDeleteConversation = async (convId: number) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette conversation ? Cela la supprimera également de Chatwoot.')) return
+    setStatusLoading(true)
+    try {
+      const res = await fetch('/api/chatwoot/conversations', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: convId }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setActiveConvId(null)
+        fetchConversations()
       } else {
-        setEnAttenteCount(prev => prev + 1)
-        setResolueCount(prev => Math.max(0, prev - 1))
+        console.error('[Messagerie] Failed to delete conversation:', data.error)
       }
+    } catch (err) {
+      console.error('[Messagerie] Failed to delete conversation:', err)
     } finally {
       setStatusLoading(false)
     }
@@ -1202,7 +1410,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
 
       {/* ══ LEFT: Conversation List ══════════════════════════════════════════════ */}
       <div style={{
-        width: isMobile ? '100%' : 320,
+        width: isMobile ? '100%' : 380,
         flexShrink: 0,
         background: 'transparent',
         borderRight: isMobile ? 'none' : `1px solid rgba(255, 255, 255, 0.2)`,
@@ -1307,6 +1515,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
                     onClick={() => setActiveConvId(conv.id)}
                     repondlyStatus={repondlyStatuses.get(conv.id)}
                     onResolve={toggleStatus}
+                    onToggleBot={handleToggleBot}
                   />
                 </motion.div>
               ))}
@@ -1418,6 +1627,58 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
                 {statusLoading ? <Loader2 size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCheck size={isMobile ? 18 : 20} />}
               </button>
             )}
+            {/* Bot Toggle Button */}
+            <button
+              onClick={() => handleToggleBot(activeConv.id, !activeConv.botEnabled)}
+              disabled={statusLoading}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: isMobile ? 40 : 44, height: isMobile ? 40 : 44,
+                borderRadius: 12,
+                background: activeConv.botEnabled ? 'rgba(14, 164, 114, 0.1)' : C.depth2,
+                border: activeConv.botEnabled ? '1px solid rgba(14, 164, 114, 0.3)' : `1px solid rgba(26, 86, 219, 0.12)`,
+                cursor: statusLoading ? 'default' : 'pointer',
+                color: activeConv.botEnabled ? C.success : C.primary,
+                flexShrink: 0,
+                transition: 'all 0.2s ease',
+                opacity: statusLoading ? 0.5 : 1,
+                boxShadow: C.innerGlow + ', ' + C.blueShadow,
+              }}
+              onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth3 }}
+              onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = activeConv.botEnabled ? 'rgba(14, 164, 114, 0.1)' : C.depth2 }}
+            >
+              {activeConv.botEnabled ? (
+                <motion.div
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <Bot size={isMobile ? 18 : 20} />
+                </motion.div>
+              ) : (
+                <Bot size={isMobile ? 18 : 20} />
+              )}
+            </button>
+            {/* Delete Conversation Button */}
+            <button
+              onClick={() => handleDeleteConversation(activeConv.id)}
+              disabled={statusLoading}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: isMobile ? 40 : 44, height: isMobile ? 40 : 44,
+                borderRadius: 12,
+                background: C.depth2,
+                border: `1px solid rgba(239, 68, 68, 0.12)`,
+                cursor: statusLoading ? 'default' : 'pointer', color: C.error,
+                flexShrink: 0,
+                transition: 'all 0.2s ease',
+                opacity: statusLoading ? 0.5 : 1,
+                boxShadow: C.innerGlow + ', ' + C.blueShadow,
+              }}
+              onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth3 }}
+              onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth2 }}
+            >
+              <Trash2 size={isMobile ? 18 : 20} />
+            </button>
             {/* Notes Button */}
             <button
               onClick={() => {

@@ -11,9 +11,16 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "axios": "^1.15.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "groq-sdk": "^1.1.2"
+    "groq-sdk": "^1.1.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0"
   }
 }

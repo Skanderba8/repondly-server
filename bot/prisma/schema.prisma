@@ -12,11 +12,9 @@ model Business {
   name                  String
   email                 String    @unique
   passwordHash          String
-  repondlyPassword     String?
   phone                 String?
   chatwootAccountId     Int?      @unique
   chatwootApiToken      String?
-  chatwootUserPassword  String?
   plan                  Plan      @default(FREE)
   status                String    @default("TRIAL")
   trialEndsAt           DateTime?
@@ -57,6 +55,7 @@ model Business {
   chatwootInboxId       Int?
   chatwootAgentId       Int?
   active                Boolean   @default(true)
+  repondlyPassword      String?
 
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt

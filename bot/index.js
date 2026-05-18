@@ -4,14 +4,24 @@ import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import cron from 'node-cron';
+import { generatePrompt } from './generatePrompt.js';
 
 dotenv.config();
+
+// Debug: Check if environment variables are available
+console.log('DATABASE_URL available:', !!process.env.DATABASE_URL);
+console.log('GROQ_API_KEY available:', !!process.env.GROQ_API_KEY);
 
 const app = express();
 // Use limit to prevent memory issues with large webhooks
 app.use(express.json({ limit: '10mb' }));
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
 // ─── CONFIGURATION ───────────────────────────────────────────────────────────
 const MAX_HISTORY      = 8;
@@ -125,10 +135,51 @@ async function replyViaChatwoot(accountId, conversationId, message) {
   }
 }
 
-async function assignToHuman(conversationId) {
-  const agentId = parseInt(process.env.HANDOFF_AGENT_ID);
+async function addNoteToChatwoot(accountId, conversationId, note) {
+  const url = `${process.env.CHATWOOT_BASE_URL}/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`;
+  const token = process.env.CHATWOOT_API_TOKEN.trim();
+
+  try {
+    await axios.post(url, 
+      { content: note, message_type: 'outgoing', private: true },
+      { 
+        headers: { 
+          'api_access_token': token,
+          'api-access-token': token,
+          'Authorization': `Bearer ${token}`
+        } 
+      }
+    );
+  } catch (err) {
+    console.error(`[Chatwoot Note Error] Status: ${err.response?.status} | URL: ${url}`);
+    throw err;
+  }
+}
+
+async function updateConversationStatus(accountId, conversationId, status) {
+  const url = `${process.env.CHATWOOT_BASE_URL}/api/v1/accounts/${accountId}/conversations/${conversationId}`;
+  const token = process.env.CHATWOOT_API_TOKEN.trim();
+
+  try {
+    await axios.patch(url, 
+      { status },
+      { 
+        headers: { 
+          'api_access_token': token,
+          'api-access-token': token,
+          'Authorization': `Bearer ${token}`
+        } 
+      }
+    );
+  } catch (err) {
+    console.error(`[Chatwoot Status Error] Status: ${err.response?.status} | URL: ${url}`);
+    throw err;
+  }
+}
+
+async function assignToHuman(accountId, conversationId, agentId) {
   if (!agentId) return;
-  const baseUrl = `${process.env.CHATWOOT_BASE_URL}/api/v1/accounts/${process.env.CHATWOOT_ACCOUNT_ID}/conversations/${conversationId}`;
+  const baseUrl = `${process.env.CHATWOOT_BASE_URL}/api/v1/accounts/${accountId}/conversations/${conversationId}`;
   const headers = { 'api_access_token': process.env.CHATWOOT_API_TOKEN };
   try {
     await axios.post(`${baseUrl}/assignments`, { assignee_id: agentId }, { headers });
@@ -138,20 +189,215 @@ async function assignToHuman(conversationId) {
   }
 }
 
+// ─── BUSINESS RESOLUTION ───────────────────────────────────────────────────────
+async function resolveBusinessByInboxId(inboxId) {
+  const business = await prisma.business.findFirst({
+    where: { 
+      chatwootInboxId: inboxId,
+      active: true 
+    },
+    include: {
+      botConfig: true,
+    },
+  });
+  return business;
+}
+
 // ─── AI ENGINE ───────────────────────────────────────────────────────────────
-async function getAIReply(conversationId, message, lang) {
+async function getAIReply(conversationId, message, systemPrompt) {
   const conv    = getConversation(conversationId);
   const trimmed = trimInput(message);
   const completion = await groq.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     max_tokens: MAX_REPLY_TOKENS,
     temperature: TEMPERATURE,
-    messages: [{ role: 'system', content: PROMPTS[lang] }, ...conv.history, { role: 'user', content: trimmed }],
+    messages: [{ role: 'system', content: systemPrompt }, ...conv.history, { role: 'user', content: trimmed }],
   });
-  const reply = completion.choices.message.content.trim();
+  const reply = completion.choices[0].message.content.trim();
   addToHistory(conversationId, 'user', trimmed);
   addToHistory(conversationId, 'assistant', reply);
   return reply;
+}
+
+function parseJSONEnvelope(response) {
+  try {
+    const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const jsonString = jsonMatch[1] || jsonMatch[0];
+      return JSON.parse(jsonString);
+    }
+    return { reply: response, action: null };
+  } catch (e) {
+    console.error('[JSON Parse Error]', e.message);
+    return { reply: response, action: null };
+  }
+}
+
+// ─── ACTION HANDLERS ──────────────────────────────────────────────────────────
+async function handleOrderComplete(business, conversationId, data) {
+  const { accountId, chatwootAgentId, ownerPhone } = business;
+  
+  // Validate required fields
+  const botConfig = business.botConfig;
+  const requiredFields = botConfig?.requiredOrderFields || ['customer_name', 'phone', 'location', 'items'];
+  const missingFields = requiredFields.filter(field => !data[field]);
+  
+  if (missingFields.length > 0) {
+    console.error(`[Order Complete] Missing required fields: ${missingFields.join(', ')}`);
+    return false;
+  }
+
+  // Format order summary
+  const itemsList = data.items.map(item => `- ${item.name} x${item.qty}: ${item.price} DT`).join('\n');
+  const summary = `🛍️ Nouvelle commande - ${business.name}\n\n` +
+    `Client: ${data.customer_name}\n` +
+    `📞 ${data.phone}\n` +
+    `📍 ${data.location}\n\n` +
+    `Commande:\n${itemsList}\n` +
+    `Total: ${data.total} DT\n` +
+    (data.notes ? `\nNotes: ${data.notes}` : '');
+
+  // Add note to conversation
+  await addNoteToChatwoot(accountId, conversationId, summary);
+  
+  // Update conversation status to resolved
+  await updateConversationStatus(accountId, conversationId, 'resolved');
+  
+  // Notify owner
+  await notifyOwner(ownerPhone, 'order', { businessName: business.name, ...data });
+  
+  // Log to conversations_log
+  await prisma.conversationLog.create({
+    data: {
+      businessId: business.id,
+      chatwootConversationId: conversationId,
+      status: 'RESOLVED',
+      terminalAction: 'ORDER',
+      actionData: data,
+    },
+  });
+
+  return true;
+}
+
+async function handleAppointmentComplete(business, conversationId, data) {
+  const { accountId, chatwootAgentId, ownerPhone } = business;
+  
+  // Validate required fields
+  const botConfig = business.botConfig;
+  const requiredFields = botConfig?.requiredAppointmentFields || ['customer_name', 'phone', 'service', 'date', 'time'];
+  const missingFields = requiredFields.filter(field => !data[field]);
+  
+  if (missingFields.length > 0) {
+    console.error(`[Appointment Complete] Missing required fields: ${missingFields.join(', ')}`);
+    return false;
+  }
+
+  // Format appointment summary
+  const summary = `📅 Nouveau rendez-vous - ${business.name}\n\n` +
+    `Client: ${data.customer_name}\n` +
+    `📞 ${data.phone}\n` +
+    `Service: ${data.service}\n` +
+    `Date: ${data.date} à ${data.time}`;
+
+  // Add note to conversation
+  await addNoteToChatwoot(accountId, conversationId, summary);
+  
+  // Update conversation status to resolved
+  await updateConversationStatus(accountId, conversationId, 'resolved');
+  
+  // Notify owner
+  await notifyOwner(ownerPhone, 'appointment', { businessName: business.name, ...data });
+  
+  // Log to conversations_log
+  await prisma.conversationLog.create({
+    data: {
+      businessId: business.id,
+      chatwootConversationId: conversationId,
+      status: 'RESOLVED',
+      terminalAction: 'APPOINTMENT',
+      actionData: data,
+    },
+  });
+
+  return true;
+}
+
+async function handleHumanHandover(business, conversationId, reason) {
+  const { accountId, chatwootAgentId } = business;
+  
+  // Assign conversation to business owner's agent
+  await assignToHuman(accountId, conversationId, chatwootAgentId);
+  
+  // Set status to open
+  await updateConversationStatus(accountId, conversationId, 'open');
+  
+  // Notify owner
+  await notifyOwner(business.ownerPhone, 'handover', { 
+    businessName: business.name, 
+    reason 
+  });
+  
+  // Log to conversations_log
+  await prisma.conversationLog.create({
+    data: {
+      businessId: business.id,
+      chatwootConversationId: conversationId,
+      status: 'HANDED_OVER',
+      terminalAction: 'HANDOVER',
+      actionData: { reason },
+    },
+  });
+
+  return true;
+}
+
+async function notifyOwner(phoneNumber, type, data) {
+  // This function sends a WhatsApp message to the business owner
+  // Uses WhatsApp Business API if configured, otherwise logs the message
+  
+  const messages = {
+    order: `🛍️ Nouvelle commande - ${data.businessName}\n\nClient: ${data.customer_name}\n📞 ${data.phone}\n📍 ${data.location}\n\nCommande:\n${data.items.map(i => `- ${i.name} x${i.qty}: ${i.price} DT`).join('\n')}\nTotal: ${data.total} DT${data.notes ? `\n\nNotes: ${data.notes}` : ''}`,
+    appointment: `📅 Nouveau rendez-vous - ${data.businessName}\n\nClient: ${data.customer_name}\n📞 ${data.phone}\nService: ${data.service}\nDate: ${data.date} à ${data.time}`,
+    handover: `⚠️ Intervention requise - ${data.businessName}\n\n${data.customer_name || 'Un client'} a besoin d'aide.\nSujet: ${data.reason}`,
+  };
+
+  const message = messages[type] || `Notification: ${JSON.stringify(data)}`;
+  
+  // Log the message
+  console.log(`[Notify Owner ${type}] To: ${phoneNumber} | Message: ${message}`);
+  
+  // Try to send via WhatsApp Business API if configured
+  const whatsappApiUrl = process.env.WHATSAPP_API_URL;
+  const whatsappApiToken = process.env.WHATSAPP_API_TOKEN;
+  
+  if (whatsappApiUrl && whatsappApiToken && phoneNumber) {
+    try {
+      // Format phone number (remove +, spaces, dashes)
+      const formattedPhone = phoneNumber.replace(/[\s\-\+]/g, '');
+      
+      await axios.post(`${whatsappApiUrl}/messages`, {
+        to: formattedPhone,
+        type: 'text',
+        text: { body: message }
+      }, {
+        headers: {
+          'Authorization': `Bearer ${whatsappApiToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log(`[Notify Owner ${type}] WhatsApp message sent successfully to ${phoneNumber}`);
+    } catch (error) {
+      console.error(`[Notify Owner ${type}] Failed to send WhatsApp message:`, error.response?.data || error.message);
+      // Fallback: log the message for manual follow-up
+      console.log(`[Notify Owner ${type}] MANUAL ACTION REQUIRED: Send to ${phoneNumber}: ${message}`);
+    }
+  } else {
+    // No WhatsApp API configured, log for manual action
+    console.log(`[Notify Owner ${type}] MANUAL ACTION REQUIRED: Send to ${phoneNumber}: ${message}`);
+    console.log(`[Notify Owner ${type}] Configure WHATSAPP_API_URL and WHATSAPP_API_TOKEN to enable automatic sending`);
+  }
 }
 
 // ─── WEBHOOK HANDLER ─────────────────────────────────────────────────────────
@@ -169,32 +415,123 @@ app.post('/chatwoot-webhook', async (req, res) => {
   const event = req.body;
   const content = event.content;
   const conversationId = event.conversation?.id;
-  const accountId = event.account?.id; // GET THE REAL ACCOUNT ID FROM DATA
+  const inboxId = event.conversation?.inbox_id;
+  const accountId = event.account?.id;
   
   const senderType = event.sender ? event.sender.type : event.conversation?.meta?.sender?.type;
 
   if (event.message_type !== 'incoming' || senderType === 'agent' || !content) return;
 
-  console.log(`[Acc: ${accountId} | Conv: ${conversationId}] Incoming: ${content}`);
+  console.log(`[Acc: ${accountId} | Conv: ${conversationId} | Inbox: ${inboxId}] Incoming: ${content}`);
 
   try {
-    const lang = detectLanguage(content);
+    // Resolve business by inbox ID
+    const business = await resolveBusinessByInboxId(inboxId);
+    
+    if (!business) {
+      console.log(`[Bot] No active business found for inbox ${inboxId}`);
+      return;
+    }
+
     const conv = getConversation(conversationId);
 
     if (conv.humanTookOver) return;
 
-    if (!conv.greeted) {
-      conv.greeted = true;
-      saveState();
-      await replyViaChatwoot(accountId, conversationId, WELCOME[lang]);
-      return;
+    // Check if bot is enabled via ConversationLog
+    const log = await prisma.conversationLog.findFirst({
+      where: { businessId: business.id, chatwootConversationId: conversationId }
+    });
+    if (log && !log.botEnabled) return; // bot paused by user
+
+    // Get or generate system prompt
+    let systemPrompt = business.botConfig?.systemPrompt;
+    if (!systemPrompt || business.botConfig?.needsRegen) {
+      console.log(`[Bot] Generating prompt for business ${business.id}`);
+      systemPrompt = await generatePrompt(business.id);
     }
 
-    const reply = await getAIReply(conversationId, content, lang);
-    await replyViaChatwoot(accountId, conversationId, reply);
+    // Get AI reply with business-specific prompt
+    const aiResponse = await getAIReply(conversationId, content, systemPrompt);
+    
+    // Parse JSON envelope
+    const parsed = parseJSONEnvelope(aiResponse);
+    
+    // Send the reply to customer
+    await replyViaChatwoot(accountId, conversationId, parsed.reply);
+    
+    // Handle action if present
+    if (parsed.action) {
+      console.log(`[Bot] Action detected: ${parsed.action.type}`);
+      
+      switch (parsed.action.type) {
+        case 'order_complete':
+          await handleOrderComplete(business, conversationId, parsed.action.data);
+          break;
+        case 'appointment_complete':
+          await handleAppointmentComplete(business, conversationId, parsed.action.data);
+          break;
+        case 'human_handover':
+          await handleHumanHandover(business, conversationId, parsed.action.data.reason);
+          conv.humanTookOver = true;
+          saveState();
+          break;
+        default:
+          console.log(`[Bot] Unknown action type: ${parsed.action.type}`);
+      }
+    }
 
   } catch (err) {
     console.error(`[Critical Error] Status: ${err.response?.status} | Msg: ${err.message}`);
+  }
+});
+
+// ─── API ENDPOINTS ────────────────────────────────────────────────────────────
+app.post('/api/regenerate-prompt/:businessId', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    console.log(`[API] Regenerating prompt for business ${businessId}`);
+    const prompt = await generatePrompt(businessId);
+    res.json({ success: true, prompt });
+  } catch (err) {
+    console.error('[API] Prompt regeneration error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', activeConversations: conversations.size });
+});
+
+// ─── PROMPT REGENERATION CRON JOB ─────────────────────────────────────────────
+// Run every 30 seconds to check for businesses that need prompt regeneration
+cron.schedule('*/30 * * * * *', async () => {
+  try {
+    console.log('[Cron] Checking for businesses needing prompt regeneration');
+    
+    const businessesNeedingRegen = await prisma.business.findMany({
+      where: {
+        active: true,
+        botConfig: {
+          needsRegen: true,
+        },
+      },
+      include: {
+        botConfig: true,
+      },
+    });
+
+    console.log(`[Cron] Found ${businessesNeedingRegen.length} businesses needing regeneration`);
+
+    for (const business of businessesNeedingRegen) {
+      try {
+        console.log(`[Cron] Regenerating prompt for business ${business.id}`);
+        await generatePrompt(business.id, prisma);
+      } catch (err) {
+        console.error(`[Cron] Error regenerating prompt for business ${business.id}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error('[Cron] Error checking for prompt regeneration:', err);
   }
 });
 
@@ -203,10 +540,6 @@ app.get('/webhook', (req, res) => {
   if (req.query['hub.verify_token'] === process.env.VERIFY_TOKEN) {
     res.send(req.query['hub.challenge']);
   } else res.sendStatus(403);
-});
-
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', activeConversations: conversations.size });
 });
 
 const PORT = process.env.PORT || 3001;

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
@@ -11,7 +11,10 @@ import {
   ArrowRight, Wifi, WifiOff, Zap, RefreshCw, Menu,
 } from 'lucide-react'
 import MessagerieView from './messagerie/MessagerieView'
+import dynamic from 'next/dynamic'
 import { FileText, CheckCheck, RotateCcw, Loader2, Link2, Unlink, ExternalLink, Smartphone } from 'lucide-react'
+
+const BotConfigView = dynamic(() => import('./bot-config/page'), { ssr: false })
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -85,7 +88,7 @@ const C = {
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type PageId = 'home' | 'inbox' | 'channels' | 'calendrier' | 'bot' | 'settings'
+type PageId = 'home' | 'inbox' | 'channels' | 'calendrier' | 'bot' | 'bot-config' | 'settings'
 
 interface RecentConv {
   id: number
@@ -100,6 +103,7 @@ const NAV: { id: PageId; label: string; icon: React.ReactNode }[] = [
   { id: 'home',       label: 'Accueil',    icon: <LayoutDashboard size={16} /> },
   { id: 'inbox',      label: 'Messagerie', icon: <Inbox size={16} /> },
   { id: 'calendrier', label: 'Calendrier', icon: <Calendar size={16} /> },
+  { id: 'bot-config', label: 'Bot IA',    icon: <Bot size={16} /> },
   { id: 'settings',   label: 'Paramètres', icon: <Settings size={16} /> },
 ]
 
@@ -687,6 +691,7 @@ export default function DashboardShell() {
   const [recentConvs, setRecentConvs] = useState<RecentConv[]>([])
   const [activeConversation, setActiveConversation] = useState<{ id: number | null; status: 'EN_ATTENTE' | 'RESOLUE' | null }>({ id: null, status: null })
   const [messagerieNotesOpen, setMessagerieNotesOpen] = useState(false)
+  const eventSourceRef = useRef<EventSource | null>(null)
 
   const showToast = useCallback((type: 'error' | 'success', msg: string) => {
     setToast({ type, msg })
@@ -779,6 +784,90 @@ export default function DashboardShell() {
   }, [showToast])
 
   useEffect(() => { fetchStatus() }, [fetchStatus])
+
+  // ── SSE subscription for real-time notifications ─────────────────────────────────
+  useEffect(() => {
+    const eventSource = new EventSource('/api/sse')
+    eventSourceRef.current = eventSource
+
+    // Play notification sound using Web Audio API
+    const playNotificationSound = () => {
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        oscillator.frequency.value = 440 // A4 note
+        oscillator.type = 'sine'
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+        
+        oscillator.start(audioContext.currentTime)
+        oscillator.stop(audioContext.currentTime + 0.2)
+      } catch (err) {
+        console.error('[Notification] Failed to play sound:', err)
+      }
+    }
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        
+        if (data.type === 'message_created' && data.data) {
+          const msgConvId = data.data.conversationId
+          const isIncoming = data.data.messageType === 0
+          const isNotActive = msgConvId !== activeConversation.id
+          
+          // Only notify for incoming messages not in active conversation
+          if (isIncoming && isNotActive) {
+            // Update stats.openCount in real-time
+            setStats(prev => ({ ...prev, openCount: prev.openCount + 1 }))
+            
+            // Play sound
+            playNotificationSound()
+            
+            // Request notification permission and show
+            if ('Notification' in window && Notification.permission === 'granted') {
+              const senderName = data.data.sender?.name || 'Contact'
+              const preview = data.data.content || 'Nouveau message'
+              new Notification(senderName, { body: preview })
+            } else if ('Notification' in window && Notification.permission !== 'denied') {
+              Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                  const senderName = data.data.sender?.name || 'Contact'
+                  const preview = data.data.content || 'Nouveau message'
+                  new Notification(senderName, { body: preview })
+                }
+              })
+            }
+            
+            // Refresh recent conversations list
+            fetchStatus()
+          }
+        }
+        
+        if (data.type === 'conversation_created' || data.type === 'conversation_status_changed') {
+          // Refresh to update conversation list
+          fetchStatus()
+        }
+      } catch (err) {
+        console.error('[SSE] Failed to parse event:', err)
+      }
+    }
+
+    eventSource.onerror = (err) => {
+      console.error('[SSE] Connection error:', err)
+      eventSource.close()
+    }
+
+    return () => {
+      eventSource.close()
+      eventSourceRef.current = null
+    }
+  }, [activeConversation.id, fetchStatus])
 
   useEffect(() => {
     const checkMobile = () => {
@@ -1552,6 +1641,11 @@ export default function DashboardShell() {
                         </button>
                       </div>
                     </motion.div>
+                  </div>
+                )}
+                {activePage === 'bot-config' && (
+                  <div style={{ padding: 0, height: '100%' }}>
+                    <BotConfigView />
                   </div>
                 )}
                 {activePage === 'settings' && (

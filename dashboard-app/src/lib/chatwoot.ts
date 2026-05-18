@@ -172,3 +172,13 @@ export async function getMessage(
 ): Promise<CWMessage> {
   return cw<CWMessage>(accountId, apiToken, `/conversations/${conversationId}/messages/${messageId}`)
 }
+
+export async function deleteConversation(
+  accountId: number,
+  apiToken: string,
+  conversationId: number
+): Promise<void> {
+  return cw<void>(accountId, apiToken, `/conversations/${conversationId}`, {
+    method: 'DELETE',
+  })
+}
