@@ -114,9 +114,9 @@ function needsHumanHandover(message) {
 }
 
 // ─── CHATWOOT API ───────────────────────────────────────────────────────────
-async function replyViaChatwoot(accountId, conversationId, message) {
+async function replyViaChatwoot(accountId, conversationId, message, apiToken) {
   const url = `${process.env.CHATWOOT_BASE_URL}/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`;
-  const token = process.env.CHATWOOT_API_TOKEN.trim();
+  const token = (apiToken || process.env.CHATWOOT_API_TOKEN).trim();
 
   try {
     await axios.post(url, 
@@ -135,9 +135,9 @@ async function replyViaChatwoot(accountId, conversationId, message) {
   }
 }
 
-async function addNoteToChatwoot(accountId, conversationId, note) {
+async function addNoteToChatwoot(accountId, conversationId, note, apiToken) {
   const url = `${process.env.CHATWOOT_BASE_URL}/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`;
-  const token = process.env.CHATWOOT_API_TOKEN.trim();
+  const token = (apiToken || process.env.CHATWOOT_API_TOKEN).trim();
 
   try {
     await axios.post(url, 
@@ -156,9 +156,9 @@ async function addNoteToChatwoot(accountId, conversationId, note) {
   }
 }
 
-async function updateConversationStatus(accountId, conversationId, status) {
+async function updateConversationStatus(accountId, conversationId, status, apiToken) {
   const url = `${process.env.CHATWOOT_BASE_URL}/api/v1/accounts/${accountId}/conversations/${conversationId}`;
-  const token = process.env.CHATWOOT_API_TOKEN.trim();
+  const token = (apiToken || process.env.CHATWOOT_API_TOKEN).trim();
 
   try {
     await axios.patch(url, 
@@ -177,10 +177,11 @@ async function updateConversationStatus(accountId, conversationId, status) {
   }
 }
 
-async function assignToHuman(accountId, conversationId, agentId) {
+async function assignToHuman(accountId, conversationId, agentId, apiToken) {
   if (!agentId) return;
   const baseUrl = `${process.env.CHATWOOT_BASE_URL}/api/v1/accounts/${accountId}/conversations/${conversationId}`;
-  const headers = { 'api_access_token': process.env.CHATWOOT_API_TOKEN };
+  const token = (apiToken || process.env.CHATWOOT_API_TOKEN).trim();
+  const headers = { 'api_access_token': token };
   try {
     await axios.post(`${baseUrl}/assignments`, { assignee_id: agentId }, { headers });
     await axios.post(`${baseUrl}/messages`, { content: `@human agent requested.`, message_type: 'outgoing', private: true }, { headers });
@@ -191,10 +192,35 @@ async function assignToHuman(accountId, conversationId, agentId) {
 
 // ─── BUSINESS RESOLUTION ───────────────────────────────────────────────────────
 async function resolveBusinessByInboxId(inboxId) {
+  // First check ConnectedPage for inbox mapping
+  const connectedPage = await prisma.connectedPage.findFirst({
+    where: {
+      chatwootInboxId: inboxId,
+      active: true,
+    },
+    include: {
+      business: {
+        include: {
+          botConfig: true,
+        },
+      },
+    },
+  });
+
+  if (connectedPage && connectedPage.business.active) {
+    return connectedPage.business;
+  }
+
+  // Fallback: check direct business inbox fields
   const business = await prisma.business.findFirst({
     where: { 
-      chatwootInboxId: inboxId,
-      active: true 
+      active: true,
+      OR: [
+        { chatwootInboxId: inboxId },
+        { whatsappInboxId: inboxId },
+        { facebookInboxId: inboxId },
+        { instagramInboxId: inboxId },
+      ]
     },
     include: {
       botConfig: true,
@@ -235,7 +261,7 @@ function parseJSONEnvelope(response) {
 
 // ─── ACTION HANDLERS ──────────────────────────────────────────────────────────
 async function handleOrderComplete(business, conversationId, data) {
-  const { accountId, chatwootAgentId, ownerPhone } = business;
+  const { accountId, chatwootAgentId, ownerPhone, chatwootApiToken } = business;
   
   // Validate required fields
   const botConfig = business.botConfig;
@@ -258,10 +284,10 @@ async function handleOrderComplete(business, conversationId, data) {
     (data.notes ? `\nNotes: ${data.notes}` : '');
 
   // Add note to conversation
-  await addNoteToChatwoot(accountId, conversationId, summary);
+  await addNoteToChatwoot(accountId, conversationId, summary, chatwootApiToken);
   
   // Update conversation status to resolved
-  await updateConversationStatus(accountId, conversationId, 'resolved');
+  await updateConversationStatus(accountId, conversationId, 'resolved', chatwootApiToken);
   
   // Notify owner
   await notifyOwner(ownerPhone, 'order', { businessName: business.name, ...data });
@@ -281,7 +307,7 @@ async function handleOrderComplete(business, conversationId, data) {
 }
 
 async function handleAppointmentComplete(business, conversationId, data) {
-  const { accountId, chatwootAgentId, ownerPhone } = business;
+  const { accountId, chatwootAgentId, ownerPhone, chatwootApiToken } = business;
   
   // Validate required fields
   const botConfig = business.botConfig;
@@ -301,10 +327,10 @@ async function handleAppointmentComplete(business, conversationId, data) {
     `Date: ${data.date} à ${data.time}`;
 
   // Add note to conversation
-  await addNoteToChatwoot(accountId, conversationId, summary);
+  await addNoteToChatwoot(accountId, conversationId, summary, chatwootApiToken);
   
   // Update conversation status to resolved
-  await updateConversationStatus(accountId, conversationId, 'resolved');
+  await updateConversationStatus(accountId, conversationId, 'resolved', chatwootApiToken);
   
   // Notify owner
   await notifyOwner(ownerPhone, 'appointment', { businessName: business.name, ...data });
@@ -324,13 +350,13 @@ async function handleAppointmentComplete(business, conversationId, data) {
 }
 
 async function handleHumanHandover(business, conversationId, reason) {
-  const { accountId, chatwootAgentId } = business;
+  const { accountId, chatwootAgentId, chatwootApiToken } = business;
   
   // Assign conversation to business owner's agent
-  await assignToHuman(accountId, conversationId, chatwootAgentId);
+  await assignToHuman(accountId, conversationId, chatwootAgentId, chatwootApiToken);
   
   // Set status to open
-  await updateConversationStatus(accountId, conversationId, 'open');
+  await updateConversationStatus(accountId, conversationId, 'open', chatwootApiToken);
   
   // Notify owner
   await notifyOwner(business.ownerPhone, 'handover', { 
@@ -447,7 +473,7 @@ app.post('/chatwoot-webhook', async (req, res) => {
     let systemPrompt = business.botConfig?.systemPrompt;
     if (!systemPrompt || business.botConfig?.needsRegen) {
       console.log(`[Bot] Generating prompt for business ${business.id}`);
-      systemPrompt = await generatePrompt(business.id);
+      systemPrompt = await generatePrompt(business.id, prisma);
     }
 
     // Get AI reply with business-specific prompt
@@ -457,7 +483,8 @@ app.post('/chatwoot-webhook', async (req, res) => {
     const parsed = parseJSONEnvelope(aiResponse);
     
     // Send the reply to customer
-    await replyViaChatwoot(accountId, conversationId, parsed.reply);
+    console.log(`[Bot] Reply: ${parsed.reply}`);
+    await replyViaChatwoot(accountId, conversationId, parsed.reply, business.chatwootApiToken);
     
     // Handle action if present
     if (parsed.action) {
