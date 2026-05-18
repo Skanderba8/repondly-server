@@ -192,15 +192,15 @@ export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>
-                {(adminUser.name || adminUser.email).slice(0, 2).toUpperCase()}
+                {(adminUser?.name || adminUser?.email || 'U').slice(0, 2).toUpperCase()}
               </span>
             </div>
             <div style={{ overflow: 'hidden', flex: 1 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {adminUser.name || adminUser.email}
+                {adminUser?.name || adminUser?.email || 'Loading...'}
               </div>
               <div style={{ fontSize: 10, color: C.mid }}>
-                {adminUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
+                {adminUser?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
               </div>
             </div>
           </div>

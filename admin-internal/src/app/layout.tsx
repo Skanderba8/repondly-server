@@ -14,8 +14,20 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Fetch the current session
+  // Fetch the current session (non-blocking for auth routes)
   const session = await auth();
+
+  // Don't block auth routes - let them render without session
+  // The signin page is a client component that handles auth
+  if (!session?.user) {
+    return (
+      <html lang="en">
+        <body>
+          {children}
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html lang="en">
@@ -23,7 +35,7 @@ export default async function RootLayout({
         <Providers>
           <div className="flex h-screen overflow-hidden bg-gray-100">
             {/* Pass the session user to the sidebar. Using 'as any' temporarily to bypass strict type checking if the session type isn't perfectly mapped */}
-            <AdminSidebar adminUser={session?.user as any} />
+            <AdminSidebar adminUser={session.user as any} />
             <main className="flex-1 overflow-y-auto p-8">
               {children}
             </main>

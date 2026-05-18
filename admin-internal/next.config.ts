@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ['admin.repondly.com', 'localhost:3006'],
 
   // ─── Production performance optimizations ───────────────────────────
-  // Disable source maps in production to reduce memory usage
-  productionBrowserSourceMaps: false,
+  // Enable source maps for debugging
+  productionBrowserSourceMaps: true,
 
   // Disable powered-by header
   poweredByHeader: false,
