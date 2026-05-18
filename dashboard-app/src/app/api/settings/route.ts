@@ -27,6 +27,10 @@ export async function GET(request: Request) {
         chatwootInboxId: true,
         chatwootAgentId: true,
         active: true,
+        description: true,
+        botName: true,
+        greetingMessage: true,
+        hasConfiguredBot: true,
       },
     })
 
@@ -70,7 +74,8 @@ export async function PATCH(request: Request) {
     })
 
     // Trigger prompt regeneration if bot-related fields changed
-    if (businessType !== undefined || botMode !== undefined || languages !== undefined || tone !== undefined) {
+    const shouldRegen = body.name !== undefined || body.phone !== undefined || body.businessType !== undefined || body.botMode !== undefined || body.languages !== undefined || body.tone !== undefined || body.description !== undefined || body.botName !== undefined || body.greetingMessage !== undefined
+    if (shouldRegen) {
       await prisma.botConfig.update({
         where: { businessId: session.user.id },
         data: { needsRegen: true },

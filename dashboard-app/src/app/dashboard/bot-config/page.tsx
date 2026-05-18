@@ -81,12 +81,16 @@ interface BotConfig {
   languages: string[]
   tone: string | null
   ownerPhone: string | null
+  description: string | null
+  botName: string | null
+  greetingMessage: string | null
   requiredOrderFields: string[]
   requiredAppointmentFields: string[]
   handoverTriggers: string[]
   collectName: boolean
   collectPhone: boolean
   collectLocation: boolean
+  strictInstructionBlock: string | null
 }
 
 const TABS = [
@@ -183,6 +187,9 @@ export default function BotConfigPage() {
           languages: botConfig.languages,
           tone: botConfig.tone,
           ownerPhone: botConfig.ownerPhone,
+          description: botConfig.description,
+          botName: botConfig.botName,
+          greetingMessage: botConfig.greetingMessage,
         }),
       })
       const data = await res.json()
@@ -637,6 +644,23 @@ function GeneralConfig({ config, setConfig, onSave, saving }: {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: C.textSecondary, marginBottom: 8 }}>
+              Description de l'entreprise
+            </label>
+            <textarea
+              value={config.description || ''}
+              onChange={(e) => setConfig({ ...config, description: e.target.value })}
+              placeholder="Décrivez votre entreprise..."
+              rows={3}
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: C.radiusInput,
+                border: `1px solid ${C.borderMid}`, fontSize: 14, color: C.textPrimary,
+                background: C.depth1, resize: 'vertical',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: C.textSecondary, marginBottom: 8 }}>
               Type d'entreprise
             </label>
             <select
@@ -682,6 +706,40 @@ function GeneralConfig({ config, setConfig, onSave, saving }: {
 
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: C.textSecondary, marginBottom: 8 }}>
+              Langues (séparées par virgule)
+            </label>
+            <input
+              type="text"
+              value={config.languages?.join(', ') || ''}
+              onChange={(e) => setConfig({ ...config, languages: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+              placeholder="Ex: French, English, Arabic"
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: C.radiusInput,
+                border: `1px solid ${C.borderMid}`, fontSize: 14, color: C.textPrimary,
+                background: C.depth1,
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: C.textSecondary, marginBottom: 8 }}>
+              Nom du bot
+            </label>
+            <input
+              type="text"
+              value={config.botName || ''}
+              onChange={(e) => setConfig({ ...config, botName: e.target.value })}
+              placeholder="Nom de votre assistant IA"
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: C.radiusInput,
+                border: `1px solid ${C.borderMid}`, fontSize: 14, color: C.textPrimary,
+                background: C.depth1,
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: C.textSecondary, marginBottom: 8 }}>
               Ton du bot
             </label>
             <input
@@ -693,6 +751,23 @@ function GeneralConfig({ config, setConfig, onSave, saving }: {
                 width: '100%', padding: '10px 14px', borderRadius: C.radiusInput,
                 border: `1px solid ${C.borderMid}`, fontSize: 14, color: C.textPrimary,
                 background: C.depth1,
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: C.textSecondary, marginBottom: 8 }}>
+              Message de bienvenue (optionnel)
+            </label>
+            <textarea
+              value={config.greetingMessage || ''}
+              onChange={(e) => setConfig({ ...config, greetingMessage: e.target.value })}
+              placeholder="Message de bienvenue du bot..."
+              rows={2}
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: C.radiusInput,
+                border: `1px solid ${C.borderMid}`, fontSize: 14, color: C.textPrimary,
+                background: C.depth1, resize: 'vertical',
               }}
             />
           </div>

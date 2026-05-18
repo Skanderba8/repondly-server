@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { systemPrompt, requiredOrderFields, requiredAppointmentFields, handoverTriggers, collectName, collectPhone, collectLocation } = body
+    const { systemPrompt, requiredOrderFields, requiredAppointmentFields, handoverTriggers, collectName, collectPhone, collectLocation, strictInstructionBlock } = body
 
     const botConfig = await prisma.botConfig.upsert({
       where: { businessId: session.user.id },
@@ -50,6 +50,7 @@ export async function POST(request: Request) {
         collectPhone: collectPhone !== undefined ? collectPhone : false,
         collectLocation: collectLocation !== undefined ? collectLocation : false,
         needsRegen: true,
+        ...(strictInstructionBlock !== undefined && { strictInstructionBlock }),
       },
       create: {
         businessId: session.user.id,
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
         collectPhone: collectPhone !== undefined ? collectPhone : false,
         collectLocation: collectLocation !== undefined ? collectLocation : false,
         needsRegen: true,
+        ...(strictInstructionBlock !== undefined && { strictInstructionBlock }),
       },
     })
 

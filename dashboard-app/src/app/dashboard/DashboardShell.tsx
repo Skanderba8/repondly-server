@@ -1967,6 +1967,60 @@ function HomeView({
       {/* ── Quick Actions Bar ── */}
       {!isMobile && <QuickActionsBar onNavigate={onNavigate} />}
 
+      {/* ── Onboarding CTA Banner ── */}
+      {!hasConfiguredBot && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: `linear-gradient(135deg, ${C.primary} 0%, ${C.accentPurple} 100%)`,
+            borderRadius: C.radiusCard,
+            padding: '20px 24px',
+            marginBottom: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: C.glowPrimary,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: '#fff', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Bot size={20} />
+              Configurez votre agent IA
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>
+              Suivez les étapes pour activer l'automatisation intelligente de vos conversations
+            </div>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => window.location.href = '/dashboard/onboarding'}
+            style={{
+              position: 'relative', zIndex: 1,
+              padding: '12px 24px',
+              borderRadius: C.radiusPill,
+              background: '#fff',
+              color: C.primary,
+              border: 'none',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+            }}
+          >
+            Commencer <ArrowRight size={16} style={{ marginLeft: 4 }} />
+          </motion.button>
+        </motion.div>
+      )}
+
       {/* ── KPI row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         <KpiCard
@@ -2043,7 +2097,7 @@ function HomeView({
               step={3}
               label="Configurer l'agent IA"
               cta="Configurer →"
-              onClick={() => onNavigate('settings')}
+              onClick={() => window.location.href = '/dashboard/onboarding'}
             />
           </div>
         </div>

@@ -56,6 +56,9 @@ model Business {
   chatwootAgentId       Int?
   active                Boolean   @default(true)
   repondlyPassword      String?
+  description           String?
+  botName               String?
+  greetingMessage       String?
 
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
@@ -383,6 +386,7 @@ model BotConfig {
   collectLocation          Boolean  @default(false)
   needsRegen               Boolean  @default(true)
   lastGeneratedAt          DateTime?
+  strictInstructionBlock   String?
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
