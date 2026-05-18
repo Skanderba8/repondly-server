@@ -23,6 +23,15 @@ const nextConfig: NextConfig = {
             value: 'origin-when-cross-origin'
           }
         ]
+      },
+      {
+        source: '/:path*(.html)?',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate'
+          }
+        ]
       }
     ]
   }
