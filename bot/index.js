@@ -469,66 +469,73 @@ app.post('/chatwoot-webhook', async (req, res) => {
     // Parse JSON envelope
     const parsed = parseJSONEnvelope(aiResponse);
     
-    // Send the reply to customer
+    // Send the reply to customer IMMEDIATELY
     console.log(`[Bot] Reply: ${parsed.reply}`);
     await replyViaChatwoot(accountId, conversationId, parsed.reply, business.chatwootApiToken);
     
-    // Update CRM notes with extraction data (if enabled)
-    if (parsed.extraction && business.botConfig?.enableLiveExtraction) {
+    // Run post-processing in background (non-blocking)
+    setImmediate(async () => {
       try {
-        await updateCRMNotes(prisma, business.id, conversationId, parsed.extraction);
-        console.log(`[Bot] CRM notes updated for conversation ${conversationId}`);
-      } catch (err) {
-        console.error(`[Bot] Failed to update CRM notes:`, err.message);
-      }
-    }
-    
-    // Trigger deep extraction in background (if enabled)
-    if (business.botConfig?.enableLiveExtraction && business.botConfig?.extractionDepth !== 'light') {
-      triggerDeepExtraction(prisma, business.id, conversationId, conv.history, business.name);
-    }
-    
-    // Get current CRM note for handover context
-    const crmNote = await prisma.conversationCRMNote.findUnique({
-      where: {
-        businessId_chatwootConversationId: {
-          businessId: business.id,
-          chatwootConversationId: conversationId,
-        },
-      },
-    });
-    
-    // Check for handover trigger
-    const shouldHandover = needsHumanHandover(content, business.botConfig, parsed.extraction);
-    console.log(`[Bot] Handover check: shouldHandover=${shouldHandover}, message="${content.toLowerCase()}", botConfig=${!!business.botConfig}`);
-    if (shouldHandover) {
-      console.log(`[Bot] Human handover triggered for conversation ${conversationId}`);
-      await handleHumanHandover(business, conversationId, 'Customer requested human assistance or expressed frustration', crmNote);
-      conv.humanTookOver = true;
-      saveState();
-      return;
-    }
-    
-    // Handle action if present
-    if (parsed.action) {
-      console.log(`[Bot] Action detected: ${parsed.action.type}`);
-      
-      switch (parsed.action.type) {
-        case 'order_complete':
-          await handleOrderComplete(business, conversationId, parsed.action.data);
-          break;
-        case 'appointment_complete':
-          await handleAppointmentComplete(business, conversationId, parsed.action.data);
-          break;
-        case 'human_handover':
-          await handleHumanHandover(business, conversationId, parsed.action.data.reason, crmNote);
+        // Update CRM notes with extraction data (if enabled)
+        if (parsed.extraction && business.botConfig?.enableLiveExtraction) {
+          try {
+            await updateCRMNotes(prisma, business.id, conversationId, parsed.extraction);
+            console.log(`[Bot] CRM notes updated for conversation ${conversationId}`);
+          } catch (err) {
+            console.error(`[Bot] Failed to update CRM notes:`, err.message);
+          }
+        }
+        
+        // Trigger deep extraction in background (if enabled)
+        if (business.botConfig?.enableLiveExtraction && business.botConfig?.extractionDepth !== 'light') {
+          triggerDeepExtraction(prisma, business.id, conversationId, conv.history, business.name);
+        }
+        
+        // Get current CRM note for handover context
+        const crmNote = await prisma.conversationCRMNote.findUnique({
+          where: {
+            businessId_chatwootConversationId: {
+              businessId: business.id,
+              chatwootConversationId: conversationId,
+            },
+          },
+        });
+        
+        // Check for handover trigger
+        const shouldHandover = needsHumanHandover(content, business.botConfig, parsed.extraction);
+        console.log(`[Bot] Handover check: shouldHandover=${shouldHandover}, message="${content.toLowerCase()}", botConfig=${!!business.botConfig}`);
+        if (shouldHandover) {
+          console.log(`[Bot] Human handover triggered for conversation ${conversationId}`);
+          await handleHumanHandover(business, conversationId, 'Customer requested human assistance or expressed frustration', crmNote);
           conv.humanTookOver = true;
           saveState();
-          break;
-        default:
-          console.log(`[Bot] Unknown action type: ${parsed.action.type}`);
+          return;
+        }
+        
+        // Handle action if present
+        if (parsed.action) {
+          console.log(`[Bot] Action detected: ${parsed.action.type}`);
+          
+          switch (parsed.action.type) {
+            case 'order_complete':
+              await handleOrderComplete(business, conversationId, parsed.action.data);
+              break;
+            case 'appointment_complete':
+              await handleAppointmentComplete(business, conversationId, parsed.action.data);
+              break;
+            case 'human_handover':
+              await handleHumanHandover(business, conversationId, parsed.action.data.reason, crmNote);
+              conv.humanTookOver = true;
+              saveState();
+              break;
+            default:
+              console.log(`[Bot] Unknown action type: ${parsed.action.type}`);
+          }
+        }
+      } catch (err) {
+        console.error(`[Bot] Background processing error:`, err.message);
       }
-    }
+    });
 
   } catch (err) {
     console.error(`[Critical Error] Status: ${err.response?.status} | Msg: ${err.message}`);
