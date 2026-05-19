@@ -81,6 +81,7 @@ model Business {
   faqs                  Faq[]
   botConfig             BotConfig?
   conversationLogs      ConversationLog[]
+  conversationCRMNotes  ConversationCRMNote[]
 }
 
 model Client {
@@ -387,6 +388,20 @@ model BotConfig {
   needsRegen               Boolean  @default(true)
   lastGeneratedAt          DateTime?
   strictInstructionBlock   String?
+  
+  // Language handling
+  primaryLanguage          String?
+  allowDarijaInput         Boolean  @default(true)
+  forceProfessionalArabic Boolean  @default(true)
+  
+  // Handover configuration
+  whatsappPhoneNumberId    String?
+  whatsappToken            String?
+  
+  // Extraction configuration
+  enableLiveExtraction     Boolean  @default(true)
+  extractionDepth          String   @default("standard")
+  
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
@@ -404,4 +419,54 @@ model ConversationLog {
   createdAt       DateTime @default(now())
 
   business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model ConversationCRMNote {
+  id                      String   @id @default(cuid())
+  businessId              String
+  chatwootConversationId  Int
+  
+  // Identity fields
+  customerName            String?
+  customerPhone           String?
+  customerEmail           String?
+  customerLocation        String?
+  preferredLanguage       String?
+  
+  // Commercial intent
+  serviceOfInterest       String?
+  budget                  String?
+  orderIntent             String?
+  urgency                 String?
+  purchaseStage           String?
+  objections              String[]
+  preferences             String[]
+  
+  // Conversation intelligence
+  needsSummary            String?
+  importantContext        String?
+  painPoints              String[]
+  customRequests          String[]
+  sentiment               String?
+  frustrationLevel        Int?
+  
+  // Business actions
+  appointmentRequested    Boolean  @default(false)
+  quoteRequested          Boolean  @default(false)
+  orderRequested          Boolean  @default(false)
+  supportRequested        Boolean  @default(false)
+  followUpNeeded          Boolean  @default(false)
+  humanHandoverStatus     String?
+  
+  // Metadata
+  lastExtractedAt         DateTime @default(now())
+  extractionCount         Int      @default(0)
+  
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  
+  business                Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  @@unique([businessId, chatwootConversationId])
+  @@index([businessId, chatwootConversationId])
 }
