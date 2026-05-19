@@ -16,7 +16,7 @@ export default auth((req) => {
   
   if (pathname === '/auth/signin' && isAuthenticated) {
     const target = role === 'SUPER_ADMIN' || role === 'ADMIN' ? 'https://admin.repondly.com' : '/dashboard'
-    return NextResponse.redirect(new URL(target, req.url))
+    return NextResponse.redirect(target.startsWith('http') ? target : new URL(target, req.url))
   }
   
   return NextResponse.next()

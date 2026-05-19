@@ -36,7 +36,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
   
-  // Network-first for HTML pages and API routes
+  // Skip service worker for auth routes - let them pass through
+  if (url.pathname.startsWith('/api/auth/')) {
+    return
+  }
+  
+  // Network-first for HTML pages and API routes (excluding auth)
   if (event.request.mode === 'navigate' || 
       url.pathname.startsWith('/api/') ||
       url.pathname.endsWith('.html')) {
@@ -44,7 +49,7 @@ self.addEventListener('fetch', (event) => {
       fetch(event.request)
         .then((response) => {
           if (!response || response.status !== 200) {
-            return caches.match(event.request)
+            return caches.match(event.request).then(cached => cached || response)
           }
           const responseToCache = response.clone()
           caches.open(CACHE_NAME).then((cache) => {
@@ -52,7 +57,7 @@ self.addEventListener('fetch', (event) => {
           })
           return response
         })
-        .catch(() => caches.match(event.request))
+        .catch(() => caches.match(event.request).then(cached => cached || fetch(event.request)))
     )
     return
   }
@@ -77,6 +82,7 @@ self.addEventListener('fetch', (event) => {
           })
           return response
         })
+        .catch(() => fetch(event.request))
       })
   )
 })

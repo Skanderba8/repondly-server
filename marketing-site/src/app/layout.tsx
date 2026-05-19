@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: 'Répondly',
   description: 'Automatisez vos messages',
   icons: { icon: '/logo.png' },
+  alternates: {
+    canonical: 'https://repondly.com',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
