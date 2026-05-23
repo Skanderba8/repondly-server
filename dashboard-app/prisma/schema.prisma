@@ -41,10 +41,14 @@ model Business {
   instagramInboxId   Int?
   instagramConnected Boolean @default(false)
 
-  // New Onboarding Milestones
+  // Onboarding Milestones
   hasAcceptedDPA      Boolean @default(false)
   hasSetBusinessHours Boolean @default(false)
   hasConfiguredBot    Boolean @default(false)
+
+  // Business info
+  alwaysOpen          Boolean @default(false)
+  address             String?
 
   // AI Bot Configuration
   businessType          BusinessType?
@@ -81,6 +85,7 @@ model Business {
   faqs                  Faq[]
   botConfig             BotConfig?
   conversationLogs      ConversationLog[]
+  orders                Order[]
 }
 
 model Client {
@@ -280,6 +285,17 @@ enum BookingStatus {
   CANCELLED
 }
 
+enum OrderType {
+  ORDER
+  APPOINTMENT
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
 enum AdminRole {
   SUPER_ADMIN
   ADMIN
@@ -425,6 +441,27 @@ model BotConfig {
   updatedAt                DateTime @updatedAt
 
   business                 Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id                     String      @id @default(cuid())
+  businessId             String
+  type                   OrderType
+  clientName             String?
+  clientPhone            String?
+  items                  Json?
+  notes                  String?
+  total                  Float?
+  datetime               DateTime?
+  status                 OrderStatus @default(PENDING)
+  chatwootConversationId Int?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  business               Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, status])
+  @@index([businessId, createdAt])
 }
 
 model ConversationLog {

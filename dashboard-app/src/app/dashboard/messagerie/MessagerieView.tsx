@@ -1,80 +1,61 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useTheme } from '@/lib/theme'
 import { motion, AnimatePresence } from 'framer-motion'
-import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
+import { useMobileNav } from '@/components/AppShell'
 import {
   Search, CheckCheck, RotateCcw, Send, Loader2,
   MessageSquare, WifiOff, X, FileText, ChevronRight,
   AlertCircle, Check, CheckCircle2, Clock, Smartphone, Menu, LayoutDashboard, Radio, Calendar, Bot, Settings, LogOut, User, ArrowRight, TrendingUp, Trash2, Pause, Play,
+  MoreVertical, ChevronLeft, CheckSquare, BotOff,
 } from 'lucide-react'
 
-// ─── Design tokens from dashboard-design-patterns.md ───────────────────────
-const C = {
-  pageBg: '#F2F2F7',
-  cardBg: '#FFFFFF',
-  primary: '#1A56DB',
-  accentGreen: '#0EA472',
-  accentPurple: '#7C3AED',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textTertiary: '#64748B',
-  muted: '#64748B',
-  success: '#0EA472',
-  inProgress: '#1A56DB',
-  pending: '#F59E0B',
-  error: '#EF4444',
-  border: 'rgba(0, 0, 0, 0.08)',
-  borderMid: '#CBD5E1',
-  // Channel colors
-  whatsapp: '#22C55E',
-  whatsappBg: '#F0FDF4',
-  whatsappText: '#16A34A',
-  facebook: '#3B82F6',
-  facebookBg: '#EFF6FF',
-  facebookText: '#2563EB',
-  instagram: '#EC4899',
-  instagramBg: '#FDF2F8',
-  instagramText: '#DB2777',
-  // Glass effects
-  glassMedium: 'rgba(255, 255, 255, 0.85)',
-  glassLight: 'rgba(255, 255, 255, 0.7)',
-  glassDark: 'rgba(255, 255, 255, 0.95)',
-  glassShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-  glassBorder: '1px solid rgba(255, 255, 255, 0.3)',
-  // Depth layering system
-  depth1: 'rgba(255, 255, 255, 0.92)',
-  depth2: 'rgba(255, 255, 255, 0.85)',
-  depth3: 'rgba(255, 255, 255, 0.75)',
-  depth4: 'rgba(255, 255, 255, 0.65)',
-  innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.4)',
-  blueShadow: '0 8px 32px rgba(30, 27, 75, 0.15)',
-  recessed: 'inset 0 2px 4px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-  // Enhanced glossy liquid glass effects
-  glassSuperBlur: 'blur(48px)',
-  glassUltraBlur: 'blur(64px)',
-  shadowLayered: 'inset 0 1px 0 rgba(255,255,255,0.5), 0 4px 16px rgba(30,27,75,0.1), 0 16px 48px rgba(30,27,75,0.08)',
-  shadowGlossy: 'inset 0 2px 4px rgba(255,255,255,0.6), 0 8px 32px rgba(30,27,75,0.12), 0 0 0 1px rgba(255,255,255,0.4)',
-  glossyGradient: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%)',
-  liquidGradient: 'linear-gradient(135deg, rgba(26,86,219,0.05) 0%, rgba(124,58,237,0.05) 100%)',
-  borderGlossy: '1px solid rgba(255,255,255,0.5), inset 0 0 0 1px rgba(255,255,255,0.2)',
-  glowPrimary: '0 0 24px rgba(26,86,219,0.3)',
-  glowSuccess: '0 0 24px rgba(14,164,114,0.3)',
-  // Corner radii
-  radiusCard: 16,
-  radiusInput: 12,
-  radiusPill: 999,
-  radiusBubble: 20,
-  // Gradients
-  gradientPrimary: 'linear-gradient(135deg, #1A56DB 0%, #3B82F6 100%)',
-  gradientPurple: 'linear-gradient(135deg, #7C3AED 0%, #1A56DB 100%)',
-  gradientBlue: 'linear-gradient(135deg, #1A56DB 0%, #60A5FA 100%)',
-  // Message bubbles
-  bubbleOut: '#1A56DB',
-  bubbleIn: '#FFFFFF',
-  listHover: 'rgba(26, 86, 219, 0.04)',
-  listActive: 'rgba(26, 86, 219, 0.08)',
+// ─── Theme-aware tokens ───────────────────────────────────────────────────────
+function makeC(dark: boolean) {
+  const bg       = dark ? '#0A0A0F'  : '#F8FAFC'
+  const surface  = dark ? '#111118'  : '#FFFFFF'
+  const surface2 = dark ? '#161622'  : '#F1F5F9'
+  const surface3 = dark ? '#0F0F17'  : '#E2E8F0'
+  const border   = dark ? '#1E1E2E'  : '#E2E8F0'
+  const border2  = dark ? '#334155'  : '#CBD5E1'
+  const text     = dark ? '#F1F5F9'  : '#0F172A'
+  const text2    = dark ? '#94A3B8'  : '#475569'
+  const text3    = dark ? '#64748B'  : '#94A3B8'
+  return {
+    pageBg: bg, cardBg: surface,
+    primary: '#3B82F6', accentGreen: '#10B981', accentPurple: '#6366F1',
+    textPrimary: text, textSecondary: text2, textTertiary: text3,
+    muted: text3, success: '#10B981', inProgress: '#3B82F6',
+    pending: '#F59E0B', error: '#EF4444',
+    border, borderMid: border2,
+    whatsapp: '#22C55E', whatsappBg: 'rgba(34,197,94,0.1)', whatsappText: '#22C55E',
+    facebook: '#3B82F6', facebookBg: 'rgba(59,130,246,0.1)', facebookText: '#3B82F6',
+    instagram: '#EC4899', instagramBg: 'rgba(236,72,153,0.1)', instagramText: '#EC4899',
+    glassMedium: surface2, glassLight: surface, glassDark: border,
+    glassShadow: dark ? '0 4px 24px rgba(0,0,0,0.4)' : '0 4px 24px rgba(0,0,0,0.08)',
+    glassBorder: `1px solid ${border}`,
+    depth1: surface2, depth2: surface, depth3: surface3, depth4: bg,
+    innerGlow: 'none', blueShadow: dark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.06)',
+    recessed: 'none', glassSuperBlur: 'none', glassUltraBlur: 'none',
+    shadowLayered: dark ? '0 1px 3px rgba(0,0,0,0.4)' : '0 1px 3px rgba(0,0,0,0.08)',
+    shadowGlossy: dark ? '0 1px 3px rgba(0,0,0,0.4)' : '0 1px 3px rgba(0,0,0,0.08)',
+    glossyGradient: 'none', liquidGradient: 'none',
+    borderGlossy: `1px solid ${border}`,
+    glowPrimary: 'none', glowSuccess: 'none',
+    radiusCard: 12, radiusInput: 8, radiusPill: 999, radiusBubble: 16,
+    gradientPrimary: '#3B82F6', gradientPurple: '#6366F1', gradientBlue: '#3B82F6',
+    bubbleOut: '#3B82F6',
+    bubbleIn: dark ? '#1E1E2E' : '#F1F5F9',
+    listHover: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+    listActive: 'rgba(59,130,246,0.1)',
+  }
+}
+
+function useC() {
+  const dark = useTheme()
+  return makeC(dark)
 }
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -145,21 +126,21 @@ function formatDateLabel(ts: number): string {
 }
 
 function channelColor(channelType: string): string {
-  if (channelType === 'Channel::Whatsapp') return C.whatsapp
-  if (channelType === 'Channel::FacebookPage' || channelType === 'Channel::Instagram') return C.instagram
-  return C.primary
+  if (channelType === 'Channel::Whatsapp') return '#22C55E'
+  if (channelType === 'Channel::FacebookPage' || channelType === 'Channel::Instagram') return '#EC4899'
+  return '#3B82F6'
 }
 
 function channelBg(channelType: string): string {
-  if (channelType === 'Channel::Whatsapp') return C.whatsappBg
-  if (channelType === 'Channel::FacebookPage' || channelType === 'Channel::Instagram') return C.instagramBg
-  return 'rgba(26, 86, 219, 0.1)'
+  if (channelType === 'Channel::Whatsapp') return 'rgba(34,197,94,0.1)'
+  if (channelType === 'Channel::FacebookPage' || channelType === 'Channel::Instagram') return 'rgba(236,72,153,0.1)'
+  return 'rgba(59,130,246,0.1)'
 }
 
 function channelText(channelType: string): string {
-  if (channelType === 'Channel::Whatsapp') return C.whatsappText
-  if (channelType === 'Channel::FacebookPage' || channelType === 'Channel::Instagram') return C.instagramText
-  return C.primary
+  if (channelType === 'Channel::Whatsapp') return '#22C55E'
+  if (channelType === 'Channel::FacebookPage' || channelType === 'Channel::Instagram') return '#EC4899'
+  return '#3B82F6'
 }
 
 function initials(name: string): string {
@@ -168,6 +149,7 @@ function initials(name: string): string {
 
 // ─── Brand Channel Icons ───────────────────────────────────────────────────────
 function ChannelIcon({ channelType, size = 20 }: { channelType: string; size?: number }) {
+  const C = useC()
   const color = channelColor(channelType)
 
   if (channelType === 'Channel::Whatsapp') {
@@ -209,6 +191,7 @@ function ChannelIcon({ channelType, size = 20 }: { channelType: string; size?: n
 
 // ─── Avatar ────────────────────────────────────────────────────────────────────
 function Avatar({ contact, size = 40, showChannelBadge = false, channelType }: { contact: Contact; size?: number; showChannelBadge?: boolean; channelType?: string }) {
+  const C = useC()
   const [imgError, setImgError] = useState(false)
   const badgeSize = Math.round(size * 0.35)
   const color = channelType ? channelColor(channelType) : C.primary
@@ -263,6 +246,7 @@ function Avatar({ contact, size = 40, showChannelBadge = false, channelType }: {
 
 // ─── Empty State ───────────────────────────────────────────────────────────────
 function EmptyState({ text, icon }: { text: string; icon?: React.ReactNode }) {
+  const C = useC()
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
@@ -295,6 +279,7 @@ function ConvItem({
   onResolve?: (convId: number) => void;
   onToggleBot?: (convId: number, botEnabled: boolean) => void;
 }) {
+  const C = useC()
   const contact = conv.meta.sender
   const preview = conv.last_non_activity_message?.content || ''
   const ts      = conv.last_non_activity_message?.created_at || conv.last_activity_at
@@ -316,16 +301,17 @@ function ConvItem({
   return (
     <motion.div
       onClick={onClick}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.96 }}
+      whileHover={{ scale: active ? 1 : 1.01 }}
       style={{
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '14px 16px', cursor: 'pointer',
         background: active ? C.depth2 : C.depth3,
         backdropFilter: C.glassSuperBlur,
-        borderLeft: active ? `3px solid ${C.primary}` : '3px solid transparent',
+        borderLeft: conv.unread_count > 0 ? `3px solid #3B82F6` : (active ? `3px solid ${C.primary}` : '3px solid transparent'),
         borderTop: '1px solid rgba(255, 255, 255, 0.5)',
         boxShadow: active ? C.shadowGlossy : C.blueShadow,
-        transition: 'all 0.2s ease',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         borderBottom: `1px solid ${C.border}`,
         position: 'relative',
         overflow: 'hidden',
@@ -356,7 +342,7 @@ function ConvItem({
         pointerEvents: 'none',
         zIndex: 0,
       }} />
-      <Avatar contact={contact} size={40} showChannelBadge={true} channelType={conv.inbox?.channel_type} />
+      <Avatar contact={contact} size={44} showChannelBadge={true} channelType={conv.inbox?.channel_type} />
       <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <span style={{
@@ -506,6 +492,7 @@ function ConvItem({
 
 // ─── Message Bubble ─────────────────────────────────────────────────────────────
 function Bubble({ msg, conversationId, onStatusCheck, channelType }: { msg: Message; conversationId?: number; onStatusCheck?: (msgId: number) => void; channelType?: string }) {
+  const C = useC()
   const isOut      = msg.message_type === 1
   const isActivity = msg.message_type === 2
   const [localStatus, setLocalStatus] = useState(msg.status)
@@ -652,6 +639,7 @@ function MessageStatusIndicator({ status }: { status?: string }) {
 
 // ─── Date Separator ────────────────────────────────────────────────────────────
 function DateSep({ label }: { label: string }) {
+  const C = useC()
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0 12px' }}>
       <div style={{ flex: 1, height: 1, background: C.border }} />
@@ -663,6 +651,7 @@ function DateSep({ label }: { label: string }) {
 
 // ─── Status Tab ────────────────────────────────────────────────────────────────
 function Tab({ label, active, onClick, count }: { label: string; active: boolean; onClick: () => void; count?: number }) {
+  const C = useC()
   return (
     <button
       onClick={onClick}
@@ -728,6 +717,7 @@ function Tab({ label, active, onClick, count }: { label: string; active: boolean
 
 // ─── Notes Panel ─────────────────────────────────────────────────────────────────
 function NotesPanel({ conversationId, isOpen, onClose }: { conversationId: number; isOpen: boolean; onClose: () => void }) {
+  const C = useC()
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(false)
   const [newNote, setNewNote] = useState('')
@@ -902,6 +892,8 @@ interface MessagerieProps {
 }
 
 export default function Messagerie({ onConversationChange, externalNotesOpen, onNotesOpenChange }: MessagerieProps) {
+  const C = useC()
+  const { setHideNav } = useMobileNav()
   const [tabStatus, setTabStatus]       = useState<RepondlyStatus>('EN_ATTENTE')
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [convLoading, setConvLoading]   = useState(true)
@@ -923,6 +915,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
   const [enAttenteCount, setEnAttenteCount] = useState(0)
   const [resolueCount, setResolueCount] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
+  const [actionSheetOpen, setActionSheetOpen] = useState(false)
   const [channelFilter, setChannelFilter] = useState<'all' | 'whatsapp' | 'facebook'>('all')
   const [channelCounts, setChannelCounts] = useState({ whatsapp: 0, facebook_instagram: 0 })
 
@@ -933,6 +926,11 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
   const eventSourceRef  = useRef<EventSource | null>(null)
 
   const activeConv = conversations.find(c => c.id === activeConvId) || null
+
+  // Hide/show navbar based on conversation state
+  useEffect(() => {
+    setHideNav(!!activeConvId && isMobile)
+  }, [activeConvId, isMobile, setHideNav])
 
   // ── Fetch conversations ──────────────────────────────────────────────────────
   const fetchConversations = useCallback(async () => {
@@ -1220,7 +1218,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
     if (convPollRef.current) clearInterval(convPollRef.current)
     convPollRef.current = setInterval(fetchConversations, 30_000)
     return () => { if (convPollRef.current) clearInterval(convPollRef.current) }
-  }, [fetchConversations])
+  }, [])
 
   // ── Select conversation ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -1229,6 +1227,11 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
     fetchMessages(activeConvId).finally(() => setMsgLoading(false))
     // No polling - SSE handles real-time message updates
   }, [activeConvId, fetchMessages])
+
+  // ── Back to list handler ───────────────────────────────────────────────────────
+  const handleBack = () => {
+    setActiveConvId(null)
+  }
 
   // ── Scroll to bottom ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1383,29 +1386,16 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
 
   return (
     <div style={{
-      display: 'flex', height: '100%', width: '100%', overflow: 'hidden',
-      background: '#F8F9FB', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden',
+      background: C.pageBg, fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       position: 'relative',
       touchAction: 'manipulation',
     }}>
-      {/* Safe area for iOS PWA - matches header background */}
-      {isMobile && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 'env(safe-area-inset-top)',
-          background: C.depth1,
-          zIndex: 9999,
-        }} />
-      )}
 
       {/* ══ Main Content ════════════════════════════════════════════════════════ */}
       <div style={{
         display: 'flex', height: '100%', width: '100%', overflow: 'hidden',
         background: C.depth1,
-        backdropFilter: 'blur(24px)',
       }}>
 
       {/* ══ LEFT: Conversation List ══════════════════════════════════════════════ */}
@@ -1413,21 +1403,20 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
         width: isMobile ? '100%' : 380,
         flexShrink: 0,
         background: 'transparent',
-        borderRight: isMobile ? 'none' : `1px solid rgba(255, 255, 255, 0.2)`,
+        borderRight: isMobile ? 'none' : `1px solid ${C.border}`,
         display: isMobile && activeConvId ? 'none' : 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         height: '100%',
       }}>
+
         {/* Header */}
-        <div style={{ padding: isMobile ? '16px' : '20px', borderBottom: `1px solid ${C.border}`, background: 'transparent' }}>
+        <div style={{ padding: isMobile ? '12px 14px' : '20px', borderBottom: `1px solid ${C.border}`, background: 'transparent', flexShrink: 0 }}>
           {/* Tabs */}
           <div style={{
             display: 'flex', background: C.depth2,
-            backdropFilter: 'blur(24px)',
-            borderRadius: 20, padding: 4, gap: 4, marginBottom: isMobile ? 12 : 16,
-            border: C.glassBorder,
-            boxShadow: C.innerGlow + ', ' + C.blueShadow,
+            borderRadius: 12, padding: 4, gap: 4, marginBottom: isMobile ? 10 : 16,
+            border: `1px solid ${C.border}`,
           }}>
             <Tab label="En attente"  active={tabStatus === 'EN_ATTENTE'} onClick={() => setTabStatus('EN_ATTENTE')} count={enAttenteCount} />
             <Tab label="Résolues" active={tabStatus === 'RESOLUE'} onClick={() => setTabStatus('RESOLUE')} count={resolueCount} />
@@ -1445,12 +1434,12 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
                 onClick={() => setChannelFilter(ch.id as any)}
                 style={{
                   flex: 1, padding: isMobile ? '8px 12px' : '6px 12px', borderRadius: 16,
-                  background: channelFilter === ch.id ? C.depth2 : 'transparent',
+                  background: channelFilter === ch.id ? C.depth1 : 'transparent',
                   color: channelFilter === ch.id ? (ch.id === 'all' ? C.primary : ch.color) : C.textSecondary,
                   fontSize: isMobile ? 12 : 11, fontWeight: channelFilter === ch.id ? 600 : 500,
                   cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                   border: channelFilter === ch.id ? (ch.id === 'all' ? '1px solid rgba(26, 86, 219, 0.2)' : `1px solid ${ch.color}30`) : '1px solid transparent',
-                  ...(channelFilter === ch.id ? { boxShadow: C.innerGlow + ', ' + C.blueShadow } : {}),
+                  ...(channelFilter === ch.id ? { boxShadow: 'none' } : {}),
                 }}
               >
                 {ch.label}
@@ -1504,10 +1493,10 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
               {filtered.map(conv => (
                 <motion.div
                   key={conv.id}
-                  initial={{ opacity: 0, x: -8 }}
+                  initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                 >
                   <ConvItem
                     conv={conv}
@@ -1559,152 +1548,99 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
         }}>
 
           {/* ── Thread Header ── */}
-          <div style={{
-            padding: isMobile ? '14px 18px' : '18px 28px',
-            background: C.depth2,
-            backdropFilter: 'blur(16px)',
-            borderBottom: `1px solid ${C.border}`,
-            display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 14,
-            boxShadow: C.innerGlow,
-          }}>
-            {isMobile && (
-              <button
-                onClick={() => setActiveConvId(null)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 40, height: 40, borderRadius: 12,
-                  background: C.depth2, border: `1px solid rgba(26, 86, 219, 0.15)`,
-                  cursor: 'pointer', color: C.primary,
-                  flexShrink: 0,
-                  transition: 'all 0.2s ease',
-                  boxShadow: C.innerGlow + ', ' + C.blueShadow,
-                }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.depth3}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = C.depth2}
-              >
-                <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
-              </button>
-            )}
+          {isMobile ? (
+            /* Mobile header: safe-area top + back arrow + contact name (centered) + ··· */
+            <div style={{
+              paddingTop: 'env(safe-area-inset-top)',
+              background: C.depth2,
+              backdropFilter: 'blur(32px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+              borderBottom: `1px solid ${C.border}`,
+              flexShrink: 0,
+            }}>
+              <div style={{ height: 56, display: 'flex', alignItems: 'center', paddingLeft: 4, paddingRight: 12, gap: 8 }}>
+                {/* Back */}
+                <button
+                  onClick={handleBack}
+                  style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: C.primary, borderRadius: 12, flexShrink: 0, transition: 'background 0.2s ease' }}
+                  onTouchStart={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.05)'}
+                  onTouchEnd={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                >
+                  <ChevronLeft size={28} strokeWidth={2.5} />
+                </button>
+
+                {/* Contact info center */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary, letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                    {activeConv.meta.sender.name}
+                  </div>
+                  <div style={{ fontSize: 12, color: C.textSecondary, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <ChannelIcon channelType={activeConv.inbox?.channel_type} size={12} />
+                    <span>{activeConv.inbox?.name || 'Inbox'}</span>
+                  </div>
+                </div>
+
+                {/* More menu */}
+                <button
+                  onClick={() => setActionSheetOpen(true)}
+                  style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: C.textSecondary, borderRadius: 10, flexShrink: 0 }}
+                >
+                  <MoreVertical size={20} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Desktop header */
+            <div style={{
+              padding: '18px 28px',
+              background: C.depth2,
+              backdropFilter: 'blur(16px)',
+              borderBottom: `1px solid ${C.border}`,
+              display: 'flex', alignItems: 'center', gap: 14,
+              boxShadow: C.innerGlow,
+            }}>
             <Avatar
               contact={activeConv.meta.sender}
-              size={isMobile ? 40 : 48}
+              size={48}
               showChannelBadge={true}
               channelType={activeConv.inbox?.channel_type}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em', marginBottom: 2 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary, letterSpacing: '-0.02em', marginBottom: 2 }}>
                 {activeConv.meta.sender.name}
               </div>
-              <div style={{ fontSize: isMobile ? 12 : 13, color: C.textSecondary, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 500 }}>
+              <div style={{ fontSize: 13, color: C.textSecondary, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 500 }}>
                 <span>{activeConv.inbox?.name || 'Inbox'}</span>
-                {activeConv.meta.sender.phone_number && !isMobile && (
-                  <span style={{ color: C.border }}>·</span>
-                )}
-                {activeConv.meta.sender.phone_number && !isMobile && (
-                  <span>{activeConv.meta.sender.phone_number}</span>
+                {activeConv.meta.sender.phone_number && (
+                  <><span style={{ color: C.border }}>·</span><span>{activeConv.meta.sender.phone_number}</span></>
                 )}
               </div>
             </div>
-            {/* Resolve Button (only for EN_ATTENTE) */}
+            {/* Resolve Button */}
             {(repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'EN_ATTENTE' && (
-              <button
-                onClick={() => toggleStatus()}
-                disabled={statusLoading}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: isMobile ? 40 : 44, height: isMobile ? 40 : 44,
-                  borderRadius: 12,
-                  background: C.depth2, border: `1px solid rgba(14, 164, 114, 0.12)`,
-                  cursor: statusLoading ? 'default' : 'pointer', color: C.success,
-                  flexShrink: 0,
-                  transition: 'all 0.2s ease',
-                  opacity: statusLoading ? 0.5 : 1,
-                  boxShadow: C.innerGlow + ', ' + C.blueShadow,
-                }}
-                onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth3 }}
-                onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth2 }}
-              >
-                {statusLoading ? <Loader2 size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCheck size={isMobile ? 18 : 20} />}
+              <button onClick={() => toggleStatus()} disabled={statusLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: 12, background: C.depth2, border: `1px solid rgba(14,164,114,0.12)`, cursor: statusLoading ? 'default' : 'pointer', color: C.success, flexShrink: 0, opacity: statusLoading ? 0.5 : 1 }}>
+                {statusLoading ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCheck size={20} />}
               </button>
             )}
-            {/* Bot Toggle Button */}
-            <button
-              onClick={() => handleToggleBot(activeConv.id, !activeConv.botEnabled)}
-              disabled={statusLoading}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: isMobile ? 40 : 44, height: isMobile ? 40 : 44,
-                borderRadius: 12,
-                background: activeConv.botEnabled ? 'rgba(14, 164, 114, 0.1)' : C.depth2,
-                border: activeConv.botEnabled ? '1px solid rgba(14, 164, 114, 0.3)' : `1px solid rgba(26, 86, 219, 0.12)`,
-                cursor: statusLoading ? 'default' : 'pointer',
-                color: activeConv.botEnabled ? C.success : C.primary,
-                flexShrink: 0,
-                transition: 'all 0.2s ease',
-                opacity: statusLoading ? 0.5 : 1,
-                boxShadow: C.innerGlow + ', ' + C.blueShadow,
-              }}
-              onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth3 }}
-              onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = activeConv.botEnabled ? 'rgba(14, 164, 114, 0.1)' : C.depth2 }}
-            >
-              {activeConv.botEnabled ? (
-                <motion.div
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  <Bot size={isMobile ? 18 : 20} />
-                </motion.div>
-              ) : (
-                <Bot size={isMobile ? 18 : 20} />
-              )}
+            {/* Bot Toggle */}
+            <button onClick={() => handleToggleBot(activeConv.id, !activeConv.botEnabled)} disabled={statusLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: 12, background: activeConv.botEnabled ? 'rgba(14,164,114,0.1)' : C.depth2, border: activeConv.botEnabled ? '1px solid rgba(14,164,114,0.3)' : `1px solid rgba(26,86,219,0.12)`, cursor: statusLoading ? 'default' : 'pointer', color: activeConv.botEnabled ? C.success : C.primary, flexShrink: 0, opacity: statusLoading ? 0.5 : 1 }}>
+              {activeConv.botEnabled ? <motion.div animate={{ opacity: [1,0.3,1] }} transition={{ duration: 1.5, repeat: Infinity }}><Bot size={20} /></motion.div> : <Bot size={20} />}
             </button>
-            {/* Delete Conversation Button */}
-            <button
-              onClick={() => handleDeleteConversation(activeConv.id)}
-              disabled={statusLoading}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: isMobile ? 40 : 44, height: isMobile ? 40 : 44,
-                borderRadius: 12,
-                background: C.depth2,
-                border: `1px solid rgba(239, 68, 68, 0.12)`,
-                cursor: statusLoading ? 'default' : 'pointer', color: C.error,
-                flexShrink: 0,
-                transition: 'all 0.2s ease',
-                opacity: statusLoading ? 0.5 : 1,
-                boxShadow: C.innerGlow + ', ' + C.blueShadow,
-              }}
-              onMouseEnter={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth3 }}
-              onMouseLeave={e => { if (!statusLoading) (e.currentTarget as HTMLElement).style.background = C.depth2 }}
-            >
-              <Trash2 size={isMobile ? 18 : 20} />
+            {/* Delete */}
+            <button onClick={() => handleDeleteConversation(activeConv.id)} disabled={statusLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: 12, background: C.depth2, border: `1px solid rgba(239,68,68,0.12)`, cursor: statusLoading ? 'default' : 'pointer', color: C.error, flexShrink: 0, opacity: statusLoading ? 0.5 : 1 }}>
+              <Trash2 size={20} />
             </button>
             {/* Notes Button */}
             <button
-              onClick={() => {
-                if (onNotesOpenChange) {
-                  onNotesOpenChange(true)
-                } else {
-                  setNotesOpen(true)
-                }
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: isMobile ? 40 : 44, height: isMobile ? 40 : 44,
-                borderRadius: 12,
-                background: C.depth2,
-                border: `1px solid rgba(26, 86, 219, 0.12)`,
-                cursor: 'pointer', color: C.primary,
-                flexShrink: 0,
-                transition: 'all 0.2s ease',
-                boxShadow: C.innerGlow + ', ' + C.blueShadow,
-              }}
+              onClick={() => { if (onNotesOpenChange) onNotesOpenChange(true); else setNotesOpen(true) }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: 12, background: C.depth2, border: `1px solid rgba(26,86,219,0.12)`, cursor: 'pointer', color: C.primary, flexShrink: 0, transition: 'all 0.2s ease' }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.depth3}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = C.depth2}
             >
-              <FileText size={isMobile ? 18 : 20} />
+              <FileText size={20} />
             </button>
-          </div>
+            </div>
+          )}
 
           {/* ── Messages ── */}
           <div style={{
@@ -1743,7 +1679,7 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
               backdropFilter: 'blur(24px)',
               borderTop: `1px solid ${C.border}`,
               display: 'flex', gap: isMobile ? 10 : 12, alignItems: 'flex-end',
-              paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom) + 88)' : '20px',
+              paddingBottom: isMobile ? `calc(16px + env(safe-area-inset-bottom))` : '20px',
               boxShadow: C.innerGlow + ', ' + C.blueShadow,
             }}>
               <div style={{
@@ -1840,8 +1776,106 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
       )}
 
       {/* Spin keyframe */}
-      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+        @keyframes slideUpSheet { from { transform: translateY(100%) } to { transform: translateY(0) } }
+      `}</style>
       </div>
+
+      {/* ── Mobile Action Sheet ── */}
+      {isMobile && actionSheetOpen && activeConv && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setActionSheetOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 300,
+              background: 'rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+            }}
+          />
+          {/* Sheet */}
+          <div style={{
+            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 301,
+            background: C.depth2,
+            borderRadius: '20px 20px 0 0',
+            border: `1px solid ${C.border}`,
+            borderBottom: 'none',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+            animation: 'slideUpSheet 0.3s cubic-bezier(0.32,0.72,0,1)',
+          }}>
+            {/* Handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
+            </div>
+
+            {/* Contact name */}
+            <div style={{ padding: '4px 20px 12px', borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{activeConv.meta.sender.name}</div>
+              <div style={{ fontSize: 11, color: C.textSecondary }}>{activeConv.inbox?.name}</div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ padding: '8px 0' }}>
+              {/* Notes */}
+              <button
+                onClick={() => { setActionSheetOpen(false); if (onNotesOpenChange) onNotesOpenChange(true); else setNotesOpen(true) }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', border: 'none', background: 'transparent', color: C.textPrimary, fontSize: 15, cursor: 'pointer', textAlign: 'left' }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileText size={18} color={C.primary} />
+                </div>
+                Notes du bot
+              </button>
+
+              {/* Resolve / Unresolve */}
+              <button
+                onClick={() => { setActionSheetOpen(false); toggleStatus() }}
+                disabled={statusLoading}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', border: 'none', background: 'transparent', color: C.textPrimary, fontSize: 15, cursor: 'pointer', textAlign: 'left', opacity: statusLoading ? 0.5 : 1 }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCheck size={18} color={C.success} />
+                </div>
+                {(repondlyStatuses.get(activeConv.id) || 'EN_ATTENTE') === 'EN_ATTENTE' ? 'Résoudre' : 'Rouvrir'}
+              </button>
+
+              {/* Bot toggle */}
+              <button
+                onClick={() => { setActionSheetOpen(false); handleToggleBot(activeConv.id, !activeConv.botEnabled) }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', border: 'none', background: 'transparent', color: C.textPrimary, fontSize: 15, cursor: 'pointer', textAlign: 'left' }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: activeConv.botEnabled ? 'rgba(16,185,129,0.12)' : 'rgba(100,116,139,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Bot size={18} color={activeConv.botEnabled ? C.success : C.textSecondary} />
+                </div>
+                {activeConv.botEnabled ? 'Pause bot' : 'Reprendre bot'}
+              </button>
+
+              {/* Delete */}
+              <button
+                onClick={() => { setActionSheetOpen(false); handleDeleteConversation(activeConv.id) }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', border: 'none', background: 'transparent', color: C.error, fontSize: 15, cursor: 'pointer', textAlign: 'left' }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Trash2 size={18} color={C.error} />
+                </div>
+                Supprimer la conversation
+              </button>
+            </div>
+
+            {/* Cancel */}
+            <div style={{ padding: '4px 16px 8px' }}>
+              <button
+                onClick={() => setActionSheetOpen(false)}
+                style={{ width: '100%', padding: '14px', borderRadius: 14, background: C.depth3, border: 'none', color: C.textPrimary, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

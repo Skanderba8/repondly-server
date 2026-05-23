@@ -2,10 +2,10 @@
   "name": "Répondly Messagerie",
   "short_name": "Répondly",
   "description": "Automate your business messages",
-  "start_url": "/dashboard",
+  "start_url": "/dashboard/accueil",
   "display": "standalone",
-  "background_color": "#F2F2F7",
-  "theme_color": "#007AFF",
+  "background_color": "#0A0A0F",
+  "theme_color": "#0A0A0F",
   "orientation": "any",
   "version": "1.0.4",
   "icons": [

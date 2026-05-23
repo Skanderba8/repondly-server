@@ -63,36 +63,33 @@ export function buildSystemPrompt(business) {
     });
   }
 
-  // Hours (check exceptions first)
-  if (business.scheduleExceptions && business.scheduleExceptions.length > 0) {
-    const activeException = business.scheduleExceptions.find(e => 
-      new Date() >= new Date(e.startDate) && new Date() <= new Date(e.endDate)
-    );
-    if (activeException) {
-      prompt += `Exception: ${activeException.label}`;
-      if (activeException.closedAllDay) prompt += ` - FERMÉ`;
-      else if (activeException.openTime && activeException.closeTime) prompt += ` - ${activeException.openTime}-${activeException.closeTime}`;
-      if (activeException.customMessage) prompt += ` - ${activeException.customMessage}`;
-      prompt += `\n`;
+  // Hours
+  if (business.alwaysOpen) {
+    prompt += `Hours: Disponible 24h/24, 7j/7\n`;
+  } else {
+    if (business.scheduleExceptions && business.scheduleExceptions.length > 0) {
+      const now = new Date();
+      const activeException = business.scheduleExceptions.find(e =>
+        now >= new Date(e.startDate) && now <= new Date(e.endDate)
+      );
+      if (activeException) {
+        prompt += `Exception: ${activeException.label}`;
+        if (activeException.closedAllDay) prompt += ` - FERMÉ`;
+        else if (activeException.openTime && activeException.closeTime) prompt += ` - ${activeException.openTime}-${activeException.closeTime}`;
+        if (activeException.customMessage) prompt += ` - ${activeException.customMessage}`;
+        prompt += `\n`;
+      }
     }
-  }
 
-  if (business.schedules && business.schedules.length > 0) {
-    const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-    const openDays = business.schedules.filter(s => !s.closed);
-    if (openDays.length > 0) {
-      prompt += `Hours: `;
-      prompt += openDays.map(s => `${dayNames[s.dayOfWeek]} ${s.openTime}-${s.closeTime}`).join(', ');
-      prompt += `\n`;
+    if (business.schedules && business.schedules.length > 0) {
+      const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+      const openDays = business.schedules.filter(s => !s.closed);
+      if (openDays.length > 0) {
+        prompt += `Hours: `;
+        prompt += openDays.map(s => `${dayNames[s.dayOfWeek]} ${s.openTime}-${s.closeTime}`).join(', ');
+        prompt += `\n`;
+      }
     }
-  }
-
-  // FAQs (max 10 Q&A)
-  if (business.faqs && business.faqs.length > 0) {
-    prompt += `FAQ:\n`;
-    business.faqs.slice(0, 10).forEach(f => {
-      prompt += `Q: ${f.question}\nA: ${f.answer}\n`;
-    });
   }
 
   prompt += `\n`;
@@ -106,6 +103,11 @@ export function buildSystemPrompt(business) {
   if (collectFields.length > 0) {
     prompt += `Collect during conversation: ${collectFields.join(', ')}. `;
     prompt += `Ask naturally. Once collected, note in conversation (not in reply).\n\n`;
+  }
+
+  // ── 8. STRICT CONTEXT / INSTRUCTIONS ───────────────────────────────────────────
+  if (botConfig.strictInstructionBlock) {
+    prompt += `IMPORTANT — follow strictly:\n${botConfig.strictInstructionBlock}\n\n`;
   }
 
   return prompt;

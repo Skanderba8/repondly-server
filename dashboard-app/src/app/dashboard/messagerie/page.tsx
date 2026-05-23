@@ -1,6 +1,11 @@
-import { redirect } from 'next/navigation'
+'use client'
+
+import MessagerieView from './MessagerieView'
 
 export default function MessageriePage() {
-  // Redirect to dashboard with inbox tab active for consistent navigation
-  redirect('/dashboard#inbox')
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <MessagerieView />
+    </div>
+  )
 }

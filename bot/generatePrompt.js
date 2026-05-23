@@ -22,7 +22,9 @@ export async function generatePrompt(businessId, prisma) {
         schedules: {
           orderBy: { dayOfWeek: 'asc' },
         },
-        faqs: true,
+        scheduleExceptions: {
+          orderBy: { startDate: 'desc' },
+        },
       },
     });
 

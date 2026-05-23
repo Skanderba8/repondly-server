@@ -256,6 +256,30 @@ async function handleHumanHandover(business, conversationId, reason, crmNote) {
     },
   });
 
+  // 8. Create Order record from CRM note data
+  try {
+    const orderType = (crmNote?.appointmentRequested || crmNote?.orderIntent?.toLowerCase().includes('rendez')) 
+      ? 'APPOINTMENT' 
+      : 'ORDER';
+    const items = crmNote?.serviceOfInterest 
+      ? [{ name: crmNote.serviceOfInterest }] 
+      : null;
+    await prisma.order.create({
+      data: {
+        businessId: business.id,
+        type: orderType,
+        clientName: crmNote?.customerName || null,
+        clientPhone: crmNote?.customerPhone || null,
+        items,
+        notes: crmNote?.needsSummary || reason,
+        chatwootConversationId: conversationId,
+        status: 'PENDING',
+      },
+    });
+  } catch (orderErr) {
+    console.error(`[Bot] Failed to create Order record:`, orderErr.message);
+  }
+
   return true;
 }
 
