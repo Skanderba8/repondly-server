@@ -29,49 +29,47 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
-    const { systemPrompt, requiredOrderFields, requiredAppointmentFields, handoverTriggers, collectName, collectPhone, collectLocation, strictInstructionBlock } = body
+    const { businessId, systemPrompt, requiredOrderFields, requiredAppointmentFields, handoverTriggers, collectFields, handoverPhone, defaultLanguage, botActive } = body
+
+    if (!businessId) {
+      return NextResponse.json({ success: false, error: 'businessId is required' }, { status: 400 })
+    }
 
     const botConfig = await prisma.botConfig.upsert({
-      where: { businessId: session.user.id },
+      where: { businessId },
       update: {
         systemPrompt,
         requiredOrderFields: requiredOrderFields || [],
         requiredAppointmentFields: requiredAppointmentFields || [],
         handoverTriggers: handoverTriggers || [],
-        collectName: collectName !== undefined ? collectName : false,
-        collectPhone: collectPhone !== undefined ? collectPhone : false,
-        collectLocation: collectLocation !== undefined ? collectLocation : false,
+        collectFields: collectFields || [],
+        handoverPhone,
+        defaultLanguage: defaultLanguage || 'FR',
+        botActive: botActive !== undefined ? botActive : true,
         needsRegen: true,
-        ...(strictInstructionBlock !== undefined && { strictInstructionBlock }),
       },
       create: {
-        businessId: session.user.id,
+        businessId,
         systemPrompt,
         requiredOrderFields: requiredOrderFields || [],
         requiredAppointmentFields: requiredAppointmentFields || [],
         handoverTriggers: handoverTriggers || [],
-        collectName: collectName !== undefined ? collectName : false,
-        collectPhone: collectPhone !== undefined ? collectPhone : false,
-        collectLocation: collectLocation !== undefined ? collectLocation : false,
+        collectFields: collectFields || [],
+        handoverPhone,
+        defaultLanguage: defaultLanguage || 'FR',
+        botActive: botActive !== undefined ? botActive : true,
         needsRegen: true,
-        ...(strictInstructionBlock !== undefined && { strictInstructionBlock }),
       },
     })
 
     return NextResponse.json({ success: true, data: botConfig })
   } catch (error) {
     console.error('[BotConfig POST] Error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to save bot config' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Failed to save bot config' }, { status: 500 })
   }
 }

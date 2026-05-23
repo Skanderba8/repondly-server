@@ -83,22 +83,55 @@ export function containsDarija(text) {
   
   // Common Darija patterns (Arabic written with Latin characters)
   const darijaPatterns = [
-    /\b3andi\b/, // "عندي" (I have)
-    /\bnheb\b/,  // "نحب" (I want)
-    /\bch7al\b/, // "شحال" (how much)
-    /\bfama\b/,  // "فام" (is there)
-    /\b9adeh\b/, // "قادح" (how much)
-    /\bbkadeh\b/, // "بكادح" (how much)
-    /\bwa9tila\b/, // "وقتلة" (time)
-    /\bfin\b/,   // "فين" (where)
-    /\b3la\b/,   // "على" (on)
-    /\bmen\b/,   // "من" (from)
-    /\bl\b/,     // "ل" (to/for)
-    /\bfi\b/,    // "في" (in)
-    /\bma\b/,    // "ما" (not)
-    /\bkan\b/,   // "كان" (was)
-    /\bmouch\b/, // "موش" (not)
-    /\byes\b/,   // "ييس" (thing)
+    // Nombres Arabizi (3=ain, 7=ha, 9=qaf, 2=hamza)
+    /\b3[aouie]\b/,  // "3andi", "3andou", "3ando", "3alek"
+    /\b7[aouie]\b/,  // "7bib", "7abib", "7lou", "7ta"
+    /\b9[aouie]\b/,  // "9al", "9adeh", "9ahwa", "9rib"
+    /\b2[aouie]\b/,  // "2ah", "2ref", "2in"
+    
+    // Verbes communs
+    /\bnheb\b/,     // "نحب" (I want)
+    /\bchnowa\b/,    // "شحال" (how much/what)
+    /\bkifech\b/,    // "كيفش" (how)
+    /\bfin\b/,       // "فين" (where)
+    /\b3la\b/,       // "على" (on)
+    /\bmen\b/,       // "من" (from)
+    /\bwa9t[aou]?\b/, // "وقت", "وقتي", "وقتك" (time)
+    /\bch7al\b/,     // "شحال" (how much)
+    /\bbkadeh\b/,    // "بكادح" (how much)
+    /\bfama\b/,      // "فام" (is there)
+    /\bma\b/,        // "ما" (not)
+    /\bmouch\b/,     // "موش" (not)
+    /\bkan\b/,       // "كان" (was)
+    
+    // Pronoms
+    /\bena\b/,       // "أنا" (I)
+    /\binti\b/,      // "إنتي" (you)
+    /\bhouwa\b/,     // "هو" (he)
+    /\bhouma\b/,     // "هم" (they)
+    /\bbrabi\b/,     // "بربي" (my brother)
+    /\bmrigel\b/,    // "مرجل" (man)
+    
+    // Mots courants
+    /\byes\b/,       // "شيء" (thing)
+    /\bnormal\b/,    // "نورمال" (normal/ok)
+    /\bsahit\b/,     // "صاحب" (friend)
+    /\bwala\b/,      // "ولا" (or)
+    /\bmta3\b/,      // "متى" (of/from)
+    /\bwi\b/,        // "و" (and)
+    /\bkima\b/,      // "كما" (like)
+    /\brani\b/,      // "راني" (I am)
+    /\b3aych\b/,     // "عايش" (living)
+    /\bdirect\b/,    // "ديريكت" (direct)
+    /\bslow\b/,      // "سلوي" (slow)
+    /\bfast\b/,      // "فاست" (fast)
+    
+    // Expressions
+    /\bchnou[aou]?\b/, // "شنو", "شنوة" (what)
+    /\b3malt[aou]\b/,  // "عملت", "عملتي" (I did)
+    /\bna7ki\b/,       // "نحكي" (speak)
+    /\btfahem\b/,      // "تفهم" (understand)
+    /\bmechi\b/,       // "مشي" (like/as if)
   ];
   
   return darijaPatterns.some(pattern => pattern.test(lowerText));

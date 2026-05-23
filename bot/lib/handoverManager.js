@@ -55,44 +55,48 @@ export function needsHumanHandover(message, botConfig, extraction) {
 export async function notifyOwnerViaWhatsApp(business, crmNote, reason) {
   const botConfig = business.botConfig || {};
   
-  // Check if WhatsApp configuration is available
-  const phoneNumberId = botConfig.whatsappPhoneNumberId;
-  const token = botConfig.whatsappToken;
-  const ownerPhone = business.ownerPhone;
+  // Priority: handoverPhone (BotConfig) > ownerPhone (Business) > OWNER_PHONE (env)
+  const targetPhone = botConfig.handoverPhone || business.ownerPhone || process.env.OWNER_PHONE;
   
-  if (!phoneNumberId || !token || !ownerPhone) {
-    console.log(`[Handover] WhatsApp not configured for business ${business.id}. Manual notification required.`);
+  if (!targetPhone) {
+    console.log(`[Handover] No phone configured for business ${business.id}. Manual notification required.`);
     return false;
   }
   
-  // Build notification message in French
-  const message = buildHandoverMessage(business.name, crmNote, reason);
+  // Build notification message
+  const message = `🔔 Repondly — ${business.name}: un client attend votre réponse. Ouvrez Chatwoot pour répondre.\n\n` +
+    (crmNote?.customerName ? `Client: ${crmNote.customerName}\n` : '') +
+    (crmNote?.customerPhone ? `Téléphone: ${crmNote.customerPhone}\n` : '') +
+    (crmNote?.serviceOfInterest ? `Intérêt: ${crmNote.serviceOfInterest}\n` : '') +
+    `Sujet: ${reason}`;
   
-  try {
-    // Send via WhatsApp Graph API (like backup)
-    await axios.post(
-      `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,
-      {
-        messaging_product: 'whatsapp',
-        to: ownerPhone,
+  // Try WhatsApp API if configured
+  const whatsappApiUrl = process.env.WHATSAPP_API_URL;
+  const whatsappApiToken = process.env.WHATSAPP_API_TOKEN;
+  
+  if (whatsappApiUrl && whatsappApiToken) {
+    try {
+      const formattedPhone = targetPhone.replace(/[\s\-\+]/g, '');
+      await axios.post(`${whatsappApiUrl}/messages`, {
+        to: formattedPhone,
         type: 'text',
         text: { body: message }
-      },
-      {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${whatsappApiToken}`,
           'Content-Type': 'application/json'
         }
-      }
-    );
-    
-    console.log(`[Handover] WhatsApp notification sent to ${ownerPhone}`);
-    return true;
-  } catch (error) {
-    console.error(`[Handover] Failed to send WhatsApp notification:`, error.response?.data || error.message);
-    console.log(`[Handover] MANUAL ACTION REQUIRED: Send to ${ownerPhone}: ${message}`);
-    return false;
+      });
+      console.log(`[Handover] WhatsApp notification sent to ${targetPhone}`);
+      return true;
+    } catch (error) {
+      console.error(`[Handover] Failed to send WhatsApp:`, error.message);
+    }
   }
+  
+  // Fallback: log for manual action
+  console.log(`[Handover] MANUAL ACTION REQUIRED: Send to ${targetPhone}: ${message}`);
+  return false;
 }
 
 /**

@@ -78,6 +78,7 @@ model Business {
   products              Product[]
   services              Service[]
   schedules             Schedule[]
+  scheduleExceptions    ScheduleException[]
   faqs                  Faq[]
   botConfig             BotConfig?
   conversationLogs      ConversationLog[]
@@ -320,6 +321,12 @@ enum ConversationLogStatus {
   HANDED_OVER
 }
 
+enum DefaultLanguage {
+  FR
+  AR
+  DARIJA
+}
+
 // ─── AI Bot Models ───────────────────────────────────────────────────────────────
 
 model Product {
@@ -329,6 +336,9 @@ model Product {
   description String?
   price       Float
   available   Boolean  @default(true)
+  outOfStock  Boolean  @default(false)
+  deliveryFee Float?
+  visible     Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -343,6 +353,9 @@ model Service {
   durationMinutes Int
   price          Float
   available      Boolean  @default(true)
+  outOfStock     Boolean  @default(false)
+  deliveryFee    Float?
+  visible        Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -375,6 +388,24 @@ model Faq {
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
+model ScheduleException {
+  id             String   @id @default(cuid())
+  businessId     String
+  label          String
+  startDate      DateTime
+  endDate        DateTime
+  closedAllDay   Boolean  @default(false)
+  openTime       String?
+  closeTime      String?
+  customMessage  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, startDate])
+}
+
 model BotConfig {
   id                       String   @id @default(cuid())
   businessId               String   @unique
@@ -382,23 +413,26 @@ model BotConfig {
   requiredOrderFields      String[] @default([])
   requiredAppointmentFields String[] @default([])
   handoverTriggers         String[] @default([])
-  collectName              Boolean  @default(false)
-  collectPhone             Boolean  @default(false)
-  collectLocation          Boolean  @default(false)
+  collectFields            String[] @default([])
   needsRegen               Boolean  @default(true)
   lastGeneratedAt          DateTime?
   strictInstructionBlock   String?
   
-  // Language handling
+  // New fields
+  handoverPhone            String?
+  defaultLanguage          DefaultLanguage @default(FR)
+  botActive                Boolean  @default(true)
+  
+  // Language handling (kept for admin internal)
   primaryLanguage          String?
   allowDarijaInput         Boolean  @default(true)
   forceProfessionalArabic Boolean  @default(true)
   
-  // Handover configuration
+  // Handover configuration (kept for admin internal)
   whatsappPhoneNumberId    String?
   whatsappToken            String?
   
-  // Extraction configuration
+  // Extraction configuration (kept for admin internal)
   enableLiveExtraction     Boolean  @default(true)
   extractionDepth          String   @default("standard")
   

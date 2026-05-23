@@ -1,187 +1,67 @@
 /**
  * CRM Notes Manager Module
- * Handles progressive update of CRM notes with extracted customer information.
- * Merges new extraction data with existing notes to avoid duplicates.
+ * Simplified to write collected fields as a note to Chatwoot conversation.
+ * Removes complex AI extraction logic.
  */
 
 /**
- * Update CRM notes with new extraction data.
+ * Write collected fields as a note to Chatwoot conversation.
  * @param {object} prisma - Prisma client
  * @param {string} businessId - Business ID
  * @param {number} chatwootConversationId - Chatwoot conversation ID
- * @param {object} extraction - New extraction data from AI
- * @returns {object} - Updated CRM note
+ * @param {object} collectedData - Collected fields from conversation
+ * @param {string} accountId - Chatwoot account ID
+ * @param {string} apiToken - Chatwoot API token
+ * @returns {Promise<boolean>} - True if note written successfully
  */
-export async function updateCRMNotes(prisma, businessId, chatwootConversationId, extraction) {
+export async function writeCollectedFieldsNote(prisma, businessId, chatwootConversationId, collectedData, accountId, apiToken) {
   try {
-    // Find or create CRM note
-    let crmNote = await prisma.conversationCRMNote.findUnique({
-      where: {
-        businessId_chatwootConversationId: {
-          businessId,
-          chatwootConversationId,
-        },
-      },
-    });
+    // Build note content from collected data
+    let noteContent = '📋 Informations collectées:\n\n';
+    
+    const fieldLabels = {
+      name: 'Nom',
+      phone: 'Téléphone',
+      email: 'Email',
+      service: 'Service souhaité',
+      product: 'Produit souhaité',
+      delivery: 'Mode de livraison',
+      location: 'Localisation',
+      budget: 'Budget',
+      notes: 'Notes libres'
+    };
 
-    if (!crmNote) {
-      crmNote = await prisma.conversationCRMNote.create({
-        data: {
-          businessId,
-          chatwootConversationId,
-        },
-      });
+    for (const [field, value] of Object.entries(collectedData)) {
+      if (value && fieldLabels[field]) {
+        noteContent += `${fieldLabels[field]}: ${value}\n`;
+      }
     }
 
-    // Merge new extraction with existing data
-    const updateData = mergeExtraction(crmNote, extraction);
+    // Write note to Chatwoot
+    const url = `${process.env.CHATWOOT_BASE_URL}/api/v1/accounts/${accountId}/conversations/${chatwootConversationId}/messages`;
+    const token = (apiToken || process.env.CHATWOOT_API_TOKEN).trim();
 
-    // Update the CRM note
-    const updated = await prisma.conversationCRMNote.update({
-      where: { id: crmNote.id },
-      data: {
-        ...updateData,
-        lastExtractedAt: new Date(),
-        extractionCount: { increment: 1 },
-      },
-    });
+    await axios.post(url, 
+      { content: noteContent, message_type: 'outgoing', private: true },
+      { 
+        headers: { 
+          'api_access_token': token,
+          'api-access-token': token,
+          'Authorization': `Bearer ${token}`
+        } 
+      }
+    );
 
-    return updated;
+    console.log(`[CRM Notes] Note written for conversation ${chatwootConversationId}`);
+    return true;
   } catch (error) {
-    console.error(`[CRM Notes] Error updating notes for conversation ${chatwootConversationId}:`, error);
-    throw error;
+    console.error(`[CRM Notes] Error writing note for conversation ${chatwootConversationId}:`, error.message);
+    return false;
   }
 }
 
 /**
- * Merge new extraction data with existing CRM note.
- * Avoids duplicates and progressively improves the data.
- * @param {object} existing - Existing CRM note
- * @param {object} extraction - New extraction data
- * @returns {object} - Merged data for update
- */
-function mergeExtraction(existing, extraction) {
-  const updateData = {};
-
-  // Identity fields - only update if empty
-  if (extraction.customerName && !existing.customerName) {
-    updateData.customerName = extraction.customerName;
-  }
-  if (extraction.customerPhone && !existing.customerPhone) {
-    updateData.customerPhone = extraction.customerPhone;
-  }
-  if (extraction.customerEmail && !existing.customerEmail) {
-    updateData.customerEmail = extraction.customerEmail;
-  }
-  if (extraction.customerLocation && !existing.customerLocation) {
-    updateData.customerLocation = extraction.customerLocation;
-  }
-  if (extraction.preferredLanguage && !existing.preferredLanguage) {
-    updateData.preferredLanguage = extraction.preferredLanguage;
-  }
-
-  // Commercial intent - update if new value is more specific
-  if (extraction.serviceOfInterest && (!existing.serviceOfInterest || extraction.serviceOfInterest.length > existing.serviceOfInterest.length)) {
-    updateData.serviceOfInterest = extraction.serviceOfInterest;
-  }
-  if (extraction.budget && !existing.budget) {
-    updateData.budget = extraction.budget;
-  }
-  if (extraction.orderIntent && (!existing.orderIntent || existing.orderIntent === 'interested')) {
-    updateData.orderIntent = extraction.orderIntent;
-  }
-  if (extraction.urgency && !existing.urgency) {
-    updateData.urgency = extraction.urgency;
-  }
-  if (extraction.purchaseStage && (!existing.purchaseStage || extraction.purchaseStage !== 'initial')) {
-    updateData.purchaseStage = extraction.purchaseStage;
-  }
-
-  // Objections - append if not duplicate
-  if (extraction.objections && extraction.objections.length > 0) {
-    const existingObjections = existing.objections || [];
-    const newObjections = extraction.objections.filter(obj => !existingObjections.includes(obj));
-    if (newObjections.length > 0) {
-      updateData.objections = [...existingObjections, ...newObjections];
-    }
-  }
-
-  // Preferences - append if not duplicate
-  if (extraction.preferences && extraction.preferences.length > 0) {
-    const existingPreferences = existing.preferences || [];
-    const newPreferences = extraction.preferences.filter(pref => !existingPreferences.includes(pref));
-    if (newPreferences.length > 0) {
-      updateData.preferences = [...existingPreferences, ...newPreferences];
-    }
-  }
-
-  // Conversation intelligence - evolve progressively
-  if (extraction.needsSummary) {
-    if (!existing.needsSummary || extraction.needsSummary.length > existing.needsSummary.length) {
-      updateData.needsSummary = extraction.needsSummary;
-    }
-  }
-  if (extraction.importantContext) {
-    if (!existing.importantContext) {
-      updateData.importantContext = extraction.importantContext;
-    } else {
-      // Append to existing context
-      updateData.importantContext = `${existing.importantContext}\n${extraction.importantContext}`;
-    }
-  }
-
-  // Pain points - append if not duplicate
-  if (extraction.painPoints && extraction.painPoints.length > 0) {
-    const existingPainPoints = existing.painPoints || [];
-    const newPainPoints = extraction.painPoints.filter(pp => !existingPainPoints.includes(pp));
-    if (newPainPoints.length > 0) {
-      updateData.painPoints = [...existingPainPoints, ...newPainPoints];
-    }
-  }
-
-  // Custom requests - append if not duplicate
-  if (extraction.customRequests && extraction.customRequests.length > 0) {
-    const existingCustomRequests = existing.customRequests || [];
-    const newCustomRequests = extraction.customRequests.filter(req => !existingCustomRequests.includes(req));
-    if (newCustomRequests.length > 0) {
-      updateData.customRequests = [...existingCustomRequests, ...newCustomRequests];
-    }
-  }
-
-  // Sentiment - update with latest
-  if (extraction.sentiment) {
-    updateData.sentiment = extraction.sentiment;
-  }
-
-  // Frustration level - update with latest
-  if (extraction.frustrationLevel !== undefined) {
-    updateData.frustrationLevel = extraction.frustrationLevel;
-  }
-
-  // Business actions - set flags
-  if (extraction.businessActions) {
-    if (extraction.businessActions.includes('appointment_requested')) {
-      updateData.appointmentRequested = true;
-    }
-    if (extraction.businessActions.includes('quote_requested')) {
-      updateData.quoteRequested = true;
-    }
-    if (extraction.businessActions.includes('order_requested')) {
-      updateData.orderRequested = true;
-    }
-    if (extraction.businessActions.includes('support_requested')) {
-      updateData.supportRequested = true;
-    }
-    if (extraction.businessActions.includes('follow_up_needed')) {
-      updateData.followUpNeeded = true;
-    }
-  }
-
-  return updateData;
-}
-
-/**
- * Get CRM note for a conversation.
+ * Get CRM note for a conversation (legacy support).
  * @param {object} prisma - Prisma client
  * @param {string} businessId - Business ID
  * @param {number} chatwootConversationId - Chatwoot conversation ID

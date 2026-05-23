@@ -32,47 +32,33 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
-    const { name, description, price, available } = body
+    const { businessId, name, description, price, available, outOfStock, deliveryFee, visible } = body
 
-    if (!name || price === undefined) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      )
+    if (!businessId || !name || price === undefined) {
+      return NextResponse.json({ success: false, error: 'businessId, name, and price are required' }, { status: 400 })
     }
 
     const product = await prisma.product.create({
       data: {
-        businessId: session.user.id,
+        businessId,
         name,
         description,
-        price: parseFloat(price),
+        price,
         available: available !== undefined ? available : true,
+        outOfStock: outOfStock || false,
+        deliveryFee,
+        visible: visible !== undefined ? visible : true,
       },
-    })
-
-    // Trigger prompt regeneration
-    await prisma.botConfig.update({
-      where: { businessId: session.user.id },
-      data: { needsRegen: true },
-    }).catch(() => {
-      // Bot config might not exist yet, ignore error
     })
 
     return NextResponse.json({ success: true, data: product })
   } catch (error) {
     console.error('[Products POST] Error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create product' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Failed to create product' }, { status: 500 })
   }
 }

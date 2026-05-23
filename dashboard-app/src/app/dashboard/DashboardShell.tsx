@@ -8,13 +8,17 @@ import {
   LayoutDashboard, Inbox, Bot, Settings, LogOut,
   AlertCircle, CheckCircle, X, TrendingUp,
   MessageSquare, Radio, Calendar, ChevronDown, ChevronRight, ChevronLeft, User,
-  ArrowRight, Wifi, WifiOff, Zap, RefreshCw, Menu,
+  ArrowRight, Wifi, WifiOff, Zap, RefreshCw, Menu, Store, Package,
 } from 'lucide-react'
 import MessagerieView from './messagerie/MessagerieView'
 import dynamic from 'next/dynamic'
 import { FileText, CheckCheck, RotateCcw, Loader2, Link2, Unlink, ExternalLink, Smartphone } from 'lucide-react'
 
 const BotConfigView = dynamic(() => import('./bot-config/page'), { ssr: false })
+const BotPage = dynamic(() => import('./bot/page'), { ssr: false })
+const CommercePage = dynamic(() => import('./commerce/page'), { ssr: false })
+const CataloguePage = dynamic(() => import('./catalogue/page'), { ssr: false })
+const BotSettingsPage = dynamic(() => import('./bot-settings/page'), { ssr: false })
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -88,7 +92,7 @@ const C = {
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type PageId = 'home' | 'inbox' | 'channels' | 'calendrier' | 'bot' | 'bot-config' | 'settings'
+type PageId = 'home' | 'inbox' | 'channels' | 'calendrier' | 'bot' | 'commerce' | 'catalogue' | 'bot-settings' | 'bot-config' | 'settings'
 
 interface RecentConv {
   id: number
@@ -103,8 +107,10 @@ const NAV: { id: PageId; label: string; icon: React.ReactNode }[] = [
   { id: 'home',       label: 'Accueil',    icon: <LayoutDashboard size={16} /> },
   { id: 'inbox',      label: 'Messagerie', icon: <Inbox size={16} /> },
   { id: 'calendrier', label: 'Calendrier', icon: <Calendar size={16} /> },
-  { id: 'bot-config', label: 'Bot IA',    icon: <Bot size={16} /> },
-  { id: 'settings',   label: 'Paramètres', icon: <Settings size={16} /> },
+  { id: 'bot',        label: 'Mon Bot',    icon: <Bot size={16} /> },
+  { id: 'commerce',   label: 'Mon Commerce', icon: <Store size={16} /> },
+  { id: 'catalogue',  label: 'Catalogue', icon: <Package size={16} /> },
+  { id: 'bot-settings', label: 'Paramètres Bot', icon: <Settings size={16} /> },
 ]
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
@@ -1643,9 +1649,24 @@ export default function DashboardShell() {
                     </motion.div>
                   </div>
                 )}
-                {activePage === 'bot-config' && (
+                {activePage === 'bot' && (
                   <div style={{ padding: 0, height: '100%' }}>
-                    <BotConfigView />
+                    <BotPage />
+                  </div>
+                )}
+                {activePage === 'commerce' && (
+                  <div style={{ padding: 0, height: '100%' }}>
+                    <CommercePage />
+                  </div>
+                )}
+                {activePage === 'catalogue' && (
+                  <div style={{ padding: 0, height: '100%' }}>
+                    <CataloguePage />
+                  </div>
+                )}
+                {activePage === 'bot-settings' && (
+                  <div style={{ padding: 0, height: '100%' }}>
+                    <BotSettingsPage />
                   </div>
                 )}
                 {activePage === 'settings' && (

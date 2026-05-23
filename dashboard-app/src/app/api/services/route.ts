@@ -32,48 +32,34 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
-    const { name, description, durationMinutes, price, available } = body
+    const { businessId, name, description, durationMinutes, price, available, outOfStock, deliveryFee, visible } = body
 
-    if (!name || durationMinutes === undefined || price === undefined) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      )
+    if (!businessId || !name || durationMinutes === undefined || price === undefined) {
+      return NextResponse.json({ success: false, error: 'businessId, name, durationMinutes, and price are required' }, { status: 400 })
     }
 
     const service = await prisma.service.create({
       data: {
-        businessId: session.user.id,
+        businessId,
         name,
         description,
-        durationMinutes: parseInt(durationMinutes),
-        price: parseFloat(price),
+        durationMinutes,
+        price,
         available: available !== undefined ? available : true,
+        outOfStock: outOfStock || false,
+        deliveryFee,
+        visible: visible !== undefined ? visible : true,
       },
-    })
-
-    // Trigger prompt regeneration
-    await prisma.botConfig.update({
-      where: { businessId: session.user.id },
-      data: { needsRegen: true },
-    }).catch(() => {
-      // Bot config might not exist yet, ignore error
     })
 
     return NextResponse.json({ success: true, data: service })
   } catch (error) {
     console.error('[Services POST] Error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create service' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Failed to create service' }, { status: 500 })
   }
 }
