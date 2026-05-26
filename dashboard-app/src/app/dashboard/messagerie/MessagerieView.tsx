@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useTheme } from '@/lib/theme'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession, signOut } from 'next-auth/react'
-import { useMobileNav } from '@/components/AppShell'
 import {
   Search, CheckCheck, RotateCcw, Send, Loader2,
   MessageSquare, WifiOff, X, FileText, ChevronRight,
@@ -889,11 +888,11 @@ interface MessagerieProps {
   onConversationChange?: (convId: number | null, status: RepondlyStatus) => void
   externalNotesOpen?: boolean
   onNotesOpenChange?: (open: boolean) => void
+  initialConvId?: number
 }
 
-export default function Messagerie({ onConversationChange, externalNotesOpen, onNotesOpenChange }: MessagerieProps) {
+export default function Messagerie({ onConversationChange, externalNotesOpen, onNotesOpenChange, initialConvId }: MessagerieProps) {
   const C = useC()
-  const { setHideNav } = useMobileNav()
   const [tabStatus, setTabStatus]       = useState<RepondlyStatus>('EN_ATTENTE')
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [convLoading, setConvLoading]   = useState(true)
@@ -926,11 +925,6 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
   const eventSourceRef  = useRef<EventSource | null>(null)
 
   const activeConv = conversations.find(c => c.id === activeConvId) || null
-
-  // Hide/show navbar based on conversation state
-  useEffect(() => {
-    setHideNav(!!activeConvId && isMobile)
-  }, [activeConvId, isMobile, setHideNav])
 
   // ── Fetch conversations ──────────────────────────────────────────────────────
   const fetchConversations = useCallback(async () => {
@@ -1219,6 +1213,14 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
     convPollRef.current = setInterval(fetchConversations, 30_000)
     return () => { if (convPollRef.current) clearInterval(convPollRef.current) }
   }, [])
+
+  // ── Auto-select initialConvId once conversations are loaded ──────────────────
+  const didAutoSelect = useRef(false)
+  useEffect(() => {
+    if (!initialConvId || didAutoSelect.current || convLoading || conversations.length === 0) return
+    didAutoSelect.current = true
+    setActiveConvId(initialConvId)
+  }, [initialConvId, convLoading, conversations])
 
   // ── Select conversation ───────────────────────────────────────────────────────
   useEffect(() => {

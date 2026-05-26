@@ -1,11 +1,12 @@
 'use client'
 
-import MessagerieView from './MessagerieView'
+import ConversationList from '@/components/messagerie/ConversationList'
+import PageTransition from '@/components/ui/PageTransition'
 
 export default function MessageriePage() {
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <MessagerieView />
-    </div>
+    <PageTransition>
+      <ConversationList />
+    </PageTransition>
   )
 }

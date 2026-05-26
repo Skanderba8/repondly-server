@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4'
+const CACHE_VERSION = 'v5'
 const CACHE_NAME = `repondly-${CACHE_VERSION}`
 const STATIC_CACHE = `repondly-static-${CACHE_VERSION}`
 const urlsToCache = [
@@ -36,27 +36,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
   
-  // Skip service worker for auth routes - let them pass through
-  if (url.pathname.startsWith('/api/auth/')) {
+  // Pass all API routes through with no SW interception (SSE streams cannot be cached)
+  if (url.pathname.startsWith('/api/')) {
     return
   }
-  
-  // Network-first for HTML pages and API routes (excluding auth)
-  if (event.request.mode === 'navigate' || 
-      url.pathname.startsWith('/api/') ||
-      url.pathname.endsWith('.html')) {
+
+  // Network-first for HTML navigation (no caching)
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html')) {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200) {
-            return caches.match(event.request).then(cached => cached || response)
-          }
-          const responseToCache = response.clone()
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache)
-          })
-          return response
-        })
         .catch(() => caches.match(event.request).then(cached => cached || fetch(event.request)))
     )
     return

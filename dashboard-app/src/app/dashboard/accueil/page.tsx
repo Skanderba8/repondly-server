@@ -1,37 +1,26 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { MessageSquare, Clock, Zap, ArrowRight, RefreshCw } from 'lucide-react'
-import { useTheme, palette } from '@/lib/theme'
+import Link from 'next/link'
+import Image from 'next/image'
+import { motion } from 'framer-motion'
+import { MessageSquare, Clock, Zap, ArrowRight, ShoppingBag } from 'lucide-react'
+import PageTransition from '@/components/ui/PageTransition'
+import SkeletonCard from '@/components/ui/SkeletonCard'
 
 interface RecentConv {
   id: number
   name: string
-  preview: string
   time: number
   channel: string
   unread: number
 }
 
 interface Stats {
-  openCount: number
-  treatedToday: number
-  handoversToday: number
-}
-
-const CHANNEL_COLOR: Record<string, string> = {
-  whatsapp: '#22C55E',
-  facebook: '#3B82F6',
-  instagram: '#EC4899',
-}
-
-function channelColor(ch: string) {
-  const key = ch.toLowerCase()
-  for (const [k, v] of Object.entries(CHANNEL_COLOR)) {
-    if (key.includes(k)) return v
-  }
-  return '#3B82F6'
+  openConvs: number
+  resolvedToday: number
+  handovers: number
+  orders: number
 }
 
 function timeAgo(ts: number) {
@@ -46,56 +35,74 @@ function initials(name: string) {
   return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
 }
 
+function channelLabel(ch: string) {
+  const k = ch.toLowerCase()
+  if (k.includes('whatsapp')) return { label: 'WhatsApp', color: '#22C55E' }
+  if (k.includes('instagram')) return { label: 'Instagram', color: '#EC4899' }
+  if (k.includes('facebook')) return { label: 'Facebook', color: '#0A84FF' }
+  return { label: ch || 'Conversation', color: 'var(--color-text-3)' }
+}
+
+const KPIS = [
+  { key: 'openConvs',     label: 'En attente',         sub: 'conversations ouvertes',  icon: Clock,         accent: '#FF9F0A', href: '/dashboard/messagerie' },
+  { key: 'resolvedToday', label: 'Traités aujourd\'hui', sub: 'résolues aujourd\'hui',   icon: MessageSquare, accent: '#30D158', href: null },
+  { key: 'handovers',     label: 'Interventions',       sub: 'transferts humains',       icon: Zap,           accent: '#0A84FF', href: null },
+  { key: 'orders',        label: 'Commandes',           sub: 'commandes en attente',     icon: ShoppingBag,   accent: '#BF5AF2', href: '/dashboard/commandes' },
+] as const
+
 export default function AccueilPage() {
-  const router = useRouter()
-  const dark = useTheme()
-  const P = palette(dark)
-  const [stats, setStats] = useState<Stats>({ openCount: 0, treatedToday: 0, handoversToday: 0 })
+  const [stats, setStats] = useState<Stats>({ openConvs: 0, resolvedToday: 0, handovers: 0, orders: 0 })
   const [convs, setConvs] = useState<RecentConv[]>([])
   const [loading, setLoading] = useState(true)
   const sseRef = useRef<EventSource | null>(null)
 
   const fetchData = useCallback(async () => {
     try {
-      const [openRes, allRes, botEventsRes] = await Promise.all([
+      const [openRes, resolvedRes, ordersRes] = await Promise.all([
         fetch('/api/chatwoot/conversations?status=open'),
         fetch('/api/chatwoot/conversations?status=resolved&page=1'),
-        fetch('/api/chatwoot/conversations?status=open'),
+        fetch('/api/orders'),
       ])
 
-      let openCount = 0
+      let openConvs = 0
       let recentConvs: RecentConv[] = []
 
       if (openRes.ok) {
         const d = await openRes.json()
-        const payload: any[] = d.data?.payload || []
-        openCount = payload.length
-        recentConvs = payload.slice(0, 8).map((c: any) => ({
+        const payload: Array<{
+          id: number; meta?: { sender?: { name: string } }
+          last_activity_at: number; created_at: number
+          inbox?: { name: string }; channel_type?: string; unread_count?: number
+        }> = d.data?.payload || []
+        openConvs = payload.length
+        recentConvs = payload.slice(0, 6).map(c => ({
           id: c.id,
           name: c.meta?.sender?.name || 'Client',
-          preview: c.last_activity_at ? 'Conversation active' : '',
           time: c.last_activity_at || c.created_at,
           channel: c.inbox?.name || c.channel_type || '',
           unread: c.unread_count || 0,
         }))
       }
 
-      let treatedToday = 0
-      if (allRes.ok) {
-        const d = await allRes.json()
-        const payload: any[] = d.data?.payload || []
-        const todayStart = new Date()
-        todayStart.setHours(0, 0, 0, 0)
-        treatedToday = payload.filter((c: any) => {
-          const updatedAt = new Date(c.updated_at * 1000)
-          return updatedAt >= todayStart
-        }).length
+      let resolvedToday = 0
+      if (resolvedRes.ok) {
+        const d = await resolvedRes.json()
+        const payload: Array<{ updated_at: number }> = d.data?.payload || []
+        const start = new Date(); start.setHours(0, 0, 0, 0)
+        resolvedToday = payload.filter(c => new Date(c.updated_at * 1000) >= start).length
       }
 
-      setStats({ openCount, treatedToday, handoversToday: 0 })
+      let orders = 0
+      if (ordersRes.ok) {
+        const d = await ordersRes.json()
+        const payload: Array<{ status: string }> = d.data || []
+        orders = payload.filter(o => o.status === 'PENDING').length
+      }
+
+      setStats({ openConvs, resolvedToday, handovers: 0, orders })
       setConvs(recentConvs)
     } catch (err) {
-      console.error('[Accueil] fetch error', err)
+      console.error('[Accueil]', err)
     } finally {
       setLoading(false)
     }
@@ -103,219 +110,190 @@ export default function AccueilPage() {
 
   useEffect(() => {
     fetchData()
-
     sseRef.current = new EventSource('/api/sse')
     sseRef.current.onmessage = (e) => {
       try {
-        const data = JSON.parse(e.data)
-        if (data.type === 'new_message' || data.type === 'conversation_update') {
-          fetchData()
-        }
+        const d = JSON.parse(e.data)
+        if (d.type === 'message_created' || d.type === 'conversation_created' || d.type === 'conversation_status_changed') fetchData()
       } catch {}
     }
     return () => sseRef.current?.close()
   }, [fetchData])
 
-  const kpis = [
-    {
-      label: 'En attente',
-      value: stats.openCount,
-      sub: 'conversations ouvertes',
-      icon: <Clock size={16} />,
-      accent: '#F59E0B',
-      onClick: () => router.push('/dashboard/messagerie'),
-    },
-    {
-      label: 'Traités aujourd\'hui',
-      value: stats.treatedToday,
-      sub: 'conversations résolues',
-      icon: <MessageSquare size={16} />,
-      accent: '#10B981',
-    },
-    {
-      label: 'Interventions humaines',
-      value: stats.handoversToday,
-      sub: 'transferts aujourd\'hui',
-      icon: <Zap size={16} />,
-      accent: '#3B82F6',
-    },
-  ]
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const todayCap = today.charAt(0).toUpperCase() + today.slice(1)
 
   return (
-    <div style={{ padding: 'clamp(16px, 4vw, 32px)', maxWidth: 1080, margin: '0 auto', paddingBottom: 48 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-        <div>
-          <h1 style={{ fontSize: 'clamp(17px, 4vw, 22px)', fontWeight: 600, color: P.text, margin: 0, letterSpacing: '-0.02em' }}>
-            Tableau de bord
-          </h1>
-          <p style={{ fontSize: 13, color: P.text3, marginTop: 4, margin: 0 }}>
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
-        </div>
-        <button
-          onClick={fetchData}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '7px 14px', borderRadius: 8,
-            border: `1px solid ${P.border}`, background: 'transparent',
-            color: P.text3, fontSize: 13, cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.borderColor = P.border2
-            ;(e.currentTarget as HTMLElement).style.color = P.text2
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.borderColor = P.border
-            ;(e.currentTarget as HTMLElement).style.color = P.text3
-          }}
-        >
-          <RefreshCw size={13} />
-          Actualiser
-        </button>
-      </div>
+    <PageTransition>
+      <div style={{ padding: 'clamp(16px, 5vw, 36px)', maxWidth: 960, margin: '0 auto', paddingBottom: 32 }}>
 
-      {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
-        {kpis.map((kpi) => (
-          <div
-            key={kpi.label}
-            onClick={kpi.onClick}
-            style={{
-              background: P.surface,
-              border: `1px solid ${P.border}`,
-              borderRadius: 12,
-              padding: '20px 24px',
-              cursor: kpi.onClick ? 'pointer' : 'default',
-              transition: 'all 0.15s',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-            onMouseEnter={e => {
-              if (kpi.onClick) {
-                (e.currentTarget as HTMLElement).style.borderColor = P.border2
-                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'
-              }
-            }}
-            onMouseLeave={e => {
-              if (kpi.onClick) {
-                (e.currentTarget as HTMLElement).style.borderColor = P.border
-                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
-              }
-            }}
-          >
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-              background: kpi.accent, borderRadius: '12px 12px 0 0',
-            }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, fontWeight: 500, color: P.text3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                {kpi.label}
-              </span>
-              <span style={{ color: kpi.accent }}>{kpi.icon}</span>
-            </div>
-            {loading
-              ? <div style={{ height: 40, width: 64, background: P.border, borderRadius: 6, marginBottom: 8 }} />
-              : <div style={{ fontSize: 40, fontWeight: 700, color: P.text, lineHeight: 1, marginBottom: 6 }}>
-                  {kpi.value}
-                </div>
-            }
-            <div style={{ fontSize: 12, color: P.text3, display: 'flex', alignItems: 'center', gap: 4 }}>
-              {kpi.sub}
-              {kpi.onClick && <ArrowRight size={11} />}
-            </div>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <Image src="/logo.png" alt="" width={36} height={36} style={{ borderRadius: 10 }} />
+          <div>
+            <h1 style={{
+              fontFamily: "'Syne', sans-serif",
+              fontSize: 'clamp(18px, 4vw, 22px)',
+              fontWeight: 800,
+              color: 'var(--color-text)',
+              margin: 0,
+              letterSpacing: '-0.03em',
+              lineHeight: 1.1,
+            }}>
+              Tableau de bord
+            </h1>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--color-text-3)', margin: '3px 0 0' }}>
+              {todayCap}
+            </p>
           </div>
-        ))}
-      </div>
-
-      {/* Recent conversations */}
-      <div style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{
-          padding: '16px 20px',
-          borderBottom: `1px solid ${P.border}`,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
-          <span style={{ fontSize: 14, fontWeight: 500, color: P.text }}>
-            Activité récente
-          </span>
-          <button
-            onClick={() => router.push('/dashboard/messagerie')}
-            style={{
-              fontSize: 12, color: '#3B82F6', background: 'none', border: 'none',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            Voir tout <ArrowRight size={12} />
-          </button>
         </div>
 
-        {loading && (
-          <div style={{ padding: 32, textAlign: 'center', color: P.text3, fontSize: 13 }}>
-            Chargement...
-          </div>
-        )}
+        {/* KPI Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 24 }}>
+          {KPIS.map((kpi, i) => {
+            const Icon = kpi.icon
+            const value = stats[kpi.key]
+            const inner = (
+              <motion.div
+                key={kpi.key}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.25, delay: i * 0.04, ease: 'easeOut' }}
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-card)',
+                  padding: '18px 16px 16px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: 'var(--shadow-card)',
+                  cursor: kpi.href ? 'pointer' : 'default',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  minHeight: 110,
+                }}
+              >
+                {/* accent bar */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: kpi.accent, borderRadius: '16px 16px 0 0' }} />
 
-        {!loading && convs.length === 0 && (
-          <div style={{ padding: 48, textAlign: 'center' }}>
-            <MessageSquare size={28} color={P.border} style={{ margin: '0 auto 12px' }} />
-            <p style={{ fontSize: 13, color: P.text3, margin: 0 }}>Aucune conversation pour le moment</p>
-          </div>
-        )}
-
-        {!loading && convs.map((conv, i) => {
-          const color = channelColor(conv.channel)
-          const ini = initials(conv.name)
-          return (
-            <button
-              key={conv.id}
-              onClick={() => router.push('/dashboard/messagerie')}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '12px 20px',
-                border: 'none',
-                borderBottom: i < convs.length - 1 ? `1px solid ${P.borderSub}` : 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                transition: 'background 0.15s',
-                textAlign: 'left',
-              }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = P.hoverBg}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-            >
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: `${color}18`,
-                border: `1.5px solid ${color}40`,
-                color,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, fontWeight: 600, flexShrink: 0,
-              }}>
-                {ini}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: P.text, marginBottom: 2 }}>{conv.name}</div>
-                <div style={{ fontSize: 12, color: P.text3 }}>{conv.channel || 'Conversation'}</div>
-              </div>
-              <div style={{ fontSize: 11, color: P.text3, flexShrink: 0 }}>{timeAgo(conv.time)}</div>
-              {conv.unread > 0 && (
+                {/* icon chip */}
                 <div style={{
-                  width: 18, height: 18, borderRadius: '50%',
-                  background: '#3B82F6', color: '#fff',
-                  fontSize: 10, fontWeight: 600,
+                  width: 34, height: 34, borderRadius: 10,
+                  background: `${kpi.accent}1A`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
+                  color: kpi.accent, flexShrink: 0,
                 }}>
-                  {conv.unread}
+                  <Icon size={17} />
                 </div>
-              )}
-            </button>
-          )
-        })}
+
+                {/* number */}
+                {loading ? (
+                  <div className="rp-shimmer" style={{ height: 34, width: 52, borderRadius: 8 }} />
+                ) : (
+                  <span style={{
+                    fontFamily: "'Syne', sans-serif",
+                    fontSize: 34, fontWeight: 800,
+                    color: 'var(--color-text)',
+                    lineHeight: 1,
+                    letterSpacing: '-0.04em',
+                  }}>
+                    {value}
+                  </span>
+                )}
+
+                {/* label */}
+                <div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.2 }}>
+                    {kpi.label}
+                  </div>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--color-text-3)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+                    {kpi.sub}
+                    {kpi.href && <ArrowRight size={10} />}
+                  </div>
+                </div>
+              </motion.div>
+            )
+            return kpi.href
+              ? <Link key={kpi.key} href={kpi.href} style={{ textDecoration: 'none' }}>{inner}</Link>
+              : inner
+          })}
+        </div>
+
+        {/* Recent conversations */}
+        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--color-text)', letterSpacing: '-0.01em' }}>
+              Activité récente
+            </span>
+            <Link href="/dashboard/messagerie" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--color-accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
+              Voir tout <ArrowRight size={12} />
+            </Link>
+          </div>
+
+          {loading ? (
+            <>{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</>
+          ) : convs.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center' }}>
+              <MessageSquare size={24} color="var(--color-border)" style={{ margin: '0 auto 10px', display: 'block' }} />
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--color-text-3)', margin: 0 }}>Aucune conversation active</p>
+            </div>
+          ) : convs.map((conv, i) => {
+            const { label: chLabel, color: chColor } = channelLabel(conv.channel)
+            const ini = initials(conv.name)
+            return (
+              <Link key={conv.id} href={`/dashboard/messagerie/${conv.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                <div
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '11px 18px',
+                    borderBottom: i < convs.length - 1 ? '1px solid var(--color-border)' : 'none',
+                    transition: 'background 0.12s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--color-surface-2)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                >
+                  <div style={{
+                    width: 38, height: 38, borderRadius: '50%',
+                    background: `${chColor}1A`, border: `1.5px solid ${chColor}40`,
+                    color: chColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, flexShrink: 0,
+                  }}>
+                    {ini}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {conv.name}
+                    </div>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: chColor, marginTop: 1, fontWeight: 500 }}>
+                      {chLabel}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--color-text-3)' }}>{timeAgo(conv.time)}</span>
+                    {conv.unread > 0 && (
+                      <span style={{
+                        minWidth: 18, height: 18, borderRadius: 9,
+                        background: 'var(--color-accent)', color: '#fff',
+                        fontSize: 10, fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '0 5px',
+                      }}>
+                        {conv.unread}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
       </div>
-    </div>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes rp-pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+        .rp-shimmer { animation: rp-pulse 1.4s ease-in-out infinite; background: var(--color-surface-2); }
+      `}</style>
+    </PageTransition>
   )
 }
