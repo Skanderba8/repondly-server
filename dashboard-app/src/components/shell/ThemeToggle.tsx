@@ -9,7 +9,7 @@ export default function ThemeToggle() {
   const toggle = () => {
     const next = dark ? 'light' : 'dark'
     localStorage.setItem('rp_theme', next)
-    document.documentElement.setAttribute('data-theme', next)
+    document.documentElement.classList.toggle('dark', next === 'dark')
   }
 
   return (
@@ -19,8 +19,8 @@ export default function ThemeToggle() {
         width: 44,
         height: 28,
         borderRadius: 14,
-        border: '1.5px solid var(--color-border)',
-        background: dark ? 'var(--color-surface-2)' : 'var(--color-accent)',
+        border: '1.5px solid var(--surface-border)',
+        background: dark ? 'var(--surface-2)' : 'var(--brand-primary)',
         display: 'flex',
         alignItems: 'center',
         padding: '0 4px',
@@ -35,7 +35,7 @@ export default function ThemeToggle() {
         width: 20,
         height: 20,
         borderRadius: '50%',
-        background: dark ? 'var(--color-text-3)' : '#fff',
+        background: dark ? 'var(--text-muted)' : '#fff',
         transform: dark ? 'translateX(0)' : 'translateX(16px)',
         transition: 'transform 0.2s, background 0.2s',
         display: 'flex',
@@ -43,8 +43,8 @@ export default function ThemeToggle() {
         justifyContent: 'center',
       }}>
         {dark
-          ? <Moon size={11} color="var(--color-bg)" />
-          : <Sun size={11} color="var(--color-accent)" />
+          ? <Moon size={11} color="var(--surface-1)" />
+          : <Sun size={11} color="var(--brand-primary)" />
         }
       </div>
     </button>

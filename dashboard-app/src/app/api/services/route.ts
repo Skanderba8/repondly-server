@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 
 export async function GET(request: Request) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { businessId } = authResult
 
     const services = await prisma.service.findMany({
-      where: { businessId: session.user.id },
+      where: { businessId },
       orderBy: {
         createdAt: 'desc',
       },
@@ -31,16 +27,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { businessId } = authResult
 
     const body = await request.json()
-    const { businessId, name, description, durationMinutes, price, available, outOfStock, deliveryFee, visible } = body
+    const { name, description, durationMinutes, price, available, outOfStock, deliveryFee, visible } = body
 
-    if (!businessId || !name || durationMinutes === undefined || price === undefined) {
-      return NextResponse.json({ success: false, error: 'businessId, name, durationMinutes, and price are required' }, { status: 400 })
+    if (!name || durationMinutes === undefined || price === undefined) {
+      return NextResponse.json({ success: false, error: 'name, durationMinutes, and price are required' }, { status: 400 })
     }
 
     const service = await prisma.service.create({

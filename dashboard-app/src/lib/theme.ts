@@ -7,32 +7,58 @@ export function useTheme() {
 
   useEffect(() => {
     const update = () =>
-      setDark(document.documentElement.getAttribute('data-theme') !== 'light')
+      setDark(document.documentElement.classList.contains('dark'))
     update()
     const obs = new MutationObserver(update)
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
     return () => obs.disconnect()
   }, [])
 
   return dark
 }
 
-export function palette(dark: boolean) {
+export function palette() {
+  if (typeof window === 'undefined') {
+    // SSR fallback
+    return {
+      bg: '#F8F8FA',
+      surface: '#FFFFFF',
+      surface2: '#F0F0F5',
+      border: '#E4E4EF',
+      border2: '#E4E4EF',
+      borderSub: '#F0F0F5',
+      text: '#0F0F14',
+      text2: '#6B6B80',
+      text3: '#A0A0B4',
+      accent: '#6C63FF',
+      success: '#22C55E',
+      danger: '#EF4444',
+      warning: '#F59E0B',
+      hoverBg: 'rgba(0,0,0,0.03)',
+      activeBg: 'rgba(108,99,255,0.07)',
+    }
+  }
+
+  const style = getComputedStyle(document.documentElement)
   return {
-    bg:          dark ? '#0A0A0F'  : '#F8FAFC',
-    surface:     dark ? '#111118'  : '#FFFFFF',
-    surface2:    dark ? '#161622'  : '#F1F5F9',
-    border:      dark ? '#1E1E2E'  : '#E2E8F0',
-    border2:     dark ? '#334155'  : '#CBD5E1',
-    borderSub:   dark ? '#1A1A26'  : '#F1F5F9',
-    text:        dark ? '#F1F5F9'  : '#0F172A',
-    text2:       dark ? '#94A3B8'  : '#475569',
-    text3:       dark ? '#64748B'  : '#94A3B8',
-    accent:      '#3B82F6',
-    success:     '#10B981',
-    danger:      '#EF4444',
-    warning:     '#F59E0B',
-    hoverBg:     dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-    activeBg:    dark ? 'rgba(59,130,246,0.1)'   : 'rgba(59,130,246,0.07)',
+    bg: style.getPropertyValue('--surface-1').trim() || '#F8F8FA',
+    surface: style.getPropertyValue('--surface-0').trim() || '#FFFFFF',
+    surface2: style.getPropertyValue('--surface-2').trim() || '#F0F0F5',
+    border: style.getPropertyValue('--surface-border').trim() || '#E4E4EF',
+    border2: style.getPropertyValue('--surface-border').trim() || '#E4E4EF',
+    borderSub: style.getPropertyValue('--surface-2').trim() || '#F0F0F5',
+    text: style.getPropertyValue('--text-primary').trim() || '#0F0F14',
+    text2: style.getPropertyValue('--text-secondary').trim() || '#6B6B80',
+    text3: style.getPropertyValue('--text-muted').trim() || '#A0A0B4',
+    accent: style.getPropertyValue('--brand-primary').trim() || '#6C63FF',
+    success: style.getPropertyValue('--brand-success').trim() || '#22C55E',
+    danger: style.getPropertyValue('--brand-danger').trim() || '#EF4444',
+    warning: style.getPropertyValue('--brand-warning').trim() || '#F59E0B',
+    hoverBg: document.documentElement.classList.contains('dark')
+      ? 'rgba(255,255,255,0.03)'
+      : 'rgba(0,0,0,0.03)',
+    activeBg: document.documentElement.classList.contains('dark')
+      ? 'rgba(108,99,255,0.10)'
+      : 'rgba(108,99,255,0.07)',
   }
 }

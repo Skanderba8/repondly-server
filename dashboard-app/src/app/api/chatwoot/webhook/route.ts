@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createHmac } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { sseBroadcaster } from '@/lib/sse-broadcaster'
 
-export async function POST(req: NextRequest) {
-  const token = req.headers.get('x-chatwoot-webhook-token')
+function verifyWebhookSignature(body: string, signature: string | null): boolean {
+  if (!signature) return false
   const secret = process.env.CHATWOOT_WEBHOOK_SECRET
+  if (!secret) return false
+  const expected = createHmac('sha256', secret).update(body).digest('hex')
+  return `sha256=${expected}` === signature
+}
 
-  if (!token || token !== secret) {
-    return new NextResponse('Unauthorized', { status: 401 })
+export async function POST(req: NextRequest) {
+  const rawBody = await req.text()
+  const signature = req.headers.get('x-hub-signature-256') ?? req.headers.get('x-chatwoot-webhook-token')
+
+  if (!verifyWebhookSignature(rawBody, signature)) {
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
-  const event = await req.json()
+  const event = JSON.parse(rawBody)
   const eventType = event.event
   const accountId = event.account?.id
 
@@ -49,10 +58,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Broadcast to all connected clients for this business
-    sseBroadcaster.broadcast(businessId, { type: eventType, data })
+    // Map conversation_status_changed -> conversation_updated for SSE naming consistency
+    const sseEventName = eventType === 'conversation_status_changed' ? 'conversation_updated' : eventType
+    sseBroadcaster.broadcastToBusiness(businessId, sseEventName, data)
 
-    console.log(`[Webhook] Broadcasted ${eventType} for business ${businessId}`)
+    console.log(`[Webhook] Broadcasted ${sseEventName} for business ${businessId}`)
   }
+
+  // Forward to bot service (fire and forget - don't await, don't fail if bot is down)
+  fetch(`http://localhost:3001/chatwoot-webhook`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-hub-signature-256': signature ?? '',
+    },
+    body: rawBody,
+  }).catch(() => {}) // intentional: dashboard doesn't depend on bot being up
 
   return new NextResponse('OK')
 }

@@ -2,14 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, MessageSquare, ShoppingBag, Settings } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Home, MessageSquare, Calendar, Settings } from 'lucide-react'
 
-const NAV = [
-  { href: '/dashboard/accueil',        label: 'Accueil',    icon: LayoutDashboard },
-  { href: '/dashboard/messagerie',     label: 'Messagerie', icon: MessageSquare },
-  { href: '/dashboard/commandes',      label: 'Commandes',  icon: ShoppingBag },
-  { href: '/dashboard/configuration',  label: 'Config',     icon: Settings },
+const NAV_ITEMS = [
+  { href: '/dashboard/accueil', label: 'Accueil', icon: Home },
+  { href: '/dashboard/messagerie', label: 'Messages', icon: MessageSquare },
+  { href: '/dashboard/rendez-vous', label: 'Agenda', icon: Calendar },
+  { href: '/dashboard/configuration', label: 'Config', icon: Settings },
 ]
 
 interface IslandNavProps {
@@ -23,99 +22,103 @@ export default function IslandNav({ unreadCount = 0 }: IslandNavProps) {
   if (isThreadView) return null
 
   return (
-    <div
-      className="rp-mobile-nav"
+    <nav
+      style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 50,
+        width: 'calc(100% - 32px)',
+        maxWidth: '420px',
+      }}
     >
-      <div style={{
-        background: 'var(--color-surface-glass)',
-        backdropFilter: 'blur(40px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-island)',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '6px 8px',
-        boxShadow: 'var(--shadow-island)',
-        gap: 4,
-        maxWidth: 420,
-        margin: '0 auto',
-      }}>
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href || (href !== '/dashboard/accueil' && pathname.startsWith(href))
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          backgroundColor: 'var(--surface-0)',
+          border: '1px solid var(--surface-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '8px 12px',
+          boxShadow: 'var(--shadow-overlay)',
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname.startsWith(href)
+          const isMessages = href.includes('messagerie')
+
           return (
             <Link
               key={href}
               href={href}
               style={{
-                flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: 3,
-                padding: '8px 4px',
-                borderRadius: 20,
+                gap: '3px',
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-lg)',
+                backgroundColor: isActive
+                  ? 'var(--brand-primary-soft)'
+                  : 'transparent',
+                transition: 'all var(--transition-fast)',
                 position: 'relative',
-                minWidth: 0,
                 textDecoration: 'none',
-                WebkitTapHighlightColor: 'transparent',
+                minWidth: '56px',
               }}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="island-pill"
-                  style={{
-                    position: 'absolute',
-                    inset: '2px',
-                    borderRadius: 18,
-                    background: 'var(--color-accent-soft)',
-                    zIndex: 0,
-                  }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 18 }}
-                />
-              )}
-
-              <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ position: 'relative' }}>
                 <Icon
-                  size={20}
-                  color={isActive ? 'var(--color-accent)' : 'var(--color-text-3)'}
-                  strokeWidth={isActive ? 2.5 : 1.8}
+                  size={22}
+                  style={{
+                    color: isActive
+                      ? 'var(--brand-primary)'
+                      : 'var(--text-muted)',
+                    transition: 'color var(--transition-fast)',
+                  }}
                 />
-                {label === 'Messagerie' && unreadCount > 0 && !isActive && (
-                  <span style={{
-                    position: 'absolute',
-                    top: -3,
-                    right: -5,
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    background: 'var(--color-danger)',
-                    color: '#fff',
-                    fontSize: 8,
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                {isMessages && unreadCount > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '-4px',
+                      right: '-6px',
+                      backgroundColor: 'var(--brand-danger)',
+                      color: 'white',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      borderRadius: 'var(--radius-pill)',
+                      minWidth: '16px',
+                      height: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 4px',
+                    }}
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </div>
-
-              <span style={{
-                fontSize: 9,
-                fontWeight: isActive ? 600 : 500,
-                color: isActive ? 'var(--color-accent)' : 'var(--color-text-3)',
-                zIndex: 1,
-                lineHeight: 1,
-                fontFamily: "'DM Sans', sans-serif",
-              }}>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: isActive ? 600 : 400,
+                  color: isActive
+                    ? 'var(--brand-primary)'
+                    : 'var(--text-muted)',
+                  transition: 'color var(--transition-fast)',
+                }}
+              >
                 {label}
               </span>
             </Link>
           )
         })}
       </div>
-    </div>
+    </nav>
   )
 }

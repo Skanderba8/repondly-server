@@ -42,7 +42,7 @@ function formatTime(ts: number): string {
 function channelColor(channelType: string): string {
   if (channelType === 'Channel::Whatsapp') return '#22C55E'
   if (channelType === 'Channel::FacebookPage' || channelType === 'Channel::Instagram') return '#EC4899'
-  return 'var(--color-accent)'
+  return 'var(--brand-primary)'
 }
 
 function initials(name: string): string {
@@ -94,9 +94,9 @@ export default function ConversationItem({ conv }: ConversationItemProps) {
           gap: 12,
           padding: '14px 16px',
           height: 72,
-          background: hasUnread ? 'var(--color-accent-soft)' : 'transparent',
-          borderLeft: `3px solid ${hasUnread ? 'var(--color-accent)' : 'transparent'}`,
-          borderBottom: '1px solid var(--color-border)',
+          background: hasUnread ? 'var(--brand-primary-soft)' : 'transparent',
+          borderLeft: `3px solid ${hasUnread ? 'var(--brand-primary)' : 'transparent'}`,
+          borderBottom: '1px solid var(--surface-border)',
           cursor: 'pointer',
           transition: 'background 0.15s',
         }}
@@ -132,10 +132,10 @@ export default function ConversationItem({ conv }: ConversationItemProps) {
             position: 'absolute',
             bottom: -2,
             right: -2,
-            background: 'var(--color-surface)',
+            background: 'var(--surface-0)',
             borderRadius: '50%',
             padding: 2,
-            border: '1px solid var(--color-border)',
+            border: '1px solid var(--surface-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -151,7 +151,7 @@ export default function ConversationItem({ conv }: ConversationItemProps) {
               fontFamily: "'Syne', sans-serif",
               fontSize: 14,
               fontWeight: hasUnread ? 600 : 500,
-              color: 'var(--color-text)',
+              color: 'var(--text-primary)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -162,7 +162,7 @@ export default function ConversationItem({ conv }: ConversationItemProps) {
             <span style={{
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 11,
-              color: 'var(--color-text-3)',
+              color: 'var(--text-muted)',
               flexShrink: 0,
               marginLeft: 8,
             }}>
@@ -173,22 +173,22 @@ export default function ConversationItem({ conv }: ConversationItemProps) {
             <span style={{
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 13,
-              color: hasUnread ? 'var(--color-text-2)' : 'var(--color-text-3)',
+              color: hasUnread ? 'var(--text-secondary)' : 'var(--text-muted)',
               fontWeight: hasUnread ? 500 : 400,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               flex: 1,
             }}>
-              {isOut && <span style={{ color: 'var(--color-accent)', marginRight: 4 }}>↗</span>}
-              {preview || <em style={{ color: 'var(--color-text-3)' }}>Pas de message</em>}
+              {isOut && <span style={{ color: 'var(--brand-primary)', marginRight: 4 }}>↗</span>}
+              {preview || <em style={{ color: 'var(--text-muted)' }}>Pas de message</em>}
             </span>
             {hasUnread && (
               <span style={{
                 minWidth: 20,
                 height: 20,
                 borderRadius: 10,
-                background: 'var(--color-accent)',
+                background: 'var(--brand-primary)',
                 color: '#fff',
                 fontSize: 11,
                 fontWeight: 700,

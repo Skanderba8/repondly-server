@@ -39,7 +39,7 @@ function dateSep(ts: number) {
 function channelColor(ct: string) {
   if (ct === 'Channel::Whatsapp') return '#22C55E'
   if (ct === 'Channel::Instagram') return '#EC4899'
-  return 'var(--color-accent)'
+  return 'var(--brand-primary)'
 }
 
 function initials(name: string) {
@@ -64,22 +64,6 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const sendBarRef = useRef<HTMLDivElement>(null)
   const esRef = useRef<EventSource | null>(null)
-  const wrapRef = useRef<HTMLDivElement>(null)
-
-  // ── Fix invisible bottom bar: lock height to visualViewport ──────────────────
-  useEffect(() => {
-    const setH = () => {
-      const h = window.visualViewport?.height ?? window.innerHeight
-      if (wrapRef.current) wrapRef.current.style.height = `${h}px`
-    }
-    setH()
-    window.visualViewport?.addEventListener('resize', setH)
-    window.addEventListener('resize', setH)
-    return () => {
-      window.visualViewport?.removeEventListener('resize', setH)
-      window.removeEventListener('resize', setH)
-    }
-  }, [])
 
   // ── Track send bar height for messages padding ────────────────────────────────
   useEffect(() => {
@@ -135,17 +119,28 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   }, [messages])
 
   useEffect(() => {
-    const es = new EventSource('/api/sse')
-    esRef.current = es
-    es.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data)
-        if (data.type === 'message_created' && data.data?.conversationId === convId) {
-          fetchMessages()
-        }
-      } catch {}
+    let es: EventSource
+    let retryTimeout: ReturnType<typeof setTimeout>
+
+    function connect() {
+      es = new EventSource('/api/sse')
+      esRef.current = es
+
+      es.addEventListener('message_created', (e) => {
+        try {
+          const data = JSON.parse(e.data)
+          if (data.conversationId === convId) fetchMessages()
+        } catch {}
+      })
+
+      es.onerror = () => {
+        es.close()
+        retryTimeout = setTimeout(connect, 3000)
+      }
     }
-    return () => { es.close(); esRef.current = null }
+
+    connect()
+    return () => { es.close(); clearTimeout(retryTimeout); esRef.current = null }
   }, [convId, fetchMessages])
 
   const handleSend = async () => {
@@ -228,28 +223,28 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const ACTIONS = [
     {
       label: meta?.status === 'resolved' ? 'Rouvrir la conversation' : 'Résoudre',
-      icon: <CheckCheck size={18} color="#30D158" />,
+      icon: <CheckCheck size={18} color="#22C55E" />,
       iconBg: 'rgba(48,209,88,0.12)',
       onClick: handleToggleStatus,
       danger: false,
     },
     {
       label: meta?.botEnabled ? 'Pause bot' : 'Reprendre le bot',
-      icon: <Bot size={18} color={meta?.botEnabled ? '#30D158' : 'var(--color-text-3)'} />,
+      icon: <Bot size={18} color={meta?.botEnabled ? '#22C55E' : 'var(--text-muted)'} />,
       iconBg: meta?.botEnabled ? 'rgba(48,209,88,0.12)' : 'rgba(100,116,139,0.12)',
       onClick: handleToggleBot,
       danger: false,
     },
     {
       label: 'Notes du bot',
-      icon: <FileText size={18} color="var(--color-accent)" />,
-      iconBg: 'var(--color-accent-soft)',
+      icon: <FileText size={18} color="var(--brand-primary)" />,
+      iconBg: 'var(--brand-primary-soft)',
       onClick: () => setActionOpen(false),
       danger: false,
     },
     {
       label: 'Supprimer la conversation',
-      icon: <Trash2 size={18} color="var(--color-danger)" />,
+      icon: <Trash2 size={18} color="var(--brand-danger)" />,
       iconBg: 'rgba(255,59,48,0.10)',
       onClick: handleDelete,
       danger: true,
@@ -258,28 +253,27 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   return (
     <div
-      ref={wrapRef}
       style={{
         display: 'flex', flexDirection: 'column',
-        height: '100dvh',
-        background: 'var(--color-bg)',
+        height: '100%',
+        background: 'var(--surface-1)',
         overflow: 'hidden',
         position: 'fixed', inset: 0,
       }}
     >
       {/* ── TopBar ── */}
       <div style={{
-        background: 'var(--color-surface-glass)',
+        background: 'var(--surface-glass)',
         backdropFilter: 'blur(32px) saturate(180%)',
         WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-        borderBottom: '1px solid var(--color-border)',
+        borderBottom: '1px solid var(--surface-border)',
         flexShrink: 0,
         paddingTop: 'env(safe-area-inset-top)',
       }}>
         <div style={{ height: 56, display: 'flex', alignItems: 'center', paddingLeft: 4, paddingRight: 8, gap: 4 }}>
           <button
             onClick={() => router.push('/dashboard/messagerie')}
-            style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', borderRadius: 10, WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
+            style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--brand-primary)', borderRadius: 10, WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
           >
             <ChevronLeft size={24} strokeWidth={2.5} />
           </button>
@@ -287,7 +281,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             {ini}
           </div>
           <div style={{ flex: 1, minWidth: 0, marginLeft: 6 }}>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
               {meta?.name || '…'}
             </div>
             {meta?.inboxName && (
@@ -298,7 +292,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </div>
           <button
             onClick={() => setActionOpen(true)}
-            style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-3)', borderRadius: 8, WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
+            style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', borderRadius: 8, WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
           >
             <MoreVertical size={20} />
           </button>
@@ -320,7 +314,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             {grouped.map((item, idx) => {
               if (item.type === 'sep') return (
                 <div key={`sep-${idx}`} style={{ textAlign: 'center', margin: '16px 0 8px' }}>
-                  <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: 'var(--color-text-3)', background: 'var(--color-surface-2)', padding: '4px 14px', borderRadius: 20, border: '1px solid var(--color-border)' }}>
+                  <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: 'var(--text-muted)', background: 'var(--surface-2)', padding: '4px 14px', borderRadius: 20, border: '1px solid var(--surface-border)' }}>
                     {item.label}
                   </span>
                 </div>
@@ -330,7 +324,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               const isActivity = msg.message_type === 2
               if (isActivity) return (
                 <div key={msg.id} style={{ textAlign: 'center', margin: '6px 0' }}>
-                  <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: 'var(--color-text-3)' }}>{msg.content}</span>
+                  <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: 'var(--text-muted)' }}>{msg.content}</span>
                 </div>
               )
               return (
@@ -343,17 +337,17 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 >
                   <div style={{
                     maxWidth: '80%',
-                    background: isOut ? 'var(--color-accent)' : 'var(--color-surface)',
-                    color: isOut ? '#fff' : 'var(--color-text)',
+                    background: isOut ? 'var(--brand-primary)' : 'var(--surface-0)',
+                    color: isOut ? '#fff' : 'var(--text-primary)',
                     borderRadius: isOut ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
                     padding: '10px 14px 7px',
-                    border: isOut ? 'none' : '1px solid var(--color-border)',
+                    border: isOut ? 'none' : '1px solid var(--surface-border)',
                     boxShadow: 'var(--shadow-card)',
                   }}>
                     <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, lineHeight: 1.5, margin: 0, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                       {msg.content}
                     </p>
-                    <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: isOut ? 'rgba(255,255,255,0.6)' : 'var(--color-text-3)', display: 'block', textAlign: 'right', marginTop: 4 }}>
+                    <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: isOut ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)', display: 'block', textAlign: 'right', marginTop: 4 }}>
                       {timeStr(msg.created_at)}
                     </span>
                   </div>
@@ -370,20 +364,20 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         ref={sendBarRef}
         style={{
           flexShrink: 0,
-          background: 'var(--color-surface-glass)',
+          background: 'var(--surface-glass)',
           backdropFilter: 'blur(32px) saturate(180%)',
           WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-          borderTop: '1px solid var(--color-border)',
+          borderTop: '1px solid var(--surface-border)',
           padding: '10px 12px',
           paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
         }}
       >
         <div style={{
           display: 'flex', alignItems: 'flex-end', gap: 8,
-          background: 'var(--color-surface-2)',
+          background: 'var(--surface-2)',
           borderRadius: 26,
           padding: '8px 6px 8px 16px',
-          border: '1px solid var(--color-border)',
+          border: '1px solid var(--surface-border)',
           boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
         }}>
           <textarea
@@ -401,7 +395,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             style={{
               flex: 1, resize: 'none', border: 'none', background: 'transparent', outline: 'none',
               fontFamily: "'DM Sans',sans-serif", fontSize: 16, lineHeight: 1.45,
-              color: 'var(--color-text)', overflowY: 'hidden', maxHeight: 100, minHeight: 26,
+              color: 'var(--text-primary)', overflowY: 'hidden', maxHeight: 100, minHeight: 26,
               paddingTop: 2,
             }}
           />
@@ -412,14 +406,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
             style={{
               width: 38, height: 38, borderRadius: '50%',
-              background: reply.trim() ? 'var(--color-accent)' : 'var(--color-surface-3)',
+              background: reply.trim() ? 'var(--brand-primary)' : 'var(--surface-2)',
               border: 'none', cursor: reply.trim() ? 'pointer' : 'default',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0, transition: 'background 0.15s',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            <Send size={16} color={reply.trim() ? '#fff' : 'var(--color-text-3)'} style={{ transform: 'translateX(1px)' }} />
+            <Send size={16} color={reply.trim() ? '#fff' : 'var(--text-muted)'} style={{ transform: 'translateX(1px)' }} />
           </motion.button>
         </div>
       </div>
@@ -439,9 +433,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 201,
-                background: 'var(--color-surface)',
+                background: 'var(--surface-0)',
                 borderRadius: '24px 24px 0 0',
-                border: '1px solid var(--color-border)',
+                border: '1px solid var(--surface-border)',
                 borderBottom: 'none',
                 paddingBottom: 'env(safe-area-inset-bottom)',
                 boxShadow: '0 -8px 40px rgba(0,0,0,0.3)',
@@ -449,16 +443,16 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             >
               {/* Handle */}
               <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 6px' }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-border-2)' }} />
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--surface-border)' }} />
               </div>
 
               {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 14px', borderBottom: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 14px', borderBottom: '1px solid var(--surface-border)' }}>
                 <div>
-                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>{meta?.name}</div>
+                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{meta?.name}</div>
                   <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color, marginTop: 2 }}>{meta?.inboxName}</div>
                 </div>
-                <button onClick={() => setActionOpen(false)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-surface-2)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-3)' }}>
+                <button onClick={() => setActionOpen(false)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--surface-2)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}>
                   <X size={16} />
                 </button>
               </div>
@@ -473,7 +467,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: 16,
                       padding: '13px 20px', border: 'none', background: 'transparent',
-                      color: action.danger ? 'var(--color-danger)' : 'var(--color-text)',
+                      color: action.danger ? 'var(--brand-danger)' : 'var(--text-primary)',
                       fontFamily: "'DM Sans',sans-serif", fontSize: 16,
                       cursor: actionLoading ? 'default' : 'pointer',
                       opacity: actionLoading ? 0.5 : 1,
@@ -494,7 +488,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
       <style>{`
         @keyframes rp-pulse { 0%,100%{opacity:.35} 50%{opacity:.8} }
-        .rp-shimmer { animation: rp-pulse 1.5s ease-in-out infinite; background: var(--color-surface-2) !important; }
+        .rp-shimmer { animation: rp-pulse 1.5s ease-in-out infinite; background: var(--surface-2) !important; }
       `}</style>
     </div>
   )

@@ -25,8 +25,8 @@ export default function ChannelFilter({ value, onChange, counts }: ChannelFilter
       overflowX: 'auto',
       WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
       scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
-      background: 'var(--color-bg)',
-      borderBottom: '1px solid var(--color-border)',
+      background: 'var(--surface-1)',
+      borderBottom: '1px solid var(--surface-border)',
       flexShrink: 0,
     }}>
       {TABS.map(tab => {
@@ -57,7 +57,7 @@ export default function ChannelFilter({ value, onChange, counts }: ChannelFilter
                   position: 'absolute',
                   inset: 0,
                   borderRadius: 'var(--radius-pill)',
-                  background: 'var(--color-accent)',
+                  background: 'var(--brand-primary)',
                   zIndex: 0,
                 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
@@ -68,7 +68,7 @@ export default function ChannelFilter({ value, onChange, counts }: ChannelFilter
                 position: 'absolute',
                 inset: 0,
                 borderRadius: 'var(--radius-pill)',
-                background: 'var(--color-surface-2)',
+                background: 'var(--surface-2)',
                 zIndex: 0,
               }} />
             )}
@@ -78,7 +78,7 @@ export default function ChannelFilter({ value, onChange, counts }: ChannelFilter
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 13,
               fontWeight: isActive ? 600 : 500,
-              color: isActive ? '#fff' : 'var(--color-text-3)',
+              color: isActive ? '#fff' : 'var(--text-muted)',
             }}>
               {tab.label}
             </span>
@@ -89,8 +89,8 @@ export default function ChannelFilter({ value, onChange, counts }: ChannelFilter
                 minWidth: 18,
                 height: 18,
                 borderRadius: 9,
-                background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--color-accent-soft)',
-                color: isActive ? '#fff' : 'var(--color-accent)',
+                background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--brand-primary-soft)',
+                color: isActive ? '#fff' : 'var(--brand-primary)',
                 fontSize: 10,
                 fontWeight: 700,
                 display: 'flex',

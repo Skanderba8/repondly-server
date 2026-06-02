@@ -35,8 +35,8 @@ export default function SendBar({ value, onChange, onSend, disabled }: SendBarPr
       bottom: 0,
       left: 0,
       right: 0,
-      background: 'var(--color-surface)',
-      borderTop: '1px solid var(--color-border)',
+      background: 'var(--surface-0)',
+      borderTop: '1px solid var(--surface-border)',
       padding: '10px 16px',
       paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
       zIndex: 10,
@@ -45,10 +45,10 @@ export default function SendBar({ value, onChange, onSend, disabled }: SendBarPr
         display: 'flex',
         alignItems: 'flex-end',
         gap: 10,
-        background: 'var(--color-surface-2)',
+        background: 'var(--surface-2)',
         borderRadius: 20,
         padding: '8px 8px 8px 16px',
-        border: '1px solid var(--color-border)',
+        border: '1px solid var(--surface-border)',
       }}>
         <textarea
           ref={textareaRef}
@@ -66,7 +66,7 @@ export default function SendBar({ value, onChange, onSend, disabled }: SendBarPr
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 15,
             lineHeight: 1.45,
-            color: 'var(--color-text)',
+            color: 'var(--text-primary)',
             overflowY: 'auto',
             maxHeight: 96,
             minHeight: 24,
@@ -79,7 +79,7 @@ export default function SendBar({ value, onChange, onSend, disabled }: SendBarPr
             width: 34,
             height: 34,
             borderRadius: '50%',
-            background: canSend ? 'var(--color-accent)' : 'transparent',
+            background: canSend ? 'var(--brand-primary)' : 'transparent',
             border: 'none',
             cursor: canSend ? 'pointer' : 'default',
             display: 'flex',
@@ -90,7 +90,7 @@ export default function SendBar({ value, onChange, onSend, disabled }: SendBarPr
             transition: 'opacity 0.15s, background 0.15s',
           }}
         >
-          <Send size={16} color={canSend ? '#fff' : 'var(--color-text-3)'} />
+          <Send size={16} color={canSend ? '#fff' : 'var(--text-muted)'} />
         </button>
       </div>
     </div>

@@ -24,7 +24,7 @@ function initials(name: string) {
 function channelColor(channelType: string): string {
   if (channelType === 'Channel::Whatsapp') return '#22C55E'
   if (channelType === 'Channel::FacebookPage' || channelType === 'Channel::Instagram') return '#EC4899'
-  return 'var(--color-accent)'
+  return 'var(--brand-primary)'
 }
 
 export default function ConversationTopBar({ contact, channelType = '' }: ConversationTopBarProps) {
@@ -41,8 +41,8 @@ export default function ConversationTopBar({ contact, channelType = '' }: Conver
       paddingLeft: 4,
       paddingRight: 12,
       gap: 8,
-      background: 'var(--color-surface)',
-      borderBottom: '1px solid var(--color-border)',
+      background: 'var(--surface-0)',
+      borderBottom: '1px solid var(--surface-border)',
       backdropFilter: 'blur(32px) saturate(180%)',
       WebkitBackdropFilter: 'blur(32px) saturate(180%)',
       flexShrink: 0,
@@ -59,7 +59,7 @@ export default function ConversationTopBar({ contact, channelType = '' }: Conver
           background: 'transparent',
           border: 'none',
           cursor: 'pointer',
-          color: 'var(--color-accent)',
+          color: 'var(--brand-primary)',
           flexShrink: 0,
           borderRadius: 10,
           WebkitTapHighlightColor: 'transparent',
@@ -93,7 +93,7 @@ export default function ConversationTopBar({ contact, channelType = '' }: Conver
           fontFamily: "'Syne', sans-serif",
           fontSize: 15,
           fontWeight: 600,
-          color: 'var(--color-text)',
+          color: 'var(--text-primary)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -112,7 +112,7 @@ export default function ConversationTopBar({ contact, channelType = '' }: Conver
           background: 'transparent',
           border: 'none',
           cursor: 'pointer',
-          color: 'var(--color-text-3)',
+          color: 'var(--text-muted)',
           flexShrink: 0,
           borderRadius: 8,
         }}

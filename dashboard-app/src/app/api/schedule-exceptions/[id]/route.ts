@@ -1,20 +1,30 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { businessId } = authResult
 
     const { id } = await params
     const body = await request.json()
     const { label, startDate, endDate, closedAllDay, openTime, closeTime, customMessage } = body
+
+    const existing = await prisma.scheduleException.findUnique({
+      where: { id },
+    })
+
+    if (!existing || existing.businessId !== businessId) {
+      return NextResponse.json(
+        { success: false, error: 'Schedule exception not found or unauthorized' },
+        { status: 404 }
+      )
+    }
 
     const exception = await prisma.scheduleException.update({
       where: { id },
@@ -41,14 +51,24 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { businessId } = authResult
 
     const { id } = await params
 
-    const exception = await prisma.scheduleException.delete({
+    const existing = await prisma.scheduleException.findUnique({
+      where: { id },
+    })
+
+    if (!existing || existing.businessId !== businessId) {
+      return NextResponse.json(
+        { success: false, error: 'Schedule exception not found or unauthorized' },
+        { status: 404 }
+      )
+    }
+
+    await prisma.scheduleException.delete({
       where: { id },
     })
 

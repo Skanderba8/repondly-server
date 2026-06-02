@@ -31,18 +31,30 @@ export async function GET(req: NextRequest) {
   }
 
   const businessId = String(business.id)
+  const encoder = new TextEncoder()
+
   const stream = new ReadableStream({
     start(controller) {
       // Register this controller
-      sseBroadcaster.subscribe(businessId, controller)
+      const clientId = sseBroadcaster.addClient(businessId, controller)
 
       // Send connected ping immediately
-      const connectedEvent = `data: ${JSON.stringify({ type: 'connected' })}\n\n`
-      controller.enqueue(connectedEvent)
+      const connectedPayload = `event: connected\ndata: ${JSON.stringify({ connected: true })}\n\n`
+      controller.enqueue(encoder.encode(connectedPayload))
+
+      // Send heartbeat every 20s to keep connection alive through proxies
+      const heartbeat = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(': heartbeat\n\n'))
+        } catch {
+          clearInterval(heartbeat)
+        }
+      }, 20_000)
 
       // Cleanup on disconnect
       req.signal.addEventListener('abort', () => {
-        sseBroadcaster.unsubscribe(businessId, controller)
+        clearInterval(heartbeat)
+        sseBroadcaster.removeClient(clientId)
       })
     },
   })

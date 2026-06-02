@@ -117,7 +117,7 @@ export default function SignIn() {
         }
         .submit-btn {
           background: #ffffff;
-          color: #000000;
+          color: #0F0F14;
           border: none;
           border-radius: 10px;
           padding: 14px;

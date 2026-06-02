@@ -1,83 +1,112 @@
-const CACHE_VERSION = 'v5'
-const CACHE_NAME = `repondly-${CACHE_VERSION}`
+const CACHE_VERSION = 'v2'
 const STATIC_CACHE = `repondly-static-${CACHE_VERSION}`
-const urlsToCache = [
+const DYNAMIC_CACHE = `repondly-dynamic-${CACHE_VERSION}`
+
+const STATIC_ASSETS = [
+  '/',
+  '/dashboard/accueil',
+  '/dashboard/messagerie',
+  '/auth/signin',
   '/manifest.json',
-  '/logo.png',
-  '/mobile-icon.png',
-  '/mobile-icon-maskable.png',
 ]
 
+// Install: cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then((cache) => cache.addAll(urlsToCache))
-      .then(() => self.skipWaiting())
+    caches.open(STATIC_CACHE).then(cache => cache.addAll(STATIC_ASSETS))
   )
+  self.skipWaiting()
 })
 
+// Activate: clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    Promise.all([
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME && cacheName !== STATIC_CACHE) {
-              return caches.delete(cacheName)
-            }
-          })
-        )
-      }),
-      self.clients.claim()
-    ])
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(k => k !== STATIC_CACHE && k !== DYNAMIC_CACHE)
+          .map(k => caches.delete(k))
+      )
+    )
   )
+  self.clients.claim()
 })
 
+// Fetch strategy:
+// - API routes: network-only (never cache)
+// - SSE: network-only (never cache)
+// - Navigation: network-first, fallback to cache
+// - Static assets: cache-first
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url)
-  
-  // Pass all API routes through with no SW interception (SSE streams cannot be cached)
-  if (url.pathname.startsWith('/api/')) {
-    return
+  const { request } = event
+  const url = new URL(request.url)
+
+  // Never intercept API, SSE, or external requests
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/api/sse') ||
+    url.origin !== self.location.origin
+  ) {
+    return // let browser handle normally
   }
 
-  // Network-first for HTML navigation (no caching)
-  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html')) {
+  // Navigation requests: network-first
+  if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
-        .catch(() => caches.match(event.request).then(cached => cached || fetch(event.request)))
+      fetch(request)
+        .then(res => {
+          const clone = res.clone()
+          caches.open(DYNAMIC_CACHE).then(c => c.put(request, clone))
+          return res
+        })
+        .catch(() => caches.match(request) || caches.match('/dashboard/accueil'))
     )
     return
   }
-  
-  // Cache-first for static assets
+
+  // Static assets: cache-first
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response
+    caches.match(request).then(cached => {
+      if (cached) return cached
+      return fetch(request).then(res => {
+        if (res.ok) {
+          const clone = res.clone()
+          caches.open(DYNAMIC_CACHE).then(c => c.put(request, clone))
         }
-        return fetch(event.request).then((response) => {
-          if (!response || response.status !== 200) {
-            return response
-          }
-          if (event.request.method !== 'GET') {
-            return response
-          }
-          const responseToCache = response.clone()
-          caches.open(STATIC_CACHE).then((cache) => {
-            cache.put(event.request, responseToCache)
-          })
-          return response
-        })
-        .catch(() => fetch(event.request))
+        return res
       })
+    })
   )
 })
 
-// Notify clients when a new version is available
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting()
-  }
+// Push notifications (ready for future use)
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  const data = event.data.json()
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Répondly', {
+      body: data.body || 'Nouveau message',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-96.png',
+      tag: data.tag || 'message',
+      data: { url: data.url || '/dashboard/messagerie' },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/dashboard/messagerie'
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(windowClients => {
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin)) {
+          client.focus()
+          client.navigate(url)
+          return
+        }
+      }
+      return clients.openWindow(url)
+    })
+  )
 })

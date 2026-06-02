@@ -6,7 +6,7 @@ export default function SkeletonCard() {
       gap: 12,
       padding: '14px 16px',
       height: 72,
-      borderBottom: '1px solid var(--color-border)',
+      borderBottom: '1px solid var(--surface-border)',
     }}>
       <div className="rp-shimmer" style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>

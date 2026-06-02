@@ -33,11 +33,11 @@ export default function MessageBubble({ msg }: MessageBubbleProps) {
         <span style={{
           fontFamily: "'DM Sans', sans-serif",
           fontSize: 11,
-          color: 'var(--color-text-3)',
-          background: 'var(--color-surface-2)',
+          color: 'var(--text-muted)',
+          background: 'var(--surface-2)',
           padding: '4px 12px',
           borderRadius: 'var(--radius-pill)',
-          border: '1px solid var(--color-border)',
+          border: '1px solid var(--surface-border)',
         }}>
           {msg.content}
         </span>
@@ -61,8 +61,8 @@ export default function MessageBubble({ msg }: MessageBubbleProps) {
     >
       <div style={{
         maxWidth: '80%',
-        background: isOut ? 'var(--color-accent)' : 'var(--color-surface-2)',
-        color: isOut ? '#fff' : 'var(--color-text)',
+        background: isOut ? 'var(--brand-primary)' : 'var(--surface-2)',
+        color: isOut ? '#fff' : 'var(--text-primary)',
         borderRadius: isOut
           ? 'var(--radius-bubble) var(--radius-bubble) 4px var(--radius-bubble)'
           : 'var(--radius-bubble) var(--radius-bubble) var(--radius-bubble) 4px',
@@ -85,11 +85,11 @@ export default function MessageBubble({ msg }: MessageBubbleProps) {
           gap: 4,
           marginTop: 4,
         }}>
-          {isOptimistic && <Clock size={10} color={isOut ? 'rgba(255,255,255,0.7)' : 'var(--color-text-3)'} />}
+          {isOptimistic && <Clock size={10} color={isOut ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)'} />}
           <span style={{
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 10,
-            color: isOut ? 'rgba(255,255,255,0.7)' : 'var(--color-text-3)',
+            color: isOut ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
             lineHeight: 1,
           }}>
             {formatTime(msg.created_at)}

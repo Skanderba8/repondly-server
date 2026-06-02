@@ -6,6 +6,7 @@ import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import cron from 'node-cron';
+import crypto from 'crypto';
 import { generatePrompt } from './generatePrompt.js';
 import { detectLanguage, determineResponseLanguage, containsDarija } from './lib/languageDetector.js';
 import { writeCollectedFieldsNote, getCRMNote } from './lib/crmNotesManager.js';
@@ -19,7 +20,12 @@ console.log('GROQ_API_KEY available:', !!process.env.GROQ_API_KEY);
 
 const app = express();
 // Use limit to prevent memory issues with large webhooks
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  }
+}));
 // Enable CORS for all routes
 app.use(cors());
 
@@ -210,21 +216,21 @@ async function getAIReply(conversationId, message, systemPrompt, accountId, apiT
 
 // ─── ACTION HANDLERS ──────────────────────────────────────────────────────────
 async function handleHumanHandover(business, conversationId, reason, crmNote) {
-  const { accountId, chatwootAgentId, chatwootApiToken } = business;
-  
+  const { chatwootAccountId, chatwootAgentId, chatwootApiToken } = business;
+
   // 1. Send message to customer
-  await replyViaChatwoot(accountId, conversationId, "Je vous mets en contact avec notre équipe, un instant.", chatwootApiToken);
-  
+  await replyViaChatwoot(chatwootAccountId, conversationId, "Je vous mets en contact avec notre équipe, un instant.", chatwootApiToken);
+
   // 2. Assign conversation to handover agent (HANDOFF_AGENT_ID from env)
   const handoffAgentId = process.env.HANDOFF_AGENT_ID || chatwootAgentId;
-  await assignToHuman(accountId, conversationId, handoffAgentId, chatwootApiToken);
-  
+  await assignToHuman(chatwootAccountId, conversationId, handoffAgentId, chatwootApiToken);
+
   // 3. Set status to open
-  await updateConversationStatus(accountId, conversationId, 'open', chatwootApiToken);
-  
+  await updateConversationStatus(chatwootAccountId, conversationId, 'open', chatwootApiToken);
+
   // 4. Notify owner via WhatsApp
   await notifyOwnerViaWhatsApp(business, crmNote, reason);
-  
+
   // 5. Add structured note to Chatwoot
   const noteContent = `📋 Note Handover\n\n` +
     `Client: ${crmNote?.customerName || 'Non renseigné'}\n` +
@@ -232,7 +238,7 @@ async function handleHumanHandover(business, conversationId, reason, crmNote) {
     `Langue détectée: ${crmNote?.preferredLanguage || 'FR'}\n` +
     `Résumé: ${crmNote?.needsSummary || reason}\n` +
     `Service/Produit: ${crmNote?.serviceOfInterest || 'Non spécifié'}`;
-  await addNoteToChatwoot(accountId, conversationId, noteContent, chatwootApiToken);
+  await addNoteToChatwoot(chatwootAccountId, conversationId, noteContent, chatwootApiToken);
   
   // 6. Set ConversationLog.botEnabled = false
   await prisma.conversationLog.update({
@@ -283,13 +289,18 @@ async function handleHumanHandover(business, conversationId, reason, crmNote) {
   return true;
 }
 
+function verifyWebhookSignature(rawBody, signature) {
+  const secret = process.env.CHATWOOT_WEBHOOK_SECRET;
+  if (!secret || !signature) return false;
+  const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+
 // ─── WEBHOOK HANDLER ─────────────────────────────────────────────────────────
 app.post('/chatwoot-webhook', async (req, res) => {
-  const signature = req.headers['x-chatwoot-webhook-signature'];
-  const secret = process.env.CHATWOOT_WEBHOOK_SECRET;
+  const signature = req.headers['x-hub-signature-256'] || req.headers['x-chatwoot-webhook-signature'];
 
-  // 1. Signature Bypass for Nginx
-  if (signature && secret && signature !== secret) {
+  if (!verifyWebhookSignature(req.rawBody, signature)) {
     return res.sendStatus(401);
   }
 

@@ -31,7 +31,7 @@ const FILTERS: { key: FilterStatus; label: string }[] = [
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   PENDING: { label: 'En attente', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', icon: <Clock size={12} /> },
-  CONFIRMED: { label: 'Confirmé', color: '#10B981', bg: 'rgba(16,185,129,0.1)', icon: <CheckCircle size={12} /> },
+  CONFIRMED: { label: 'Confirmé', color: '#22C55E', bg: 'rgba(16,185,129,0.1)', icon: <CheckCircle size={12} /> },
   CANCELLED: { label: 'Annulé', color: '#EF4444', bg: 'rgba(239,68,68,0.1)', icon: <XCircle size={12} /> },
 }
 
@@ -44,7 +44,7 @@ function timeStr(iso: string) {
 
 export default function CommandesPage() {
   const dark = useTheme()
-  const P = palette(dark)
+  const P = palette()
   const [orders, setOrders] = useState<Order[]>([])
   const [filter, setFilter] = useState<FilterStatus>('ALL')
   const [loading, setLoading] = useState(true)
@@ -141,7 +141,7 @@ export default function CommandesPage() {
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '7px 14px', borderRadius: 8,
-              border: 'none', background: '#3B82F6',
+              border: 'none', background: '#6C63FF',
               color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'opacity 0.15s',
             }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.85'}
@@ -243,7 +243,7 @@ export default function CommandesPage() {
             type="submit"
             disabled={adding}
             style={{
-              padding: '8px 20px', borderRadius: 8, background: '#3B82F6',
+              padding: '8px 20px', borderRadius: 8, background: '#6C63FF',
               color: '#fff', border: 'none', fontSize: 13, fontWeight: 500,
               cursor: adding ? 'not-allowed' : 'pointer', opacity: adding ? 0.7 : 1,
             }}
@@ -284,7 +284,7 @@ export default function CommandesPage() {
                   width: 40, height: 40, borderRadius: 10, flexShrink: 0,
                   background: order.type === 'ORDER' ? 'rgba(59,130,246,0.1)' : 'rgba(99,102,241,0.1)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: order.type === 'ORDER' ? '#3B82F6' : '#6366F1',
+                  color: order.type === 'ORDER' ? '#6C63FF' : '#6C63FF',
                 }}>
                   {order.type === 'ORDER' ? <ShoppingBag size={18} /> : <Calendar size={18} />}
                 </div>
@@ -298,7 +298,7 @@ export default function CommandesPage() {
                     <span style={{
                       fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 9999,
                       background: order.type === 'ORDER' ? 'rgba(59,130,246,0.1)' : 'rgba(99,102,241,0.1)',
-                      color: order.type === 'ORDER' ? '#3B82F6' : '#6366F1',
+                      color: order.type === 'ORDER' ? '#6C63FF' : '#6C63FF',
                     }}>
                       {order.type === 'ORDER' ? 'Commande' : 'RDV'}
                     </span>
@@ -344,7 +344,7 @@ export default function CommandesPage() {
                         disabled={updating === order.id}
                         style={{
                           padding: '5px 12px', borderRadius: 7, border: '1px solid rgba(16,185,129,0.3)',
-                          background: 'rgba(16,185,129,0.08)', color: '#10B981',
+                          background: 'rgba(16,185,129,0.08)', color: '#22C55E',
                           fontSize: 11, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s',
                           opacity: updating === order.id ? 0.5 : 1,
                         }}

@@ -39,14 +39,14 @@ function channelLabel(ch: string) {
   const k = ch.toLowerCase()
   if (k.includes('whatsapp')) return { label: 'WhatsApp', color: '#22C55E' }
   if (k.includes('instagram')) return { label: 'Instagram', color: '#EC4899' }
-  if (k.includes('facebook')) return { label: 'Facebook', color: '#0A84FF' }
-  return { label: ch || 'Conversation', color: 'var(--color-text-3)' }
+  if (k.includes('facebook')) return { label: 'Facebook', color: '#6C63FF' }
+  return { label: ch || 'Conversation', color: 'var(--text-muted)' }
 }
 
 const KPIS = [
-  { key: 'openConvs',     label: 'En attente',         sub: 'conversations ouvertes',  icon: Clock,         accent: '#FF9F0A', href: '/dashboard/messagerie' },
-  { key: 'resolvedToday', label: 'Traités aujourd\'hui', sub: 'résolues aujourd\'hui',   icon: MessageSquare, accent: '#30D158', href: null },
-  { key: 'handovers',     label: 'Interventions',       sub: 'transferts humains',       icon: Zap,           accent: '#0A84FF', href: null },
+  { key: 'openConvs',     label: 'En attente',         sub: 'conversations ouvertes',  icon: Clock,         accent: '#F59E0B', href: '/dashboard/messagerie' },
+  { key: 'resolvedToday', label: 'Traités aujourd\'hui', sub: 'résolues aujourd\'hui',   icon: MessageSquare, accent: '#22C55E', href: null },
+  { key: 'handovers',     label: 'Interventions',       sub: 'transferts humains',       icon: Zap,           accent: '#6C63FF', href: null },
   { key: 'orders',        label: 'Commandes',           sub: 'commandes en attente',     icon: ShoppingBag,   accent: '#BF5AF2', href: '/dashboard/commandes' },
 ] as const
 
@@ -109,15 +109,26 @@ export default function AccueilPage() {
   }, [])
 
   useEffect(() => {
-    fetchData()
-    sseRef.current = new EventSource('/api/sse')
-    sseRef.current.onmessage = (e) => {
-      try {
-        const d = JSON.parse(e.data)
-        if (d.type === 'message_created' || d.type === 'conversation_created' || d.type === 'conversation_status_changed') fetchData()
-      } catch {}
+    let es: EventSource
+    let retryTimeout: ReturnType<typeof setTimeout>
+
+    function connect() {
+      es = new EventSource('/api/sse')
+      sseRef.current = es
+
+      es.addEventListener('message_created', () => fetchData())
+      es.addEventListener('conversation_created', () => fetchData())
+      es.addEventListener('conversation_updated', () => fetchData())
+
+      es.onerror = () => {
+        es.close()
+        retryTimeout = setTimeout(connect, 3000)
+      }
     }
-    return () => sseRef.current?.close()
+
+    fetchData()
+    connect()
+    return () => { es.close(); clearTimeout(retryTimeout); sseRef.current = null }
   }, [fetchData])
 
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -135,14 +146,14 @@ export default function AccueilPage() {
               fontFamily: "'Syne', sans-serif",
               fontSize: 'clamp(18px, 4vw, 22px)',
               fontWeight: 800,
-              color: 'var(--color-text)',
+              color: 'var(--text-primary)',
               margin: 0,
               letterSpacing: '-0.03em',
               lineHeight: 1.1,
             }}>
               Tableau de bord
             </h1>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--color-text-3)', margin: '3px 0 0' }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--text-muted)', margin: '3px 0 0' }}>
               {todayCap}
             </p>
           </div>
@@ -160,8 +171,8 @@ export default function AccueilPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.25, delay: i * 0.04, ease: 'easeOut' }}
                 style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
+                  background: 'var(--surface-0)',
+                  border: '1px solid var(--surface-border)',
                   borderRadius: 'var(--radius-card)',
                   padding: '18px 16px 16px',
                   position: 'relative',
@@ -194,7 +205,7 @@ export default function AccueilPage() {
                   <span style={{
                     fontFamily: "'Syne', sans-serif",
                     fontSize: 34, fontWeight: 800,
-                    color: 'var(--color-text)',
+                    color: 'var(--text-primary)',
                     lineHeight: 1,
                     letterSpacing: '-0.04em',
                   }}>
@@ -204,10 +215,10 @@ export default function AccueilPage() {
 
                 {/* label */}
                 <div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.2 }}>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
                     {kpi.label}
                   </div>
-                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--color-text-3)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
                     {kpi.sub}
                     {kpi.href && <ArrowRight size={10} />}
                   </div>
@@ -221,12 +232,12 @@ export default function AccueilPage() {
         </div>
 
         {/* Recent conversations */}
-        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--color-text)', letterSpacing: '-0.01em' }}>
+        <div style={{ background: 'var(--surface-0)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--surface-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
               Activité récente
             </span>
-            <Link href="/dashboard/messagerie" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--color-accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Link href="/dashboard/messagerie" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--brand-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
               Voir tout <ArrowRight size={12} />
             </Link>
           </div>
@@ -235,8 +246,8 @@ export default function AccueilPage() {
             <>{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</>
           ) : convs.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
-              <MessageSquare size={24} color="var(--color-border)" style={{ margin: '0 auto 10px', display: 'block' }} />
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--color-text-3)', margin: 0 }}>Aucune conversation active</p>
+              <MessageSquare size={24} color="var(--surface-border)" style={{ margin: '0 auto 10px', display: 'block' }} />
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Aucune conversation active</p>
             </div>
           ) : convs.map((conv, i) => {
             const { label: chLabel, color: chColor } = channelLabel(conv.channel)
@@ -247,10 +258,10 @@ export default function AccueilPage() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12,
                     padding: '11px 18px',
-                    borderBottom: i < convs.length - 1 ? '1px solid var(--color-border)' : 'none',
+                    borderBottom: i < convs.length - 1 ? '1px solid var(--surface-border)' : 'none',
                     transition: 'background 0.12s',
                   }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--color-surface-2)'}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                 >
                   <div style={{
@@ -262,7 +273,7 @@ export default function AccueilPage() {
                     {ini}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {conv.name}
                     </div>
                     <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: chColor, marginTop: 1, fontWeight: 500 }}>
@@ -270,11 +281,11 @@ export default function AccueilPage() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--color-text-3)' }}>{timeAgo(conv.time)}</span>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--text-muted)' }}>{timeAgo(conv.time)}</span>
                     {conv.unread > 0 && (
                       <span style={{
                         minWidth: 18, height: 18, borderRadius: 9,
-                        background: 'var(--color-accent)', color: '#fff',
+                        background: 'var(--brand-primary)', color: '#fff',
                         fontSize: 10, fontWeight: 700,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         padding: '0 5px',
@@ -292,7 +303,7 @@ export default function AccueilPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
         @keyframes rp-pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
-        .rp-shimmer { animation: rp-pulse 1.4s ease-in-out infinite; background: var(--color-surface-2); }
+        .rp-shimmer { animation: rp-pulse 1.4s ease-in-out infinite; background: var(--surface-2); }
       `}</style>
     </PageTransition>
   )

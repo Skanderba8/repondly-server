@@ -1,5 +1,8 @@
+// Synced from canonical schema: dashboard-app/prisma/schema.prisma
+// Admin-specific extensions preserved below.
+
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "binary"
 }
 
@@ -8,73 +11,77 @@ datasource db {
 }
 
 model Business {
-  id                    String    @id @default(cuid())
-  name                  String
-  email                 String    @unique
-  passwordHash          String
-  repondlyPassword     String?
-  phone                 String?
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  passwordHash      String
+  repondlyPassword  String?
+  phone             String?
   chatwootAccountId     Int?      @unique
   chatwootApiToken      String?
   chatwootUserPassword  String?
   plan                  Plan      @default(FREE)
-  status                String    @default("TRIAL")
-  trialEndsAt           DateTime?
-  lastLoginAt           DateTime?
-  paidThisMonth         Boolean   @default(false)
-  paymentMethod         String?
-  channels              String[]  @default([])
-  businessInfo          Json?
+  status            String    @default("TRIAL")
+  trialEndsAt       DateTime?
+  lastLoginAt       DateTime?
+  paidThisMonth     Boolean   @default(false)
+  paymentMethod     String?
+  channels          String[]  @default([])
+  businessInfo      Json?
 
   // WhatsApp Embedded Signup
   wabaId                String?
   whatsappPhoneNumberId String?
   whatsappInboxId       Int?
-  whatsappConnected     Boolean   @default(false)
+  whatsappConnected     Boolean @default(false)
 
   // Facebook
-  facebookPageId        String?
-  facebookPageToken     String?
-  facebookInboxId       Int?
-  facebookConnected     Boolean   @default(false)
+  facebookPageId    String?
+  facebookPageToken String?
+  facebookInboxId   Int?
+  facebookConnected Boolean @default(false)
 
   // Instagram
-  instagramAccountId    String?
-  instagramInboxId      Int?
-  instagramConnected    Boolean   @default(false)
+  instagramAccountId String?
+  instagramInboxId   Int?
+  instagramConnected Boolean @default(false)
 
-  // New Onboarding Milestones
-  hasAcceptedDPA        Boolean   @default(false)
-  hasSetBusinessHours   Boolean   @default(false)
-  hasConfiguredBot      Boolean   @default(false)
+  // Onboarding Milestones
+  hasAcceptedDPA      Boolean @default(false)
+  hasSetBusinessHours Boolean @default(false)
+  hasConfiguredBot    Boolean @default(false)
+
+  // Business info
+  alwaysOpen          Boolean @default(false)
+  address             String?
 
   // AI Bot Configuration
   businessType          BusinessType?
   botMode               BotMode?
-  languages             String[]  @default([])
+  languages             String[] @default([])
   tone                  String?
   ownerPhone            String?
   chatwootInboxId       Int?
   chatwootAgentId       Int?
-  active                Boolean   @default(true)
+  active                Boolean @default(true)
   description           String?
   botName               String?
   greetingMessage       String?
 
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  clients               Client[]
-  autoRules             AutoRule[]
-  reminders             Reminder[]
-  bookings              Booking[]
-  adminNotes            AdminNote[]
-  onboarding            OnboardingStage?
-  activityLogs          ActivityLog[]
-  botEvents             BotEvent[]
-  connectedPages        ConnectedPage[]
-  conversationStatuses  ConversationStatus[]
+  clients              Client[]
+  autoRules            AutoRule[]
+  reminders            Reminder[]
+  bookings             Booking[]
+  adminNotes           AdminNote[]
+  onboarding           OnboardingStage?
+  activityLogs         ActivityLog[]
+  botEvents            BotEvent[]
+  connectedPages       ConnectedPage[]
+  conversationStatuses ConversationStatus[]
   conversationViews     ConversationView[]
   products              Product[]
   services              Service[]
@@ -83,21 +90,23 @@ model Business {
   faqs                  Faq[]
   botConfig             BotConfig?
   conversationLogs      ConversationLog[]
+  conversationCRMNotes  ConversationCRMNote[]
+  orders                Order[]
 }
 
 model Client {
-  id                String    @id @default(cuid())
+  id                String   @id @default(cuid())
   businessId        String
   name              String
   phone             String?
   email             String?
   channel           Channel
   chatwootContactId Int?
-  createdAt         DateTime  @default(now())
+  createdAt         DateTime @default(now())
 
-  business          Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  reminders         Reminder[]
-  bookings          Booking[]
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  reminders Reminder[]
+  bookings  Booking[]
 }
 
 model AutoRule {
@@ -112,7 +121,7 @@ model AutoRule {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model Reminder {
@@ -125,8 +134,8 @@ model Reminder {
   status      ReminderStatus @default(PENDING)
   createdAt   DateTime       @default(now())
 
-  business    Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  client      Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
@@ -140,8 +149,8 @@ model Booking {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model AdminNote {
@@ -150,7 +159,7 @@ model AdminNote {
   content    String
   createdAt  DateTime @default(now())
 
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model OnboardingStage {
@@ -159,7 +168,7 @@ model OnboardingStage {
   stage      String   @default("DEMO_BOOKED")
   updatedAt  DateTime @updatedAt
 
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model ActivityLog {
@@ -169,7 +178,7 @@ model ActivityLog {
   metadata   Json?
   createdAt  DateTime @default(now())
 
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model BotEvent {
@@ -182,7 +191,7 @@ model BotEvent {
   wasHandled  Boolean  @default(false)
   createdAt   DateTime @default(now())
 
-  business    Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
 }
 
 model ConnectedPage {
@@ -198,7 +207,7 @@ model ConnectedPage {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, pageId, channel])
 }
@@ -216,13 +225,13 @@ model AdminUser {
 }
 
 model ConversationStatus {
-  id             String              @id @default(cuid())
+  id             String               @id @default(cuid())
   businessId     String
-  conversationId Int                 @unique
+  conversationId Int                  @unique
   status         RepondlyTicketStatus @default(EN_ATTENTE)
-  updatedAt      DateTime            @updatedAt
+  updatedAt      DateTime             @updatedAt
 
-  business       Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@index([businessId, conversationId])
 }
@@ -277,6 +286,17 @@ enum ReminderStatus {
 }
 
 enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum OrderType {
+  ORDER
+  APPOINTMENT
+}
+
+enum OrderStatus {
   PENDING
   CONFIRMED
   CANCELLED
@@ -407,50 +427,119 @@ model ScheduleException {
 }
 
 model BotConfig {
-  id                       String   @id @default(cuid())
-  businessId               String   @unique
-  systemPrompt             String?
-  requiredOrderFields      String[] @default([])
+  id                        String   @id @default(cuid())
+  businessId                String   @unique
+  systemPrompt              String?
+  requiredOrderFields       String[] @default([])
   requiredAppointmentFields String[] @default([])
-  handoverTriggers         String[] @default([])
-  collectFields            String[] @default([])
-  needsRegen               Boolean  @default(true)
-  lastGeneratedAt          DateTime?
-  strictInstructionBlock   String?
-  
-  // New fields
-  handoverPhone            String?
-  defaultLanguage          DefaultLanguage @default(FR)
-  botActive                Boolean  @default(true)
-  
-  // Language handling (kept for admin internal)
-  primaryLanguage          String?
-  allowDarijaInput         Boolean  @default(true)
-  forceProfessionalArabic Boolean  @default(true)
-  
-  // Handover configuration (kept for admin internal)
-  whatsappPhoneNumberId    String?
-  whatsappToken            String?
-  
-  // Extraction configuration (kept for admin internal)
-  enableLiveExtraction     Boolean  @default(true)
-  extractionDepth          String   @default("standard")
-  
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  handoverTriggers          String[] @default([])
+  collectFields             String[] @default([])
+  needsRegen                Boolean  @default(true)
+  lastGeneratedAt           DateTime?
+  strictInstructionBlock    String?
 
-  business                 Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // New fields
+  handoverPhone             String?
+  defaultLanguage           DefaultLanguage @default(FR)
+  botActive                 Boolean  @default(true)
+
+  // Admin-specific extensions
+  primaryLanguage           String?
+  allowDarijaInput          Boolean  @default(true)
+  forceProfessionalArabic   Boolean  @default(true)
+  whatsappPhoneNumberId     String?
+  whatsappToken             String?
+  enableLiveExtraction      Boolean  @default(true)
+  extractionDepth           String   @default("standard")
+
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  business                  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id                     String      @id @default(cuid())
+  businessId             String
+  type                   OrderType
+  clientName             String?
+  clientPhone            String?
+  items                  Json?
+  notes                  String?
+  total                  Float?
+  datetime               DateTime?
+  status                 OrderStatus @default(PENDING)
+  chatwootConversationId Int?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  business               Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, status])
+  @@index([businessId, createdAt])
 }
 
 model ConversationLog {
-  id              String              @id @default(cuid())
-  businessId      String
+  id                     String              @id @default(cuid())
+  businessId             String
   chatwootConversationId Int
-  status          ConversationLogStatus @default(ACTIVE)
-  terminalAction  TerminalAction?
-  actionData      Json?
-  botEnabled      Boolean             @default(true)
-  createdAt       DateTime @default(now())
+  status                 ConversationLogStatus @default(ACTIVE)
+  terminalAction         TerminalAction?
+  actionData             Json?
+  botEnabled             Boolean             @default(true)
+  createdAt              DateTime @default(now())
 
-  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business               Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, chatwootConversationId])
+}
+
+model ConversationCRMNote {
+  id                      String   @id @default(cuid())
+  businessId              String
+  chatwootConversationId  Int
+
+  // Identity fields
+  customerName            String?
+  customerPhone           String?
+  customerEmail           String?
+  customerLocation        String?
+  preferredLanguage       String?
+
+  // Commercial intent
+  serviceOfInterest       String?
+  budget                  String?
+  orderIntent             String?
+  urgency                 String?
+  purchaseStage           String?
+  objections              String[]
+  preferences             String[]
+
+  // Conversation intelligence
+  needsSummary            String?
+  importantContext        String?
+  painPoints              String[]
+  customRequests          String[]
+  sentiment               String?
+  frustrationLevel        Int?
+
+  // Business actions
+  appointmentRequested    Boolean  @default(false)
+  quoteRequested          Boolean  @default(false)
+  orderRequested          Boolean  @default(false)
+  supportRequested        Boolean  @default(false)
+  followUpNeeded          Boolean  @default(false)
+  humanHandoverStatus     String?
+
+  // Metadata
+  lastExtractedAt         DateTime @default(now())
+  extractionCount         Int      @default(0)
+
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  business                Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, chatwootConversationId])
+  @@index([businessId, chatwootConversationId])
 }

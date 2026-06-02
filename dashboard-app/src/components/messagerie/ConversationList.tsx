@@ -110,32 +110,33 @@ export default function ConversationList() {
     }
   }, [])
 
-  // SSE
+  // SSE with reconnect
   useEffect(() => {
-    const es = new EventSource('/api/sse')
-    eventSourceRef.current = es
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (
-          data.type === 'message_created' ||
-          data.type === 'conversation_created' ||
-          data.type === 'conversation_status_changed'
-        ) {
-          fetchConversations()
-        }
-      } catch {}
+    let es: EventSource
+    let retryTimeout: ReturnType<typeof setTimeout>
+
+    function connect() {
+      es = new EventSource('/api/sse')
+      eventSourceRef.current = es
+
+      es.addEventListener('message_created', () => fetchConversations())
+      es.addEventListener('conversation_created', () => fetchConversations())
+      es.addEventListener('conversation_updated', () => fetchConversations())
+
+      es.onerror = () => {
+        es.close()
+        retryTimeout = setTimeout(connect, 3000)
+      }
     }
-    es.onerror = () => es.close()
-    return () => { es.close(); eventSourceRef.current = null }
+
+    connect()
+    return () => { es.close(); clearTimeout(retryTimeout); eventSourceRef.current = null }
   }, [fetchConversations])
 
-  // Initial load + 30s poll
+  // Initial load
   useEffect(() => {
     setLoading(true)
     fetchConversations()
-    convPollRef.current = setInterval(fetchConversations, 30_000)
-    return () => { if (convPollRef.current) clearInterval(convPollRef.current) }
   }, [fetchConversations])
 
   // Visibility change
@@ -160,7 +161,7 @@ export default function ConversationList() {
   })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--color-bg)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)' }}>
       {/* Channel filter */}
       <ChannelFilter
         value={channelFilter}
@@ -171,20 +172,20 @@ export default function ConversationList() {
       {/* Search */}
       <div style={{
         padding: '8px 16px',
-        background: 'var(--color-bg)',
-        borderBottom: '1px solid var(--color-border)',
+        background: 'var(--surface-1)',
+        borderBottom: '1px solid var(--surface-border)',
         flexShrink: 0,
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          background: 'var(--color-surface-2)',
+          background: 'var(--surface-2)',
           borderRadius: 'var(--radius-input)',
           padding: '8px 12px',
-          border: '1px solid var(--color-border)',
+          border: '1px solid var(--surface-border)',
         }}>
-          <Search size={15} color="var(--color-text-3)" style={{ flexShrink: 0 }} />
+          <Search size={15} color="var(--text-muted)" style={{ flexShrink: 0 }} />
           <input
             type="text"
             placeholder="Rechercher…"
@@ -197,7 +198,7 @@ export default function ConversationList() {
               outline: 'none',
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 14,
-              color: 'var(--color-text)',
+              color: 'var(--text-primary)',
             }}
           />
         </div>
@@ -208,11 +209,11 @@ export default function ConversationList() {
         {loading ? (
           <ConversationSkeleton />
         ) : error ? (
-          <div style={{ padding: 32, textAlign: 'center', color: 'var(--color-text-3)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
             {error}
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 32, textAlign: 'center', color: 'var(--color-text-3)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
             Aucune conversation
           </div>
         ) : (

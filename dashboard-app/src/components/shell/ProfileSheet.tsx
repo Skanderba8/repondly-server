@@ -21,14 +21,14 @@ export default function ProfileSheet({ open, onClose }: ProfileSheetProps) {
       {/* User info */}
       <div style={{
         padding: '12px 20px 16px',
-        borderBottom: '1px solid var(--color-border)',
+        borderBottom: '1px solid var(--surface-border)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             width: 44,
             height: 44,
             borderRadius: '50%',
-            background: 'var(--color-accent)',
+            background: 'var(--brand-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -44,7 +44,7 @@ export default function ProfileSheet({ open, onClose }: ProfileSheetProps) {
               fontFamily: "'Syne', sans-serif",
               fontSize: 17,
               fontWeight: 700,
-              color: 'var(--color-text)',
+              color: 'var(--text-primary)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -54,7 +54,7 @@ export default function ProfileSheet({ open, onClose }: ProfileSheetProps) {
             <div style={{
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 14,
-              color: 'var(--color-text-3)',
+              color: 'var(--text-muted)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -78,7 +78,7 @@ export default function ProfileSheet({ open, onClose }: ProfileSheetProps) {
             width: 36,
             height: 36,
             borderRadius: 10,
-            background: 'var(--color-surface-2)',
+            background: 'var(--surface-2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -90,7 +90,7 @@ export default function ProfileSheet({ open, onClose }: ProfileSheetProps) {
             flex: 1,
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 15,
-            color: 'var(--color-text)',
+            color: 'var(--text-primary)',
           }}>
             Apparence
           </span>
@@ -123,12 +123,12 @@ export default function ProfileSheet({ open, onClose }: ProfileSheetProps) {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <LogOut size={18} color="var(--color-danger)" />
+            <LogOut size={18} color="var(--brand-danger)" />
           </div>
           <span style={{
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 15,
-            color: 'var(--color-danger)',
+            color: 'var(--brand-danger)',
           }}>
             Déconnexion
           </span>
@@ -143,9 +143,9 @@ export default function ProfileSheet({ open, onClose }: ProfileSheetProps) {
             width: '100%',
             padding: '14px',
             borderRadius: 14,
-            background: 'var(--color-surface-2)',
+            background: 'var(--surface-2)',
             border: 'none',
-            color: 'var(--color-text)',
+            color: 'var(--text-primary)',
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 15,
             fontWeight: 600,

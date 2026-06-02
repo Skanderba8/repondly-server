@@ -28,7 +28,7 @@ export default function LoadingScreen() {
             position: 'fixed',
             inset: 0,
             zIndex: 9000,
-            background: 'var(--color-bg)',
+            background: 'var(--surface-1)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -40,7 +40,7 @@ export default function LoadingScreen() {
             fontFamily: "'Syne', sans-serif",
             fontSize: 28,
             fontWeight: 700,
-            color: 'var(--color-accent)',
+            color: 'var(--brand-primary)',
             letterSpacing: '-0.02em',
           }}>
             Répondly
@@ -53,7 +53,7 @@ export default function LoadingScreen() {
                   width: 6,
                   height: 6,
                   borderRadius: '50%',
-                  background: 'var(--color-accent)',
+                  background: 'var(--brand-primary)',
                 }}
                 animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1, 0.8] }}
                 transition={{

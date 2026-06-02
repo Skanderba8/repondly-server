@@ -1,47 +1,50 @@
-// SSE Broadcaster - Server-side singleton for real-time push
-// Manages SSE connections and broadcasts events to connected clients
+import { randomUUID } from 'crypto'
 
-type SSEEvent = {
-  type: 'message_created' | 'conversation_created' | 'conversation_status_changed' | 'connected'
-  data?: any
+type SSEClient = {
+  id: string
+  businessId: string
+  controller: ReadableStreamDefaultController
+  lastActivity: number
 }
-
-type Controller = ReadableStreamDefaultController
 
 class SSEBroadcaster {
-  private connections: Map<string, Set<Controller>> = new Map()
+  private clients = new Map<string, SSEClient>()
 
-  subscribe(businessId: string, controller: Controller): void {
-    if (!this.connections.has(businessId)) {
-      this.connections.set(businessId, new Set())
-    }
-    this.connections.get(businessId)!.add(controller)
+  addClient(businessId: string, controller: ReadableStreamDefaultController) {
+    const id = randomUUID()
+    this.clients.set(id, { id, businessId, controller, lastActivity: Date.now() })
+    return id
   }
 
-  unsubscribe(businessId: string, controller: Controller): void {
-    const set = this.connections.get(businessId)
-    if (set) {
-      set.delete(controller)
-      if (set.size === 0) {
-        this.connections.delete(businessId)
+  removeClient(id: string) {
+    this.clients.delete(id)
+  }
+
+  // Broadcast only to clients of the same business (tenant isolation)
+  broadcastToBusiness(businessId: string, event: string, data: unknown) {
+    const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+    const encoder = new TextEncoder()
+    for (const client of this.clients.values()) {
+      if (client.businessId === businessId) {
+        try {
+          client.controller.enqueue(encoder.encode(payload))
+          client.lastActivity = Date.now()
+        } catch {
+          this.clients.delete(client.id)
+        }
       }
     }
   }
 
-  broadcast(businessId: string, event: SSEEvent): void {
-    const set = this.connections.get(businessId)
-    if (!set) return
-
-    const data = `data: ${JSON.stringify(event)}\n\n`
-    set.forEach(controller => {
-      try {
-        controller.enqueue(data)
-      } catch (err) {
-        console.error('[SSE] Failed to send to controller:', err)
-      }
-    })
+  // Cleanup stale connections (call periodically)
+  cleanup() {
+    const staleThreshold = Date.now() - 60_000
+    for (const [id, client] of this.clients) {
+      if (client.lastActivity < staleThreshold) this.clients.delete(id)
+    }
   }
 }
 
-// Singleton instance
 export const sseBroadcaster = new SSEBroadcaster()
+// Cleanup every 60s
+setInterval(() => sseBroadcaster.cleanup(), 60_000)

@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 
 export async function GET(request: Request) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { businessId } = authResult
 
     const products = await prisma.product.findMany({
-      where: { businessId: session.user.id },
+      where: { businessId },
       orderBy: {
         createdAt: 'desc',
       },
@@ -31,16 +27,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { businessId } = authResult
 
     const body = await request.json()
-    const { businessId, name, description, price, available, outOfStock, deliveryFee, visible } = body
+    const { name, description, price, available, outOfStock, deliveryFee, visible } = body
 
-    if (!businessId || !name || price === undefined) {
-      return NextResponse.json({ success: false, error: 'businessId, name, and price are required' }, { status: 400 })
+    if (!name || price === undefined) {
+      return NextResponse.json({ success: false, error: 'name and price are required' }, { status: 400 })
     }
 
     const product = await prisma.product.create({

@@ -41,9 +41,9 @@ export default function BottomSheet({ open, onClose, children }: BottomSheetProp
               left: 0,
               right: 0,
               zIndex: 201,
-              background: 'var(--color-surface)',
+              background: 'var(--surface-0)',
               borderRadius: '24px 24px 0 0',
-              borderTop: '1px solid var(--color-border)',
+              borderTop: '1px solid var(--surface-border)',
               paddingBottom: 'env(safe-area-inset-bottom)',
               boxShadow: 'var(--shadow-elevated)',
             }}
@@ -53,7 +53,7 @@ export default function BottomSheet({ open, onClose, children }: BottomSheetProp
                 width: 40,
                 height: 4,
                 borderRadius: 2,
-                background: 'var(--color-border-2)',
+                background: 'var(--surface-border)',
               }} />
             </div>
             {children}

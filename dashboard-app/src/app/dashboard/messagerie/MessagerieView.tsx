@@ -1102,29 +1102,29 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
 
   // ── SSE subscription for real-time updates ───────────────────────────────────────
   useEffect(() => {
-    const eventSource = new EventSource('/api/sse')
-    eventSourceRef.current = eventSource
+    let es: EventSource
+    let retryTimeout: ReturnType<typeof setTimeout>
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        
-        if (data.type === 'message_created' && data.data?.conversationId) {
-          const msgConvId = data.data.conversationId
-          
-          // If it's the active conversation, append the message
+    function connect() {
+      es = new EventSource('/api/sse')
+      eventSourceRef.current = es
+
+      es.addEventListener('message_created', (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          const msgConvId = data.conversationId
+
           if (msgConvId === activeConvId) {
             const newMessage: Message = {
-              id: data.data.messageId,
-              content: data.data.content,
+              id: data.messageId,
+              content: data.content,
               content_type: 'text',
-              created_at: data.data.timestamp || Math.floor(Date.now() / 1000),
-              message_type: data.data.messageType === 0 ? 0 : data.data.messageType === 1 ? 1 : 2,
-              sender: data.data.sender,
+              created_at: data.timestamp || Math.floor(Date.now() / 1000),
+              message_type: data.messageType === 0 ? 0 : data.messageType === 1 ? 1 : 2,
+              sender: data.sender,
             }
             setMessages(prev => [...prev, newMessage])
-            
-            // Mark as read if it's the active conversation
+
             if (newMessage.message_type === 0) {
               fetch('/api/chatwoot/conversation-view', {
                 method: 'POST',
@@ -1133,73 +1133,39 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
               }).catch(() => {})
             }
           } else {
-            // Not active conversation, refresh list to update unread counts
             fetchConversations()
           }
+        } catch (err) {
+          console.error('[SSE] Failed to parse event:', err)
         }
-        
-        if (data.type === 'conversation_created' || data.type === 'conversation_status_changed') {
-          // Refresh conversations list
-          fetchConversations()
-        }
-      } catch (err) {
-        console.error('[SSE] Failed to parse event:', err)
+      })
+
+      es.addEventListener('conversation_created', () => fetchConversations())
+      es.addEventListener('conversation_updated', () => fetchConversations())
+
+      es.onerror = (err) => {
+        console.error('[SSE] Connection error:', err)
+        es.close()
+        retryTimeout = setTimeout(connect, 3000)
       }
     }
 
-    eventSource.onerror = (err) => {
-      console.error('[SSE] Connection error:', err)
-      eventSource.close()
-    }
-
+    connect()
     return () => {
-      eventSource.close()
+      es.close()
+      clearTimeout(retryTimeout)
       eventSourceRef.current = null
     }
   }, [activeConvId, fetchConversations])
 
-  // ── Pause polling when tab is not visible ───────────────────────────────────────
+  // ── Refresh on tab visibility ───────────────────────────────────────────────────
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Pause polling when tab is hidden
-        if (convPollRef.current) clearInterval(convPollRef.current)
-        if (eventSourceRef.current) eventSourceRef.current.close()
-      } else {
-        // Resume polling when tab is visible
-        fetchConversations()
-        if (convPollRef.current) clearInterval(convPollRef.current)
-        convPollRef.current = setInterval(fetchConversations, 30_000)
-        // Reconnect SSE
-        if (!eventSourceRef.current || eventSourceRef.current.readyState === EventSource.CLOSED) {
-          const eventSource = new EventSource('/api/sse')
-          eventSourceRef.current = eventSource
-          eventSource.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data)
-              if (data.type === 'message_created' && data.data?.conversationId === activeConvId) {
-                const newMessage: Message = {
-                  id: data.data.messageId,
-                  content: data.data.content,
-                  content_type: 'text',
-                  created_at: data.data.timestamp || Math.floor(Date.now() / 1000),
-                  message_type: data.data.messageType === 0 ? 0 : data.data.messageType === 1 ? 1 : 2,
-                  sender: data.data.sender,
-                }
-                setMessages(prev => [...prev, newMessage])
-              } else if (data.type === 'conversation_created' || data.type === 'conversation_status_changed') {
-                fetchConversations()
-              }
-            } catch (err) {
-              console.error('[SSE] Failed to parse event:', err)
-            }
-          }
-        }
-      }
+      if (!document.hidden) fetchConversations()
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [fetchConversations, activeConvId])
+  }, [fetchConversations])
 
   // ── Initial load ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1207,11 +1173,6 @@ export default function Messagerie({ onConversationChange, externalNotesOpen, on
     setConversations([])
     setActiveConvId(null)
     fetchConversations()
-
-    // Poll conversation list every 30s as fallback (SSE handles real-time updates)
-    if (convPollRef.current) clearInterval(convPollRef.current)
-    convPollRef.current = setInterval(fetchConversations, 30_000)
-    return () => { if (convPollRef.current) clearInterval(convPollRef.current) }
   }, [])
 
   // ── Auto-select initialConvId once conversations are loaded ──────────────────

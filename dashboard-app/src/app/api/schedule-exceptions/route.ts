@@ -1,20 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { requireAuth } from '@/lib/api-auth'
 
 export async function GET(request: Request) {
   try {
-    const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { searchParams } = new URL(request.url)
-    const businessId = searchParams.get('businessId')
-
-    if (!businessId) {
-      return NextResponse.json({ success: false, error: 'businessId is required' }, { status: 400 })
-    }
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { businessId } = authResult
 
     const exceptions = await prisma.scheduleException.findMany({
       where: { businessId },
@@ -30,16 +22,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { businessId } = authResult
 
     const body = await request.json()
-    const { businessId, label, startDate, endDate, closedAllDay, openTime, closeTime, customMessage } = body
+    const { label, startDate, endDate, closedAllDay, openTime, closeTime, customMessage } = body
 
-    if (!businessId || !label || !startDate || !endDate) {
-      return NextResponse.json({ success: false, error: 'businessId, label, startDate, and endDate are required' }, { status: 400 })
+    if (!label || !startDate || !endDate) {
+      return NextResponse.json({ success: false, error: 'label, startDate, and endDate are required' }, { status: 400 })
     }
 
     const exception = await prisma.scheduleException.create({

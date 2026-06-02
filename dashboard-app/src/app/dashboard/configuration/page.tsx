@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic'
 const FacebookInstagramConnect = dynamic(() => import('@/components/FacebookInstagramConnect'), { ssr: false })
 
 function makeD(dark: boolean) {
-  const P = palette(dark)
+  const P = palette()
   return {
     bg: P.bg, surface: P.surface, surfaceHover: P.surface2,
     border: P.border, borderHover: P.border2,
@@ -41,6 +41,7 @@ const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'
 
 function useInputStyle(): React.CSSProperties {
   const D = useD()
+  const dark = useTheme()
   return {
     width: '100%', padding: '9px 12px', borderRadius: D.radiusSm,
     border: `1px solid ${D.border}`, background: D.bg,
@@ -51,6 +52,7 @@ function useInputStyle(): React.CSSProperties {
 
 function Label({ children }: { children: React.ReactNode }) {
   const D = useD()
+  const dark = useTheme()
   return (
     <label style={{ fontSize: 11, fontWeight: 500, color: D.textMuted, display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
       {children}
@@ -69,7 +71,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
   const D = useD()
-  const isDark = D.bg === '#000000'
+  const dark = useTheme()
+  const isDark = dark
   return (
     <div style={{ 
       background: D.surface, 
@@ -92,6 +95,7 @@ function SectionCard({ title, children }: { title?: string; children: React.Reac
 // ── Toast ──────────────────────────────────────────────────────────────────────
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
   const D = useD()
+  const dark = useTheme()
   return (
     <div style={{
       position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
@@ -113,6 +117,7 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
 // ── Save button ────────────────────────────────────────────────────────────────
 function SaveBtn({ saving, onClick }: { saving: boolean; onClick: () => void }) {
   const D = useD()
+  const dark = useTheme()
   return (
     <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${D.border}`, display: 'flex', justifyContent: 'flex-end' }}>
       <button
@@ -136,6 +141,7 @@ function SaveBtn({ saving, onClick }: { saving: boolean; onClick: () => void }) 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ConfigurationPage() {
   const D = useD()
+  const dark = useTheme()
   const [tab, setTab] = useState<Tab>('entreprise')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -300,6 +306,7 @@ export default function ConfigurationPage() {
 // ── Entreprise Tab ─────────────────────────────────────────────────────────────
 function EntrepriseTab({ biz, setBiz, saving, onSave }: { biz: any; setBiz: any; saving: boolean; onSave: () => void }) {
   const D = useD()
+  const dark = useTheme()
   const inputStyle = useInputStyle()
   const modes = [
     { value: 'INFO_ONLY', label: 'Informations uniquement' },
@@ -373,6 +380,7 @@ function EntrepriseTab({ biz, setBiz, saving, onSave }: { biz: any; setBiz: any;
 // ── Bot Tab ────────────────────────────────────────────────────────────────────
 function BotTab({ bc, setBc, biz, setBiz, saving, onSave }: { bc: any; setBc: any; biz: any; setBiz: any; saving: boolean; onSave: () => void }) {
   const D = useD()
+  const dark = useTheme()
   const inputStyle = useInputStyle()
   const [newTrigger, setNewTrigger] = useState('')
   return (
@@ -502,6 +510,7 @@ function HorairesTab({ alwaysOpen, setAlwaysOpen, schedules, setSchedules, savin
   showToast: (msg: string, type?: 'success' | 'error') => void
 }) {
   const D = useD()
+  const dark = useTheme()
   const inputStyle = useInputStyle()
   const [savingSchedule, setSavingSchedule] = useState(false)
 
@@ -615,6 +624,7 @@ function CatalogueTab({ products, setProducts, services, setServices, showToast 
   showToast: (msg: string, type?: 'success' | 'error') => void
 }) {
   const D = useD()
+  const dark = useTheme()
   const inputStyle = useInputStyle()
   const [subTab, setSubTab] = useState<'products' | 'services'>('products')
   const [showForm, setShowForm] = useState(false)

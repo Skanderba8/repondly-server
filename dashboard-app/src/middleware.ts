@@ -10,18 +10,29 @@ export default auth((req) => {
   const isAuthenticated = !!session?.user
   const role = session?.user?.role
 
-  if (pathname.startsWith('/dashboard') && !isAuthenticated) {
-    return NextResponse.redirect(new URL('/auth/signin', req.url))
+  const isApi = pathname.startsWith('/api/')
+
+  if (!isAuthenticated) {
+    if (isApi) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/auth/signin', req.url))
+    }
   }
-  
+
   if (pathname === '/auth/signin' && isAuthenticated) {
     const target = role === 'SUPER_ADMIN' || role === 'ADMIN' ? 'https://admin.repondly.com' : '/dashboard'
     return NextResponse.redirect(target.startsWith('http') ? target : new URL(target, req.url))
   }
-  
+
   return NextResponse.next()
 })
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/auth/signin'],
+  matcher: [
+    '/dashboard/:path*',
+    '/auth/signin',
+    '/api/((?!auth|webhook|health|internal|bot/test-message|webhook/test).)*',
+  ],
 }
