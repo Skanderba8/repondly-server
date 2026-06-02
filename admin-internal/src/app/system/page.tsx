@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import {
   RefreshCw, Server, Database, Globe, Bot, Activity,
   HardDrive, Cpu, ShieldCheck, Megaphone, LayoutDashboard,
-  MessageSquare, Workflow,
+  MessageSquare,
 } from 'lucide-react'
 import RoutingMap from '@/components/admin/RoutingMap'
 import { getMetricColor, sslColor as sslColorLevel } from '@/lib/system-utils'
@@ -29,7 +29,6 @@ type SystemData = {
   services: {
     bot:        ServiceStatus
     app:        ServiceStatus
-    n8n:        ServiceStatus
     chatwoot:   ServiceStatus
     marketing:  ServiceStatus
     dashboard:  ServiceStatus
@@ -153,7 +152,6 @@ const SERVICE_CARDS: ServiceCardDef[] = [
   { label: 'Admin (app)',        icon: Globe,           key: 'app'        },
   { label: 'Bot WhatsApp',       icon: Bot,             key: 'bot'        },
   { label: 'Chatwoot',           icon: MessageSquare,   key: 'chatwoot'   },
-  { label: 'n8n',                icon: Workflow,        key: 'n8n'        },
   { label: 'Prisma DB',          icon: Database,        key: 'prismaDb'   },
   { label: 'Chatwoot DB',        icon: Database,        key: 'chatwootDb' },
   { label: 'Redis',              icon: Activity,        key: 'redis'      },

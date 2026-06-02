@@ -14,7 +14,6 @@ export default async function AdminDashboardPage() {
   const mockServices = {
     botOnline: true,
     appOnline: true,
-    n8nOnline: true,
     chatwootOnline: true,
     marketingOnline: true,
     dashboardOnline: true,

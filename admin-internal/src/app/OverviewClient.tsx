@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {
   Users, TrendingUp, AlertTriangle, Settings2,
-  Bot, Globe, ArrowRight, Activity, Workflow, MessageSquare, Megaphone, LayoutDashboard,
+  Bot, Globe, ArrowRight, Activity, MessageSquare, Megaphone, LayoutDashboard,
 } from 'lucide-react'
 
 const C = {
@@ -51,7 +51,6 @@ type Props = {
   services: {
     botOnline: boolean
     appOnline: boolean
-    n8nOnline: boolean
     chatwootOnline: boolean
     marketingOnline: boolean
     dashboardOnline: boolean
@@ -193,7 +192,6 @@ export default function AdminOverviewClient({ stats, services, globalStatus, rec
               {[
                 { label: 'Bot WhatsApp', online: services.botOnline, icon: Bot, href: '/bot' },
                 { label: 'app.repondly.com', online: services.appOnline, icon: Globe, href: '/system' },
-                { label: 'n8n', online: services.n8nOnline, icon: Workflow, href: '/n8n' },
                 { label: 'Chatwoot', online: services.chatwootOnline, icon: MessageSquare, href: '/chatwoot' },
                 { label: 'Marketing', online: services.marketingOnline, icon: Megaphone, href: '/system' },
                 { label: 'Dashboard', online: services.dashboardOnline, icon: LayoutDashboard, href: '/system' },

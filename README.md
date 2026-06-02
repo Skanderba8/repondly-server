@@ -34,9 +34,6 @@ Chatwoot (Docker)                                                      :3000
   └── internal only — not exposed to Nginx directly
       (bot and dashboard call it via http://127.0.0.1:3000)
 
-n8n (Docker)                                                           :5678
-  └── internal only — automation workflows
-
 PostgreSQL                                                             :5433
   └── shared DB — used by dashboard-app and admin-internal via Prisma
 ```
@@ -54,7 +51,6 @@ repondly-server/
 ├── admin-internal/        # Internal admin panel (app.repondly.com/admin)
 ├── bot/                   # Node.js automation/webhook engine (:3001)
 ├── chatwoot/              # Docker Compose for self-hosted Chatwoot
-├── n8n/                   # Docker Compose for self-hosted n8n
 ├── nginx.conf             # Nginx reverse proxy config (source of truth)
 └── README.md              # This file
 ```
@@ -70,7 +66,6 @@ repondly-server/
 | `admin-internal` | Next.js 15, TypeScript | 3006 | PM2 | `app.repondly.com/admin` |
 | `bot` | Node.js 20, JavaScript | 3001 | PM2 | `app.repondly.com/bot/` |
 | `chatwoot` | Ruby on Rails, Docker | 3000 | Docker Compose | Internal only |
-| `n8n` | Node.js, Docker | 5678 | Docker Compose | Internal only |
 | `postgresql` | PostgreSQL 16 | 5433 | systemd | `127.0.0.1:5433` |
 
 ---
@@ -103,7 +98,7 @@ repondly-server/
 | Reverse Proxy | Nginx 1.24.0 |
 | SSL | Let's Encrypt via Certbot |
 | Process Manager | PM2 (for all Node.js/Next.js apps) |
-| Containers | Docker + Docker Compose (Chatwoot, n8n) |
+| Containers | Docker + Docker Compose (Chatwoot) |
 
 **SSL certificates:**
 - `repondly.com` uses `/etc/letsencrypt/live/repondly.com-0001/`
@@ -126,7 +121,6 @@ repondly-server/
 | Bot engine | Node.js | 20.x |
 | Process manager | PM2 | latest |
 | Chatwoot | Self-hosted open-source | Docker |
-| n8n | Self-hosted open-source | Docker |
 | Nginx | 1.24.0 | Ubuntu package |
 | SSL | Let's Encrypt / Certbot | — |
 
@@ -199,7 +193,7 @@ dashboard-app/src/app/
 
 ### `admin-internal` — Internal Admin Panel (:3006)
 
-**Purpose:** Internal Repondly staff tool. Manage clients, onboarding, billing, bot config, n8n workflows, Chatwoot accounts, access control, and database operations.
+**Purpose:** Internal Repondly staff tool. Manage clients, onboarding, billing, bot config, Chatwoot accounts, access control, and database operations.
 
 **Access:** `app.repondly.com/admin` — protected by separate admin auth.
 
@@ -219,7 +213,6 @@ admin-internal/src/app/
 │   │   └── OnboardingClient.tsx
 │   ├── billing/page.tsx                # Billing management
 │   ├── bot/page.tsx                    # Bot config + events
-│   ├── n8n/page.tsx                    # n8n workflow management
 │   ├── chatwoot/page.tsx               # Chatwoot account management
 │   ├── access/page.tsx                 # Access control (admin users)
 │   ├── database/page.tsx               # DB management + migrations
@@ -241,9 +234,6 @@ admin-internal/src/app/
     │   ├── events/route.ts             # GET recent bot events
     │   └── restart/route.ts            # POST restart bot via PM2
     ├── chatwoot/route.ts               # GET/POST Chatwoot account mgmt
-    ├── n8n/
-    │   ├── route.ts                    # GET/POST n8n workflows
-    │   └── [id]/route.ts              # PATCH/DELETE workflow
     ├── database/
     │   ├── route.ts                    # GET DB stats
     │   └── migrate/route.ts            # POST run migrations
@@ -255,7 +245,6 @@ admin-internal/src/app/
 - `ClientsTable.tsx` — searchable client list
 - `AccessManager.tsx` — admin user permissions
 - `DatabaseManager.tsx` — DB health + migration trigger
-- `N8nPanel.tsx` — n8n workflow control
 - `ChatwootPanel.tsx` — Chatwoot account management
 - `RoutingMap.tsx` — visual routing overview
 
@@ -297,14 +286,6 @@ PATCH /api/v1/accounts/:id/conversations/:convId           # update status
 GET  /api/v1/accounts/:id/contacts                         # list contacts
 GET  /api/v1/accounts/:id/conversations                    # list conversations
 ```
-
----
-
-### `n8n` — Workflow Automation
-
-- Runs via `docker-compose.yml` in `/n8n/`
-- Internal use only — managed via `admin-internal` n8n panel
-- Used for scheduled automations, advanced workflow triggers, external integrations
 
 ---
 
@@ -439,7 +420,6 @@ npx prisma studio        # GUI for DB
 
 # Docker services
 cd /opt/repondly/chatwoot && docker compose up -d
-cd /opt/repondly/n8n     && docker compose up -d
 docker compose ps        # check running containers
 docker compose logs -f   # follow logs
 
@@ -505,10 +485,9 @@ tree -I "node_modules|.next|.git|dist" > project_tree.txt
 
 - Marketing site live at `repondly.com` (multilingual FR/AR, legal pages, contact form)
 - Dashboard app live at `app.repondly.com` (client auth, WhatsApp status, messagerie view)
-- Admin panel live at `app.repondly.com/admin` (kanban, client management, onboarding, n8n, Chatwoot, DB manager)
+- Admin panel live at `app.repondly.com/admin` (kanban, client management, onboarding, Chatwoot, DB manager)
 - Bot engine running on :3001 (Chatwoot webhook receiver, auto-reply logic)
 - Self-hosted Chatwoot on Docker
-- Self-hosted n8n on Docker
 - PostgreSQL 16 on :5433 with full Prisma schema
 - Nginx routing all 4 domains/subdomains correctly
 - PM2 managing all Node processes (survives reboots)
@@ -528,7 +507,6 @@ tree -I "node_modules|.next|.git|dist" > project_tree.txt
 - **Billing page** in dashboard — subscription plan + upgrade flow
 - **Redis** setup on VPS for job queues
 - **Client onboarding polish** — guided setup wizard for new businesses
-- **n8n workflow templates** — pre-built automations for common SMB use cases
 
 ---
 

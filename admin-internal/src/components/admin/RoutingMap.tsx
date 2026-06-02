@@ -18,7 +18,6 @@ const C = {
 type ServiceStatuses = {
   bot:        { online: boolean; latency: number | null }
   app:        { online: boolean; latency: number | null }
-  n8n:        { online: boolean; latency: number | null }
   chatwoot:   { online: boolean; latency: number | null }
   marketing:  { online: boolean; latency: number | null }
   dashboard:  { online: boolean; latency: number | null }
@@ -118,15 +117,6 @@ const ROUTING_RULES: RoutingRule[] = [
     port: 3000,
     serviceKey: 'chatwoot',
     sslDomain: 'inbox.repondly.com',
-  },
-  {
-    id: 'n8n',
-    sources: ['n8n.repondly.com'],
-    path: '/',
-    target: 'n8n',
-    port: 5678,
-    serviceKey: 'n8n',
-    sslDomain: 'n8n.repondly.com',
   },
 ]
 

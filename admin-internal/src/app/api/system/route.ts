@@ -40,7 +40,6 @@ function getCachedMetrics(): CachedMetrics {
     ssl: {
       'repondly.com':        getSslDaysRemaining('repondly.com'),
       'admin.repondly.com':  getSslDaysRemaining('admin.repondly.com'),
-      'n8n.repondly.com':    getSslDaysRemaining('n8n.repondly.com'),
       'inbox.repondly.com':  getSslDaysRemaining('inbox.repondly.com'),
     },
     timestamp: now,
@@ -197,7 +196,6 @@ export async function GET(request: NextRequest) {
   const [
     bot,
     app,
-    n8n,
     chatwoot,
     marketing,
     dashboard,
@@ -206,8 +204,7 @@ export async function GET(request: NextRequest) {
     redis,
   ] = await Promise.all([
     checkService('http://127.0.0.1:3001/health'),
-    checkService('http://127.0.0.1:3006'),   // check self via localhost, not HTTPS
-    checkService('https://n8n.repondly.com'),
+    checkService('http://127.0.0.1:3006'),
     checkService('http://127.0.0.1:3000'),
     checkService('http://127.0.0.1:3005'),
     checkService('http://127.0.0.1:3004'),
@@ -226,7 +223,6 @@ export async function GET(request: NextRequest) {
     services: {
       bot,
       app,
-      n8n,
       chatwoot,
       marketing,
       dashboard,

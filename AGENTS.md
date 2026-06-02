@@ -13,7 +13,7 @@ B2B SaaS automating WhatsApp/Facebook/Instagram for Tunisian SMBs.
 | Admin internal | `admin-internal/` | 3006 | TS (Next.js 15) | `admin-internal` |
 | Bot engine | `bot/` | 3001 | JS (Express) | `repondly-bot` |
 
-All share a single PostgreSQL 16 database (`DATABASE_URL`, port 5433). Docker services: Chatwoot (`chatwoot/`) on port 3000, n8n (`n8n/`) on port 5678.
+All share a single PostgreSQL 16 database (`DATABASE_URL`, port 5433). Docker services: Chatwoot (`chatwoot/`) on port 3000.
 
 **Nginx routing critical detail:** `/_next/` static assets are routed via `$http_referer` — requests from `/admin` pages go to port 3006, all others to 3004. If you add a new app under `app.repondly.com`, update the Nginx map block.
 

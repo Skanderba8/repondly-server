@@ -7,7 +7,7 @@ import { useState } from 'react'
 import {
   LayoutDashboard, Users, Server, ChevronLeft, ChevronRight,
   LogOut, Shield, Database, CreditCard, Kanban, Activity,
-  MessageSquare, Workflow,
+  MessageSquare,
 } from 'lucide-react'
 
 const C = {
@@ -24,7 +24,6 @@ const ACTIVE_LINKS = [
   { label: "Vue d'ensemble", href: '/', icon: LayoutDashboard, exact: true },
   { label: 'Clients', href: '/clients', icon: Users, exact: false },
   { label: 'Système', href: '/system', icon: Server, exact: false },
-  { label: 'n8n', href: '/n8n', icon: Workflow, exact: false },
   { label: 'Base de données', href: '/database', icon: Database, exact: false, superAdminOnly: true },
   { label: 'Accès', href: '/access', icon: Shield, exact: false, superAdminOnly: true },
 ]
