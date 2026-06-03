@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
       sender: event.sender,
       content: event.content,
       messageType: event.message_type,
+      senderType: event.sender?.type,
       status: event.conversation?.status,
+      unreadCount: event.conversation?.unread_count,
       inboxId: event.conversation?.inbox_id,
       timestamp: event.created_at || Date.now(),
     }

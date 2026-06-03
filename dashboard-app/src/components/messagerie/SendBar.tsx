@@ -1,17 +1,28 @@
 'use client'
 
 import { useRef } from 'react'
-import { Send } from 'lucide-react'
+import { Send, Bot } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface SendBarProps {
   value: string
   onChange: (v: string) => void
   onSend: () => void
   disabled?: boolean
+  botActive: boolean
+  onPauseBot: () => void
 }
 
-export default function SendBar({ value, onChange, onSend, disabled }: SendBarProps) {
+export default function SendBar({
+  value,
+  onChange,
+  onSend,
+  disabled,
+  botActive,
+  onPauseBot,
+}: SendBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -24,23 +35,56 @@ export default function SendBar({ value, onChange, onSend, disabled }: SendBarPr
     onChange(e.target.value)
     const el = e.target
     el.style.height = 'auto'
+    // Max ~4 rows at ~20px per row + padding
     el.style.height = `${Math.min(el.scrollHeight, 96)}px`
   }
 
   const canSend = value.trim().length > 0 && !disabled
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      background: 'var(--surface-0)',
-      borderTop: '1px solid var(--surface-border)',
-      padding: '10px 16px',
-      paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
-      zIndex: 10,
-    }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Bot active notice */}
+      {botActive && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            padding: '6px 10px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--brand-primary-soft)',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12,
+            color: 'var(--brand-primary)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Bot size={14} />
+            <span>Le bot répond automatiquement</span>
+          </div>
+          <button
+            onClick={onPauseBot}
+            style={{
+              padding: '3px 8px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--brand-primary)',
+              background: 'transparent',
+              color: 'var(--brand-primary)',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            Répondre manuellement
+          </button>
+        </motion.div>
+      )}
+
+      {/* Input row */}
       <div style={{
         display: 'flex',
         alignItems: 'flex-end',
@@ -76,21 +120,33 @@ export default function SendBar({ value, onChange, onSend, disabled }: SendBarPr
           onClick={onSend}
           disabled={!canSend}
           style={{
-            width: 34,
             height: 34,
-            borderRadius: '50%',
+            borderRadius: 'var(--radius-pill)',
             background: canSend ? 'var(--brand-primary)' : 'transparent',
             border: 'none',
             cursor: canSend ? 'pointer' : 'default',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            gap: 4,
             flexShrink: 0,
             opacity: canSend ? 1 : 0.3,
             transition: 'opacity 0.15s, background 0.15s',
+            padding: canSend && !isMobile ? '0 14px' : '0',
+            width: canSend && !isMobile ? 'auto' : 34,
           }}
         >
           <Send size={16} color={canSend ? '#fff' : 'var(--text-muted)'} />
+          {canSend && !isMobile && (
+            <span style={{
+              color: '#fff',
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13,
+              fontWeight: 600,
+            }}>
+              Envoyer
+            </span>
+          )}
         </button>
       </div>
     </div>

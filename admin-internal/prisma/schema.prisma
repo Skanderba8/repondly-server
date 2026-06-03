@@ -1,5 +1,6 @@
-// Synced from canonical schema: dashboard-app/prisma/schema.prisma
-// Admin-specific extensions preserved below.
+// CANONICAL SCHEMA — edit only this file.
+// Migrations: run from admin-internal/ only.
+// After changes: run db:generate in bot/, dashboard-app/, and admin-internal/.
 
 generator client {
   provider   = "prisma-client-js"
@@ -317,8 +318,8 @@ enum RepondlyTicketStatus {
 enum ExceptionType {
   CLOSURE
   PROMO
-  TEMP_HOURS
-  CUSTOM_MESSAGE
+  HOLIDAY
+  OTHER
 }
 
 // ─── AI Bot Enums ────────────────────────────────────────────────────────────────
@@ -422,7 +423,7 @@ model ScheduleException {
   id             String         @id @default(cuid())
   businessId     String
   label          String
-  type           ExceptionType  @default(CUSTOM_MESSAGE)
+  type           ExceptionType  @default(OTHER)
   startDate      DateTime
   endDate        DateTime
   closedAllDay   Boolean        @default(false)
@@ -449,13 +450,10 @@ model BotConfig {
   lastGeneratedAt           DateTime?
   strictInstructionBlock    String?
 
-  // New fields
   handoverPhone             String?
   defaultLanguage           DefaultLanguage @default(FR)
   botActive                 Boolean  @default(true)
   personality               String?
-
-  // Admin-specific extensions
   primaryLanguage           String?
   allowDarijaInput          Boolean  @default(true)
   forceProfessionalArabic   Boolean  @default(true)

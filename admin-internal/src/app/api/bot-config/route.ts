@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { businessId, systemPrompt, requiredOrderFields, requiredAppointmentFields, handoverTriggers, collectName, collectPhone, collectLocation } = body
+    const { businessId, systemPrompt, requiredOrderFields, requiredAppointmentFields, handoverTriggers, collectFields } = body
 
     if (!businessId) {
       return NextResponse.json(
@@ -46,9 +46,7 @@ export async function POST(request: Request) {
         requiredOrderFields: requiredOrderFields || [],
         requiredAppointmentFields: requiredAppointmentFields || [],
         handoverTriggers: handoverTriggers || [],
-        collectName: collectName !== undefined ? collectName : false,
-        collectPhone: collectPhone !== undefined ? collectPhone : false,
-        collectLocation: collectLocation !== undefined ? collectLocation : false,
+        collectFields: collectFields || [],
         needsRegen: true,
       },
       create: {
@@ -57,9 +55,7 @@ export async function POST(request: Request) {
         requiredOrderFields: requiredOrderFields || [],
         requiredAppointmentFields: requiredAppointmentFields || [],
         handoverTriggers: handoverTriggers || [],
-        collectName: collectName !== undefined ? collectName : false,
-        collectPhone: collectPhone !== undefined ? collectPhone : false,
-        collectLocation: collectLocation !== undefined ? collectLocation : false,
+        collectFields: collectFields || [],
         needsRegen: true,
       },
     })

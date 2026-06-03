@@ -11,12 +11,20 @@ import { generatePrompt } from './generatePrompt.js';
 import { detectLanguage, determineResponseLanguage, containsDarija } from './lib/languageDetector.js';
 import { writeCollectedFieldsNote, getCRMNote } from './lib/crmNotesManager.js';
 import { needsHumanHandover, notifyOwnerViaWhatsApp, updateHandoverStatus } from './lib/handoverManager.js';
+import healthHandler from './routes/health.js';
 
 dotenv.config();
 
+// ─── STRUCTURED LOGGER ───────────────────────────────────────────────────────
+const log = {
+  info:  (msg, data = {}) => console.log(JSON.stringify({ level: 'info',  ts: new Date().toISOString(), msg, ...data })),
+  warn:  (msg, data = {}) => console.log(JSON.stringify({ level: 'warn',  ts: new Date().toISOString(), msg, ...data })),
+  error: (msg, data = {}) => console.error(JSON.stringify({ level: 'error', ts: new Date().toISOString(), msg, ...data })),
+};
+
 // Debug: Check if environment variables are available
-console.log('DATABASE_URL available:', !!process.env.DATABASE_URL);
-console.log('GROQ_API_KEY available:', !!process.env.GROQ_API_KEY);
+log.info('env_check', { DATABASE_URL: !!process.env.DATABASE_URL });
+log.info('env_check', { GROQ_API_KEY: !!process.env.GROQ_API_KEY });
 
 const app = express();
 // Use limit to prevent memory issues with large webhooks
@@ -66,7 +74,7 @@ async function replyViaChatwoot(accountId, conversationId, message, apiToken) {
       }
     );
   } catch (err) {
-    console.error(`[Chatwoot Send Error] Status: ${err.response?.status} | URL: ${url}`);
+    log.error('chatwoot_error', { endpoint: 'reply', status: err.response?.status, url });
     throw err;
   }
 }
@@ -87,7 +95,7 @@ async function addNoteToChatwoot(accountId, conversationId, note, apiToken) {
       }
     );
   } catch (err) {
-    console.error(`[Chatwoot Note Error] Status: ${err.response?.status} | URL: ${url}`);
+    log.error('chatwoot_error', { endpoint: 'note', status: err.response?.status, url });
     throw err;
   }
 }
@@ -118,7 +126,7 @@ async function fetchConversationHistory(accountId, conversationId, apiToken) {
       content: msg.content,
     })).reverse();
   } catch (err) {
-    console.error(`[Chatwoot History Fetch Error]:`, err.message);
+    log.error('chatwoot_error', { endpoint: 'history', status: err.response?.status, url });
     return []; // Continue with empty history on failure
   }
 }
@@ -139,7 +147,7 @@ async function updateConversationStatus(accountId, conversationId, status, apiTo
       }
     );
   } catch (err) {
-    console.error(`[Chatwoot Status Error] Status: ${err.response?.status} | URL: ${url}`);
+    log.error('chatwoot_error', { endpoint: 'status', status: err.response?.status, url });
     throw err;
   }
 }
@@ -153,7 +161,7 @@ async function assignToHuman(accountId, conversationId, agentId, apiToken) {
     await axios.post(`${baseUrl}/assignments`, { assignee_id: agentId }, { headers });
     await axios.post(`${baseUrl}/messages`, { content: `@human agent requested.`, message_type: 'outgoing', private: true }, { headers });
   } catch (err) {
-    console.error(`[Handover Error]`, err.message);
+    log.error('chatwoot_error', { endpoint: 'assign', status: err.response?.status, message: err.message });
   }
 }
 
@@ -203,15 +211,20 @@ async function getAIReply(conversationId, message, systemPrompt, accountId, apiT
   // Fetch history from Chatwoot API
   const history = await fetchConversationHistory(accountId, conversationId, apiToken);
   
-  const completion = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    max_tokens: MAX_REPLY_TOKENS,
-    temperature: TEMPERATURE,
-    messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: trimmed }],
-  });
-  
-  const reply = completion.choices[0].message.content.trim();
-  return reply;
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: MAX_REPLY_TOKENS,
+      temperature: TEMPERATURE,
+      messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: trimmed }],
+    });
+    
+    const reply = completion.choices[0].message.content.trim();
+    return reply;
+  } catch (err) {
+    log.error('groq_error', { message: err.message, model: 'llama-3.3-70b-versatile' });
+    throw err;
+  }
 }
 
 // ─── ACTION HANDLERS ──────────────────────────────────────────────────────────
@@ -283,7 +296,7 @@ async function handleHumanHandover(business, conversationId, reason, crmNote) {
       },
     });
   } catch (orderErr) {
-    console.error(`[Bot] Failed to create Order record:`, orderErr.message);
+    log.error('order_create_failed', { businessId: business.id, conversationId, error: orderErr.message });
   }
 
   return true;
@@ -316,16 +329,18 @@ app.post('/chatwoot-webhook', async (req, res) => {
 
   if (event.message_type !== 'incoming' || senderType === 'agent' || !content) return;
 
-  console.log(`[Acc: ${accountId} | Conv: ${conversationId} | Inbox: ${inboxId}] Incoming: ${content}`);
+  log.info('webhook_received', { inboxId, conversationId, contentPreview: content?.slice(0, 50) });
 
   try {
     // Resolve business by inbox ID
     const business = await resolveBusinessByInboxId(inboxId);
 
     if (!business) {
-      console.log(`[Bot] No active business found for inbox ${inboxId}`);
+      log.warn('business_not_found', { inboxId });
       return;
     }
+
+    log.info('business_resolved', { businessId: business.id });
 
     // Log every incoming message for analytics
     try {
@@ -338,14 +353,14 @@ app.post('/chatwoot-webhook', async (req, res) => {
         },
       });
     } catch (logErr) {
-      console.error(`[Bot] Failed to log message:`, logErr.message);
+      log.error('message_log_failed', { businessId: business.id, conversationId, error: logErr.message });
     }
 
     // Check if bot is enabled via ConversationLog
-    const log = await prisma.conversationLog.findFirst({
+    const logEntry = await prisma.conversationLog.findFirst({
       where: { businessId: business.id, chatwootConversationId: conversationId }
     });
-    if (log && !log.botEnabled) return; // bot paused by user
+    if (logEntry && !logEntry.botEnabled) return; // bot paused by user
 
     // Detect language
     const detectedLanguage = detectLanguage(content);
@@ -353,13 +368,13 @@ app.post('/chatwoot-webhook', async (req, res) => {
     
     // Log Darija detection for tracking
     if (containsDarija(content)) {
-      console.log(`[Bot] Darija detected in message for conversation ${conversationId}`);
+      log.info('darija_detected', { businessId: business.id, conversationId });
     }
 
     // Get or generate system prompt
     let systemPrompt = business.botConfig?.systemPrompt;
     if (!systemPrompt || business.botConfig?.needsRegen) {
-      console.log(`[Bot] Generating prompt for business ${business.id}`);
+      log.info('prompt_generation', { businessId: business.id });
       systemPrompt = await generatePrompt(business.id, prisma);
     }
 
@@ -367,7 +382,7 @@ app.post('/chatwoot-webhook', async (req, res) => {
     const aiResponse = await getAIReply(conversationId, content, systemPrompt, accountId, business.chatwootApiToken);
     
     // Send the reply to customer
-    console.log(`[Bot] Reply: ${aiResponse}`);
+    log.info('ai_reply_sent', { businessId: business.id, conversationId, replyLength: aiResponse.length });
     await replyViaChatwoot(accountId, conversationId, aiResponse, business.chatwootApiToken);
     
     // Check for handover intent (simple string check)
@@ -375,7 +390,7 @@ app.post('/chatwoot-webhook', async (req, res) => {
     const shouldHandover = handoverPhrases.some(phrase => aiResponse.toLowerCase().includes(phrase));
     
     if (shouldHandover) {
-      console.log(`[Bot] Handover triggered for conversation ${conversationId}`);
+      log.info('handover_triggered', { businessId: business.id, conversationId, reason: 'Bot initiated handover' });
       
       // Get current CRM note for handover context
       const crmNote = await prisma.conversationCRMNote.findUnique({
@@ -392,7 +407,7 @@ app.post('/chatwoot-webhook', async (req, res) => {
     }
 
   } catch (err) {
-    console.error(`[Critical Error] Status: ${err.response?.status} | Msg: ${err.message}`);
+    log.error('critical_webhook_error', { status: err.response?.status, message: err.message });
   }
 });
 
@@ -400,14 +415,14 @@ app.post('/chatwoot-webhook', async (req, res) => {
 app.post('/api/test-message', async (req, res) => {
   try {
     const { conversationId, message, systemPrompt, accountId, apiToken } = req.body;
-    console.log(`[API] Test message for conversation ${conversationId}`);
+    log.info('api_test_message', { conversationId });
     
     // Get AI reply with provided system prompt
     const reply = await getAIReply(conversationId, message, systemPrompt, accountId, apiToken);
     
     res.json({ success: true, reply });
   } catch (err) {
-    console.error('[API] Test message error:', err);
+    log.error('api_test_message_error', { error: err.message });
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -415,24 +430,22 @@ app.post('/api/test-message', async (req, res) => {
 app.post('/api/regenerate-prompt/:businessId', async (req, res) => {
   try {
     const { businessId } = req.params;
-    console.log(`[API] Regenerating prompt for business ${businessId}`);
+    log.info('api_regenerate_prompt', { businessId });
     const prompt = await generatePrompt(businessId);
     res.json({ success: true, prompt });
   } catch (err) {
-    console.error('[API] Prompt regeneration error:', err);
+    log.error('api_regenerate_prompt_error', { businessId: req.params.businessId, error: err.message });
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
+app.get('/health', healthHandler);
 
 // ─── PROMPT REGENERATION CRON JOB ─────────────────────────────────────────────
 // Run every 5 minutes as safety net (immediate regen triggered on save)
 cron.schedule('*/5 * * * *', async () => {
   try {
-    console.log('[Cron] Checking for businesses needing prompt regeneration (safety net)');
+    log.info('cron_check_regen', { msg: 'Checking for businesses needing prompt regeneration' });
     
     const businessesNeedingRegen = await prisma.business.findMany({
       where: {
@@ -446,18 +459,18 @@ cron.schedule('*/5 * * * *', async () => {
       },
     });
 
-    console.log(`[Cron] Found ${businessesNeedingRegen.length} businesses needing regeneration`);
+    log.info('cron_regen_count', { count: businessesNeedingRegen.length });
 
     for (const business of businessesNeedingRegen) {
       try {
-        console.log(`[Cron] Regenerating prompt for business ${business.id}`);
+        log.info('cron_regen_business', { businessId: business.id });
         await generatePrompt(business.id, prisma);
       } catch (err) {
-        console.error(`[Cron] Error regenerating prompt for business ${business.id}:`, err);
+        log.error('cron_regen_error', { businessId: business.id, error: err.message });
       }
     }
   } catch (err) {
-    console.error('[Cron] Error checking for prompt regeneration:', err);
+    log.error('cron_check_error', { error: err.message });
   }
 });
 
@@ -469,4 +482,4 @@ app.get('/webhook', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Répondly bot live on port ${PORT}`));
+app.listen(PORT, () => log.info('server_start', { port: PORT, msg: `Répondly bot live on port ${PORT}` }));

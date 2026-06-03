@@ -1,8 +1,8 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { ChevronLeft, MoreVertical } from 'lucide-react'
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 interface Contact {
   id: number
@@ -15,6 +15,10 @@ interface Contact {
 interface ConversationTopBarProps {
   contact: Contact
   channelType?: string
+  botEnabled?: boolean
+  onToggleBot?: () => void
+  onBack?: () => void
+  onMenu?: () => void
 }
 
 function initials(name: string) {
@@ -27,8 +31,14 @@ function channelColor(channelType: string): string {
   return 'var(--brand-primary)'
 }
 
-export default function ConversationTopBar({ contact, channelType = '' }: ConversationTopBarProps) {
-  const router = useRouter()
+export default function ConversationTopBar({
+  contact,
+  channelType = '',
+  botEnabled = true,
+  onToggleBot,
+  onBack,
+  onMenu,
+}: ConversationTopBarProps) {
   const [imgError, setImgError] = useState(false)
   const color = channelColor(channelType)
 
@@ -48,25 +58,27 @@ export default function ConversationTopBar({ contact, channelType = '' }: Conver
       flexShrink: 0,
       zIndex: 10,
     }}>
-      <button
-        onClick={() => router.back()}
-        style={{
-          width: 44,
-          height: 44,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--brand-primary)',
-          flexShrink: 0,
-          borderRadius: 10,
-          WebkitTapHighlightColor: 'transparent',
-        }}
-      >
-        <ChevronLeft size={22} strokeWidth={2.5} />
-      </button>
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{
+            width: 44,
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--brand-primary)',
+            flexShrink: 0,
+            borderRadius: 10,
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <ChevronLeft size={22} strokeWidth={2.5} />
+        </button>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
         {contact.avatar_url && !imgError ? (
@@ -89,36 +101,77 @@ export default function ConversationTopBar({ contact, channelType = '' }: Conver
             {initials(contact.name)}
           </div>
         )}
-        <span style={{
-          fontFamily: "'Syne', sans-serif",
-          fontSize: 15,
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
-          {contact.name}
-        </span>
+        <div style={{ minWidth: 0 }}>
+          <span style={{
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 15,
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            display: 'block',
+          }}>
+            {contact.name}
+          </span>
+        </div>
       </div>
 
-      <button
-        style={{
-          width: 36,
-          height: 36,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--text-muted)',
-          flexShrink: 0,
-          borderRadius: 8,
-        }}
-      >
-        <MoreVertical size={18} />
-      </button>
+      {/* Bot toggle */}
+      {onToggleBot && (
+        <button
+          onClick={onToggleBot}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 10px',
+            borderRadius: 'var(--radius-pill)',
+            border: '1px solid var(--surface-border)',
+            background: botEnabled ? 'var(--brand-success-soft)' : 'var(--brand-warning-soft)',
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <span style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: botEnabled ? 'var(--brand-success)' : 'var(--brand-warning)',
+            flexShrink: 0,
+          }} />
+          <span style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 11,
+            fontWeight: 600,
+            color: botEnabled ? 'var(--brand-success)' : 'var(--brand-warning)',
+            whiteSpace: 'nowrap',
+          }}>
+            {botEnabled ? 'Bot actif' : 'Bot en pause'}
+          </span>
+        </button>
+      )}
+
+      {onMenu && (
+        <button
+          onClick={onMenu}
+          style={{
+            width: 36,
+            height: 36,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--text-muted)',
+            flexShrink: 0,
+            borderRadius: 8,
+          }}
+        >
+          <MoreVertical size={18} />
+        </button>
+      )}
     </div>
   )
 }

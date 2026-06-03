@@ -7,6 +7,9 @@ function mapSectorToBusinessType(sector: string): string {
     case 'beauty': return 'SALON'
     case 'medical': return 'CLINIC'
     case 'restaurant': return 'RESTAURANT'
+    case 'boutique':
+    case 'ecommerce':
+      return 'BOUTIQUE'
     default: return 'OTHER'
   }
 }
@@ -16,8 +19,11 @@ function mapSectorToBotMode(sector: string): string {
     case 'beauty':
     case 'medical':
     case 'coaching':
+    case 'garage':
       return 'APPOINTMENTS'
     case 'restaurant':
+    case 'boutique':
+    case 'ecommerce':
       return 'ORDERS'
     default:
       return 'INFO_ONLY'

@@ -1,25 +1,49 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Sparkles, Trash2, Plus, Phone,
-  Smile, Briefcase, Zap, ChevronRight,
+  Sparkles,
+  Stethoscope,
+  GraduationCap,
+  UtensilsCrossed,
+  Store,
+  Package,
+  Home,
+  Wrench,
+  CalendarDays,
+  Building2,
+  Phone,
+  Trash2,
+  Plus,
+  ChevronRight,
+  Check,
+  Smile,
+  Briefcase,
+  Zap,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
+import { CardSurface } from '@/components/ui/card-surface'
+import { H2, Body, Caption } from '@/components/ui/typography'
 import ProgressBar from '@/components/onboarding/ProgressBar'
+import { cn } from '@/lib/utils'
 
-/* ── Types ────────────────────────────────────────────────────────────────── */
+/* ── Types ──────────────────────────────────────────────────────────────── */
 
 type SectorKey =
   | 'beauty'
   | 'medical'
   | 'coaching'
   | 'restaurant'
+  | 'boutique'
+  | 'ecommerce'
   | 'real-estate'
+  | 'garage'
+  | 'events'
   | 'other'
 
 type LangKey = 'darija' | 'french' | 'mix'
@@ -55,15 +79,19 @@ interface OnboardingData {
   botName: string
 }
 
-/* ── Constants ────────────────────────────────────────────────────────────── */
+/* ── Constants ──────────────────────────────────────────────────────────── */
 
-const SECTORS: { key: SectorKey; label: string; icon: string }[] = [
-  { key: 'beauty', label: 'Beauté & Soins', icon: '💅' },
-  { key: 'medical', label: 'Médical / Clinique', icon: '🏥' },
-  { key: 'coaching', label: 'Éducation / Cours', icon: '📚' },
-  { key: 'restaurant', label: 'Restaurant', icon: '🍽️' },
-  { key: 'real-estate', label: 'Immobilier', icon: '🏠' },
-  { key: 'other', label: 'Autre', icon: '✨' },
+const SECTORS: { key: SectorKey; label: string; icon: React.ReactNode }[] = [
+  { key: 'beauty', label: 'Beauté & Soins', icon: <Sparkles size={20} /> },
+  { key: 'medical', label: 'Médical / Clinique', icon: <Stethoscope size={20} /> },
+  { key: 'coaching', label: 'Éducation / Cours', icon: <GraduationCap size={20} /> },
+  { key: 'restaurant', label: 'Restaurant', icon: <UtensilsCrossed size={20} /> },
+  { key: 'boutique', label: 'Boutique / Magasin', icon: <Store size={20} /> },
+  { key: 'ecommerce', label: 'E-commerce', icon: <Package size={20} /> },
+  { key: 'real-estate', label: 'Immobilier', icon: <Home size={20} /> },
+  { key: 'garage', label: 'Garage / Auto', icon: <Wrench size={20} /> },
+  { key: 'events', label: 'Événementiel', icon: <CalendarDays size={20} /> },
+  { key: 'other', label: 'Autre', icon: <Building2 size={20} /> },
 ]
 
 const DEFAULT_SCHEDULE: Record<string, ScheduleDay> = {
@@ -112,25 +140,25 @@ const FAQ_FALLBACK_ANSWERS: Record<string, string> = {
 
 const PERSONALITIES: {
   key: PersonalityKey
-  emoji: React.ReactNode
+  icon: React.ReactNode
   title: string
   desc: string
 }[] = [
   {
     key: 'warm',
-    emoji: <Smile size={24} />,
+    icon: <Smile size={20} />,
     title: 'Chaleureux & Proche',
     desc: 'Le bot parle comme un ami de confiance',
   },
   {
     key: 'professional',
-    emoji: <Briefcase size={24} />,
+    icon: <Briefcase size={20} />,
     title: 'Professionnel',
     desc: 'Ton formel et rassurant',
   },
   {
     key: 'direct',
-    emoji: <Zap size={24} />,
+    icon: <Zap size={20} />,
     title: 'Concis & Direct',
     desc: 'Réponses courtes et efficaces',
   },
@@ -158,25 +186,46 @@ function sectorDefaults(sector: SectorKey): ServiceItem[] {
         { name: 'Menu du jour', price: '25' },
         { name: 'Formule dégustation', price: '55' },
       ]
+    case 'boutique':
+      return [
+        { name: 'Article populaire', price: '45' },
+        { name: 'Pack promo', price: '90' },
+      ]
+    case 'ecommerce':
+      return [
+        { name: 'Produit phare', price: '60' },
+        { name: 'Pack découverte', price: '120' },
+      ]
     case 'real-estate':
       return [
-        { name: 'Visite appartement', price: '0' },
-        { name: 'Estimation', price: '0' },
+        { name: 'Visite appartement', price: '' },
+        { name: 'Estimation', price: '' },
+      ]
+    case 'garage':
+      return [
+        { name: 'Réparation standard', price: '80' },
+        { name: 'Diagnostic', price: '40' },
+      ]
+    case 'events':
+      return [
+        { name: 'Pack événement', price: '500' },
+        { name: 'Prestation sur mesure', price: '' },
       ]
     default:
       return [
-        { name: 'Service standard', price: '50' },
-        { name: 'Service premium', price: '100' },
+        { name: 'Offre standard', price: '50' },
+        { name: 'Offre premium', price: '100' },
       ]
   }
 }
 
-/* ── Main Page ────────────────────────────────────────────────────────────── */
+/* ── Main Page ──────────────────────────────────────────────────────────── */
 
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [data, setData] = useState<OnboardingData>({
     name: '',
     sector: '',
@@ -197,26 +246,48 @@ export default function OnboardingPage() {
     []
   )
 
-  const canProceed = (): boolean => {
-    switch (step) {
-      case 1:
-        return (
-          data.name.trim().length > 0 &&
-          data.sector !== '' &&
-          data.city.trim().length > 0
-        )
-      case 2:
-        return data.services.length > 0 && data.services.every((s) => s.name.trim() && s.price.trim())
-      case 3:
-        return Object.values(data.schedule).some((d) => d.open)
-      case 4:
-        return true
-      case 5:
-        return true
-      default:
-        return false
+  // Scroll focused inputs into view on mobile so they don't hide behind the footer
+  useEffect(() => {
+    const handleFocus = (e: FocusEvent) => {
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 250)
+      }
     }
-  }
+    document.addEventListener('focusin', handleFocus)
+    return () => document.removeEventListener('focusin', handleFocus)
+  }, [step])
+
+  const validateStep = useCallback(
+    (s: number): boolean => {
+      const e: Record<string, string> = {}
+      switch (s) {
+        case 1:
+          if (!data.name.trim()) e.name = "Le nom de l'entreprise est requis"
+          if (!data.sector) e.sector = 'Choisissez un secteur'
+          if (!data.city.trim()) e.city = 'La ville est requise'
+          break
+        case 2:
+          if (data.services.length === 0) {
+            e.services = 'Ajoutez au moins une offre'
+          } else {
+            const emptyName = data.services.some((sv) => !sv.name.trim())
+            if (emptyName) e.services = 'Toutes les offres doivent avoir un nom'
+          }
+          break
+        case 3:
+          if (!Object.values(data.schedule).some((d) => d.open)) {
+            e.schedule = 'Au moins un jour doit être ouvert'
+          }
+          break
+      }
+      setErrors(e)
+      return Object.keys(e).length === 0
+    },
+    [data]
+  )
 
   const handleSectorChange = (sector: SectorKey) => {
     update('sector', sector)
@@ -224,8 +295,10 @@ export default function OnboardingPage() {
   }
 
   const handleNext = async () => {
+    if (!validateStep(step)) return
     if (step < 5) {
       setStep((s) => s + 1)
+      setErrors({})
       return
     }
     setSaving(true)
@@ -246,7 +319,9 @@ export default function OnboardingPage() {
           .map((f) => ({
             question: f.question,
             answer:
-              f.answer.trim() || FAQ_FALLBACK_ANSWERS[f.question] || 'Notre équipe vous répondra sous peu.',
+              f.answer.trim() ||
+              FAQ_FALLBACK_ANSWERS[f.question] ||
+              'Notre équipe vous répondra sous peu.',
           })),
         botPersonality: data.botPersonality,
         botName: data.botName.trim() || data.name.trim(),
@@ -271,29 +346,18 @@ export default function OnboardingPage() {
   }
 
   const handleBack = () => {
-    if (step > 1) setStep((s) => s - 1)
+    if (step > 1) {
+      setStep((s) => s - 1)
+      setErrors({})
+    }
   }
 
   return (
-    <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
+    <div className="flex flex-1 flex-col overflow-hidden">
       <ProgressBar currentStep={step} />
 
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          padding: '20px',
-          paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
-        }}
-      >
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 pb-32 pt-5 sm:pb-28">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -301,136 +365,130 @@ export default function OnboardingPage() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
-            style={{ maxWidth: 520, margin: '0 auto' }}
+            className="mx-auto max-w-xl"
           >
-            {step === 1 && <Step1 data={data} update={update} onSectorChange={handleSectorChange} />}
-            {step === 2 && <Step2 data={data} update={update} />}
-            {step === 3 && <Step3 data={data} update={update} />}
+            {step === 1 && (
+              <Step1
+                data={data}
+                update={update}
+                onSectorChange={handleSectorChange}
+                errors={errors}
+              />
+            )}
+            {step === 2 && <Step2 data={data} update={update} errors={errors} />}
+            {step === 3 && <Step3 data={data} update={update} errors={errors} />}
             {step === 4 && <Step4 data={data} update={update} />}
             {step === 5 && <Step5 data={data} update={update} />}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div
-        style={{
-          padding: '16px 20px',
-          paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-          borderTop: '1px solid var(--surface-border)',
-          background: 'var(--surface-0)',
-          display: 'flex',
-          gap: 12,
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      {/* Fixed bottom action bar */}
+      <div className="shrink-0 border-t border-[var(--surface-border)] bg-[var(--surface-0)] px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] flex items-center gap-3">
         <Button
           variant="outline"
           onClick={handleBack}
           disabled={step === 1}
-          style={{ visibility: step === 1 ? 'hidden' : 'visible' }}
+          className={cn(step === 1 && 'invisible')}
         >
           Retour
         </Button>
         <Button
           onClick={handleNext}
-          disabled={!canProceed() || saving}
-          style={{
-            background: 'var(--brand-primary)',
-            color: '#fff',
-            flex: 1,
-            maxWidth: 280,
-          }}
+          disabled={saving}
+          className="flex-1 bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary)]/90 active:bg-[var(--brand-primary)]/80 max-w-[280px] ml-auto"
         >
-          {saving
-            ? 'Sauvegarde...'
-            : step === 5
-              ? <>Terminer <Sparkles size={16} style={{ marginLeft: 6 }} /></>
-              : <>Suivant <ChevronRight size={16} style={{ marginLeft: 6 }} /></>}
+          {saving ? (
+            'Sauvegarde...'
+          ) : step === 5 ? (
+            <>
+              Terminer <Check size={16} className="ml-1.5" />
+            </>
+          ) : (
+            <>
+              Suivant <ChevronRight size={16} className="ml-1.5" />
+            </>
+          )}
         </Button>
       </div>
     </div>
   )
 }
 
-/* ── Step 1: Identité ─────────────────────────────────────────────────────── */
+/* ── Step 1: Identité ───────────────────────────────────────────────────── */
 
 function Step1({
   data,
   update,
   onSectorChange,
+  errors,
 }: {
   data: OnboardingData
   update: <K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) => void
   onSectorChange: (s: SectorKey) => void
+  errors: Record<string, string>
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div className="flex flex-col gap-5">
       <div>
-        <h2
-          style={{
-            fontFamily: "'Syne', sans-serif",
-            fontSize: 20,
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            margin: '0 0 4px',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Votre entreprise
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-          Quelques infos pour personnaliser votre assistant
-        </p>
+        <H2 className="font-['Syne',sans-serif] text-xl sm:text-2xl">Votre entreprise</H2>
+        <Body>Quelques infos pour personnaliser votre assistant</Body>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Field label="Nom de l'entreprise *">
+      <div className="flex flex-col gap-4">
+        <Field label="Nom de l'entreprise *" error={errors.name}>
           <Input
             value={data.name}
             onChange={(e) => update('name', e.target.value)}
             placeholder="Ex: Salon Lumière"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.preventDefault()
+            }}
           />
         </Field>
 
-        <Field label="Secteur d'activité *">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+        <Field label="Secteur d'activité *" error={errors.sector}>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {SECTORS.map((s) => {
               const active = data.sector === s.key
               return (
-                <button
+                <CardSurface
                   key={s.key}
+                  interactive
                   onClick={() => onSectorChange(s.key)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '12px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: `1.5px solid ${active ? 'var(--brand-primary)' : 'var(--surface-border)'}`,
-                    background: active ? 'var(--brand-primary-soft)' : 'var(--surface-0)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'border-color 0.15s, background 0.15s',
-                  }}
+                  className={cn(
+                    'flex items-center gap-2.5 p-3 transition-all',
+                    active &&
+                      'border-[var(--brand-primary)] bg-[var(--brand-primary-soft)]'
+                  )}
                 >
-                  <span style={{ fontSize: 20 }}>{s.icon}</span>
                   <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: active ? 600 : 400,
-                      color: active ? 'var(--brand-primary)' : 'var(--text-primary)',
-                    }}
+                    className={cn(
+                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+                      active
+                        ? 'bg-[var(--brand-primary)] text-white'
+                        : 'bg-[var(--surface-2)] text-[var(--text-muted)]'
+                    )}
+                  >
+                    {s.icon}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-sm leading-tight',
+                      active
+                        ? 'font-semibold text-[var(--brand-primary)]'
+                        : 'text-[var(--text-primary)]'
+                    )}
                   >
                     {s.label}
                   </span>
-                </button>
+                </CardSurface>
               )
             })}
           </div>
         </Field>
 
-        <Field label="Ville *">
+        <Field label="Ville *" error={errors.city}>
           <Input
             value={data.city}
             onChange={(e) => update('city', e.target.value)}
@@ -439,50 +497,40 @@ function Step1({
         </Field>
 
         <Field label="Téléphone">
-          <div style={{ position: 'relative' }}>
+          <div className="relative">
             <Phone
               size={16}
-              style={{
-                position: 'absolute',
-                left: 10,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-muted)',
-              }}
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
             />
             <Input
               value={data.phone}
               onChange={(e) => update('phone', e.target.value)}
               placeholder="+216 XX XXX XXX"
-              style={{ paddingLeft: 34 }}
+              className="pl-9"
             />
           </div>
         </Field>
 
         <Field label="Langue par défaut">
-          <div style={{ display: 'flex', gap: 10 }}>
-            {[
-              { key: 'french' as LangKey, label: 'Français' },
-              { key: 'darija' as LangKey, label: 'Darija' },
-              { key: 'mix' as LangKey, label: 'Mixte' },
-            ].map((l) => {
+          <div className="flex gap-2.5">
+            {(
+              [
+                { key: 'french' as LangKey, label: 'Français' },
+                { key: 'darija' as LangKey, label: 'Darija' },
+                { key: 'mix' as LangKey, label: 'Mixte' },
+              ] as const
+            ).map((l) => {
               const active = data.language === l.key
               return (
                 <button
                   key={l.key}
                   onClick={() => update('language', l.key)}
-                  style={{
-                    flex: 1,
-                    padding: '10px 8px',
-                    borderRadius: 'var(--radius-md)',
-                    border: `1.5px solid ${active ? 'var(--brand-primary)' : 'var(--surface-border)'}`,
-                    background: active ? 'var(--brand-primary-soft)' : 'var(--surface-0)',
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 400,
-                    color: active ? 'var(--brand-primary)' : 'var(--text-primary)',
-                    transition: 'border-color 0.15s, background 0.15s',
-                  }}
+                  className={cn(
+                    'flex-1 rounded-[var(--radius-md)] border px-2 py-2.5 text-sm transition-all',
+                    active
+                      ? 'border-[var(--brand-primary)] bg-[var(--brand-primary-soft)] font-semibold text-[var(--brand-primary)]'
+                      : 'border-[var(--surface-border)] bg-[var(--surface-0)] text-[var(--text-primary)]'
+                  )}
                 >
                   {l.label}
                 </button>
@@ -495,21 +543,25 @@ function Step1({
   )
 }
 
-/* ── Step 2: Services ─────────────────────────────────────────────────────── */
+/* ── Step 2: Offres & Tarifs ────────────────────────────────────────────── */
 
 function Step2({
   data,
   update,
+  errors,
 }: {
   data: OnboardingData
   update: <K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) => void
+  errors: Record<string, string>
 }) {
   const addService = () => {
     update('services', [...data.services, { name: '', price: '' }])
   }
 
   const updateService = (index: number, field: keyof ServiceItem, value: string) => {
-    const next = data.services.map((s, i) => (i === index ? { ...s, [field]: value } : s))
+    const next = data.services.map((s, i) =>
+      i === index ? { ...s, [field]: value } : s
+    )
     update('services', next)
   }
 
@@ -519,79 +571,39 @@ function Step2({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div className="flex flex-col gap-5">
       <div>
-        <h2
-          style={{
-            fontFamily: "'Syne', sans-serif",
-            fontSize: 20,
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            margin: '0 0 4px',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Services & Tarifs
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-          Ajoutez les services que vous proposez
-        </p>
+        <H2 className="font-['Syne',sans-serif] text-xl sm:text-2xl">Offres & Tarifs</H2>
+        <Body>Ajoutez les produits ou services que vous proposez</Body>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="flex flex-col gap-2.5">
         {data.services.map((s, i) => (
           <div
             key={i}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '10px 12px',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--surface-border)',
-              background: 'var(--surface-0)',
-            }}
+            className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-[var(--surface-border)] bg-[var(--surface-0)] p-2.5"
           >
             <Input
               value={s.name}
               onChange={(e) => updateService(i, 'name', e.target.value)}
-              placeholder="Nom du service"
-              style={{ flex: 1 }}
+              placeholder="Nom de l'offre"
+              className="flex-1"
             />
-            <div style={{ position: 'relative', width: 100 }}>
+            <div className="relative w-24 shrink-0">
               <Input
                 type="number"
                 value={s.price}
                 onChange={(e) => updateService(i, 'price', e.target.value)}
                 placeholder="0"
-                style={{ paddingRight: 28 }}
+                className="pr-7"
               />
-              <span
-                style={{
-                  position: 'absolute',
-                  right: 8,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  fontSize: 12,
-                  color: 'var(--text-muted)',
-                }}
-              >
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)]">
                 DT
               </span>
             </div>
             <button
               onClick={() => removeService(i)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--brand-danger)',
-                cursor: 'pointer',
-                padding: 6,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[var(--brand-danger)] transition-colors hover:bg-[var(--brand-danger)]/10"
               aria-label="Supprimer"
             >
               <Trash2 size={16} />
@@ -600,45 +612,37 @@ function Step2({
         ))}
       </div>
 
+      {errors.services && (
+        <p className="text-xs text-[var(--brand-danger)]">{errors.services}</p>
+      )}
+
       <button
         onClick={addService}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          padding: '10px',
-          borderRadius: 'var(--radius-md)',
-          border: '1.5px dashed var(--surface-border)',
-          background: 'transparent',
-          color: 'var(--brand-primary)',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-          transition: 'border-color 0.15s',
-        }}
+        className="flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[var(--surface-border)] bg-transparent px-3 py-2.5 text-sm font-semibold text-[var(--brand-primary)] transition-colors hover:border-[var(--brand-primary)]"
       >
         <Plus size={16} />
-        Ajouter un service
+        Ajouter une offre
       </button>
 
-      {data.services.length === 0 && (
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
-          Ajoutez au moins un service pour continuer
+      {data.services.length === 0 && !errors.services && (
+        <p className="text-center text-xs text-[var(--text-muted)]">
+          Ajoutez au moins une offre pour continuer
         </p>
       )}
     </div>
   )
 }
 
-/* ── Step 3: Horaires ─────────────────────────────────────────────────────── */
+/* ── Step 3: Horaires ───────────────────────────────────────────────────── */
 
 function Step3({
   data,
   update,
+  errors,
 }: {
   data: OnboardingData
   update: <K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) => void
+  errors: Record<string, string>
 }) {
   const toggleDay = (day: string) => {
     const next = {
@@ -657,100 +661,48 @@ function Step3({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div className="flex flex-col gap-5">
       <div>
-        <h2
-          style={{
-            fontFamily: "'Syne', sans-serif",
-            fontSize: 20,
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            margin: '0 0 4px',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Horaires d'ouverture
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-          Activez les jours où vous êtes ouverts
-        </p>
+        <H2 className="font-['Syne',sans-serif] text-xl sm:text-2xl">Horaires d'ouverture</H2>
+        <Body>Activez les jours où vous êtes ouverts</Body>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {errors.schedule && (
+        <p className="text-xs text-[var(--brand-danger)]">{errors.schedule}</p>
+      )}
+
+      <div className="flex flex-col gap-2">
         {Object.entries(DAY_LABELS).map(([key, label]) => {
           const day = data.schedule[key]
           return (
             <div
               key={key}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '10px 12px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--surface-border)',
-                background: 'var(--surface-0)',
-              }}
+              className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--surface-border)] bg-[var(--surface-0)] px-3 py-2.5"
             >
-              <span
-                style={{
-                  width: 80,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                  flexShrink: 0,
-                }}
-              >
+              <span className="w-20 shrink-0 text-sm font-medium text-[var(--text-primary)]">
                 {label}
               </span>
 
               <Switch checked={day.open} onCheckedChange={() => toggleDay(key)} />
 
               {day.open ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                <div className="flex flex-1 items-center gap-2">
                   <input
                     type="time"
                     value={day.from}
                     onChange={(e) => updateTime(key, 'from', e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: '6px 8px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--surface-border)',
-                      background: 'var(--surface-1)',
-                      color: 'var(--text-primary)',
-                      fontSize: 13,
-                      fontFamily: 'inherit',
-                      outline: 'none',
-                    }}
+                    className="flex-1 rounded-[var(--radius-sm)] border border-[var(--surface-border)] bg-[var(--surface-1)] px-2 py-1.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand-primary)]"
                   />
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>à</span>
+                  <span className="text-xs text-[var(--text-muted)]">à</span>
                   <input
                     type="time"
                     value={day.to}
                     onChange={(e) => updateTime(key, 'to', e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: '6px 8px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--surface-border)',
-                      background: 'var(--surface-1)',
-                      color: 'var(--text-primary)',
-                      fontSize: 13,
-                      fontFamily: 'inherit',
-                      outline: 'none',
-                    }}
+                    className="flex-1 rounded-[var(--radius-sm)] border border-[var(--surface-border)] bg-[var(--surface-1)] px-2 py-1.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand-primary)]"
                   />
                 </div>
               ) : (
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: 'var(--text-muted)',
-                    fontStyle: 'italic',
-                    flex: 1,
-                  }}
-                >
+                <span className="flex-1 text-xs italic text-[var(--text-muted)]">
                   Fermé
                 </span>
               )}
@@ -762,7 +714,7 @@ function Step3({
   )
 }
 
-/* ── Step 4: FAQs ─────────────────────────────────────────────────────────── */
+/* ── Step 4: FAQs ───────────────────────────────────────────────────────── */
 
 function Step4({
   data,
@@ -772,92 +724,61 @@ function Step4({
   update: <K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) => void
 }) {
   const toggleFaq = (index: number) => {
-    const next = data.faqs.map((f, i) => (i === index ? { ...f, active: !f.active } : f))
+    const next = data.faqs.map((f, i) =>
+      i === index ? { ...f, active: !f.active } : f
+    )
     update('faqs', next)
   }
 
   const updateFaqAnswer = (index: number, value: string) => {
-    const next = data.faqs.map((f, i) => (i === index ? { ...f, answer: value } : f))
+    const next = data.faqs.map((f, i) =>
+      i === index ? { ...f, answer: value } : f
+    )
     update('faqs', next)
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div className="flex flex-col gap-5">
       <div>
-        <h2
-          style={{
-            fontFamily: "'Syne', sans-serif",
-            fontSize: 20,
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            margin: '0 0 4px',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Questions fréquentes
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
+        <H2 className="font-['Syne',sans-serif] text-xl sm:text-2xl">Questions fréquentes</H2>
+        <Body>
           Activez celles que le bot peut répondre. Personnalisez la réponse si vous le souhaitez.
-        </p>
+        </Body>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="flex flex-col gap-2.5">
         {data.faqs.map((faq, i) => (
           <div
             key={i}
-            style={{
-              borderRadius: 'var(--radius-md)',
-              border: `1px solid ${faq.active ? 'var(--brand-primary-soft)' : 'var(--surface-border)'}`,
-              background: faq.active ? 'var(--surface-0)' : 'var(--surface-1)',
-              overflow: 'hidden',
-              transition: 'border-color 0.15s, background 0.15s',
-            }}
+            className={cn(
+              'rounded-[var(--radius-md)] border transition-colors overflow-hidden',
+              faq.active
+                ? 'border-[var(--brand-primary-soft)] bg-[var(--surface-0)]'
+                : 'border-[var(--surface-border)] bg-[var(--surface-1)]'
+            )}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 14px',
-                cursor: 'pointer',
-              }}
-              onClick={() => toggleFaq(i)}
-            >
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                }}
-              >
+            <div className="flex items-center justify-between px-3.5 py-3">
+              <span className="text-sm font-medium text-[var(--text-primary)]">
                 {faq.question}
               </span>
-              <Switch checked={faq.active} onCheckedChange={() => toggleFaq(i)} />
+              <Switch
+                checked={faq.active}
+                onCheckedChange={() => toggleFaq(i)}
+              />
             </div>
             {faq.active && (
-              <div style={{ padding: '0 14px 12px' }}>
-                <textarea
+              <div className="px-3.5 pb-3">
+                <Textarea
                   value={faq.answer}
                   onChange={(e) => updateFaqAnswer(i, e.target.value)}
-                  placeholder={FAQ_FALLBACK_ANSWERS[faq.question] || 'Réponse par défaut...'}
-                  style={{
-                    width: '100%',
-                    minHeight: 60,
-                    padding: '8px 10px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--surface-border)',
-                    background: 'var(--surface-1)',
-                    color: 'var(--text-primary)',
-                    fontSize: 13,
-                    fontFamily: 'inherit',
-                    outline: 'none',
-                    resize: 'vertical',
-                    boxSizing: 'border-box',
-                  }}
+                  placeholder={
+                    FAQ_FALLBACK_ANSWERS[faq.question] || 'Réponse par défaut...'
+                  }
+                  className="min-h-[60px] resize-y text-sm"
                 />
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                <Caption className="mt-1 block">
                   Laissez vide pour utiliser la réponse suggérée ci-dessus.
-                </p>
+                </Caption>
               </div>
             )}
           </div>
@@ -867,7 +788,7 @@ function Step4({
   )
 }
 
-/* ── Step 5: Personnalité ─────────────────────────────────────────────────── */
+/* ── Step 5: Personnalité ───────────────────────────────────────────────── */
 
 function Step5({
   data,
@@ -877,76 +798,49 @@ function Step5({
   update: <K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) => void
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div className="flex flex-col gap-5">
       <div>
-        <h2
-          style={{
-            fontFamily: "'Syne', sans-serif",
-            fontSize: 20,
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            margin: '0 0 4px',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Personnalité du bot
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-          Choisissez le ton que votre assistant adoptera
-        </p>
+        <H2 className="font-['Syne',sans-serif] text-xl sm:text-2xl">Personnalité du bot</H2>
+        <Body>Choisissez le ton que votre assistant adoptera</Body>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="flex flex-col gap-2.5">
         {PERSONALITIES.map((p) => {
           const active = data.botPersonality === p.key
           return (
-            <button
+            <CardSurface
               key={p.key}
+              interactive
               onClick={() => update('botPersonality', p.key)}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 14,
-                padding: '16px 14px',
-                borderRadius: 'var(--radius-md)',
-                border: `1.5px solid ${active ? 'var(--brand-primary)' : 'var(--surface-border)'}`,
-                background: active ? 'var(--brand-primary-soft)' : 'var(--surface-0)',
-                cursor: 'pointer',
-                textAlign: 'left',
-                width: '100%',
-                transition: 'border-color 0.15s, background 0.15s',
-              }}
+              className={cn(
+                'flex items-start gap-3.5 p-4 transition-all text-left',
+                active && 'border-[var(--brand-primary)] bg-[var(--brand-primary-soft)]'
+              )}
             >
               <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  background: active ? 'var(--brand-primary)' : 'var(--surface-2)',
-                  color: active ? '#fff' : 'var(--text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'background 0.15s, color 0.15s',
-                }}
+                className={cn(
+                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors',
+                  active
+                    ? 'bg-[var(--brand-primary)] text-white'
+                    : 'bg-[var(--surface-2)] text-[var(--text-muted)]'
+                )}
               >
-                {p.emoji}
+                {p.icon}
               </div>
               <div>
                 <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: active ? 'var(--brand-primary)' : 'var(--text-primary)',
-                    marginBottom: 2,
-                  }}
+                  className={cn(
+                    'text-sm font-semibold',
+                    active
+                      ? 'text-[var(--brand-primary)]'
+                      : 'text-[var(--text-primary)]'
+                  )}
                 >
                   {p.title}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.desc}</div>
+                <div className="text-xs text-[var(--text-muted)]">{p.desc}</div>
               </div>
-            </button>
+            </CardSurface>
           )
         })}
       </div>
@@ -962,23 +856,26 @@ function Step5({
   )
 }
 
-/* ── Shared Field wrapper ─────────────────────────────────────────────────── */
+/* ── Shared Field wrapper ───────────────────────────────────────────────── */
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  error,
+}: {
+  label: string
+  children: React.ReactNode
+  error?: string
+}) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label
-        style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: 'var(--text-secondary)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-        }}
-      >
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
         {label}
       </label>
       {children}
+      {error && (
+        <span className="text-xs text-[var(--brand-danger)]">{error}</span>
+      )}
     </div>
   )
 }

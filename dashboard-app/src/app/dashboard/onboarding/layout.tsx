@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { signOut } from 'next-auth/react'
 import { LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function OnboardingLayout({
   children,
@@ -10,70 +11,34 @@ export default function OnboardingLayout({
   children: React.ReactNode
 }) {
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        backgroundColor: 'var(--surface-1)',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
+    <div className="flex min-h-[100dvh] flex-col bg-[var(--surface-1)]">
       {/* Header: logo + logout */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 20px',
-          paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="flex items-center justify-between px-5 py-4 pt-[calc(1rem+env(safe-area-inset-top))]">
+        <div className="flex items-center gap-2.5">
           <Image
             src="/logo.png"
             alt="Répondly"
             width={28}
             height={28}
-            style={{ borderRadius: 7, flexShrink: 0 }}
+            className="shrink-0 rounded-md"
           />
-          <span
-            style={{
-              fontFamily: "'Syne', sans-serif",
-              fontSize: 17,
-              fontWeight: 700,
-              color: 'var(--brand-primary)',
-              letterSpacing: '-0.01em',
-              lineHeight: 1,
-            }}
-          >
+          <span className="font-['Syne',sans-serif] text-[17px] font-bold leading-none tracking-tight text-[var(--brand-primary)]">
             Répondly
           </span>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-muted)',
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 13,
-            cursor: 'pointer',
-            padding: '6px 10px',
-            borderRadius: 8,
-          }}
+          className="text-[var(--text-muted)]"
         >
-          <LogOut size={14} />
+          <LogOut size={14} className="mr-1.5" />
           <span className="hidden sm:inline">Se déconnecter</span>
-        </button>
+        </Button>
       </div>
 
       {/* Wizard content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {children}
-      </div>
+      <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
     </div>
   )
 }

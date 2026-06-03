@@ -55,17 +55,25 @@ All AI responses use JSON envelope: `{ reply, action, extraction }`.
 
 Terminal states: `order_complete`, `appointment_complete`, `human_handover`. Each triggers a Chatwoot API call (assign conversation + add private note) and a WhatsApp notification to the business owner.
 
-## Prisma schema — three copies
+## Database
 
-Three copies of the Prisma schema exist (bot, dashboard-app, admin-internal) in each app's `prisma/schema.prisma`. They share the same database but differ in which models/fields each app needs. When adding a model or field, update all three schemas. Migrations are managed from `admin-internal/prisma/migrations/`.
+**Schema location**: `admin-internal/prisma/schema.prisma` — this is the only schema file.
+Bot and dashboard symlink to it. Never edit `bot/prisma/schema.prisma` or
+`dashboard-app/prisma/schema.prisma` directly (they are symlinks, not real files).
 
-Prisma client setup pattern (used in all TypeScript apps):
-```ts
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-// ... pg Pool with DATABASE_URL
-export const prisma = new PrismaClient({ adapter })
+**After any schema change**, regenerate all clients:
 ```
+  cd admin-internal && npm run db:generate
+  cd ../dashboard-app && npm run db:generate
+  cd ../bot && npm run db:generate
+```
+Or use the root helper: `source commands.sh && db:generate:all`
+
+**Migrations**: always run from admin-internal only:
+```
+  cd admin-internal && npm run db:migrate
+```
+Never run migrations from bot/ or dashboard-app/.
 
 ## Auth
 

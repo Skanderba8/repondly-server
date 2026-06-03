@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import TopBar from '@/components/shell/TopBar'
 import IslandNav from '@/components/shell/IslandNav'
@@ -18,6 +18,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isMsg = pathname.startsWith('/dashboard/messagerie')
   const isOnboarding = pathname.startsWith('/dashboard/onboarding')
 
+  // Extract active conversation ID from pathname
+  const activeConvId = isThreadView
+    ? parseInt(pathname.split('/').pop() || '', 10)
+    : null
+
+  // Fetch actual unread count
+  const fetchUnread = useCallback(async () => {
+    try {
+      const res = await fetch('/api/stats/today')
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success) {
+          setUnreadCount(json.data?.unreadCount || 0)
+        }
+      }
+    } catch {}
+  }, [])
+
   // SSE for real-time unread count
   useEffect(() => {
     let es: EventSource
@@ -27,11 +45,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       es = new EventSource('/api/sse')
       sseRef.current = es
 
-      es.addEventListener('message_created', () => {
-        setUnreadCount((prev) => prev + 1)
+      es.addEventListener('message_created', (e) => {
+        try {
+          const data = JSON.parse(e.data)
+          // Only count incoming messages that are NOT for the currently open conversation
+          if (
+            data.messageType === 'incoming' &&
+            data.conversationId !== activeConvId
+          ) {
+            setUnreadCount(prev => prev + 1)
+          }
+        } catch {
+          setUnreadCount(prev => prev + 1)
+        }
       })
+
       es.addEventListener('conversation_updated', () => {
-        setUnreadCount((prev) => prev + 1)
+        fetchUnread()
+      })
+
+      es.addEventListener('conversation_created', () => {
+        fetchUnread()
       })
 
       es.onerror = () => {
@@ -46,7 +80,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       clearTimeout(retryTimeout)
       sseRef.current = null
     }
-  }, [])
+  }, [activeConvId, fetchUnread])
+
+  // Initial unread count
+  useEffect(() => {
+    fetchUnread()
+  }, [fetchUnread])
 
   // Channel status
   useEffect(() => {

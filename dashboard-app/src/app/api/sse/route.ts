@@ -2,8 +2,9 @@ import { NextRequest } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sseBroadcaster } from '@/lib/sse-broadcaster'
+import { withTiming } from '@/lib/timing'
 
-export async function GET(req: NextRequest) {
+export const GET = withTiming(async (req: NextRequest) => {
   const session = await auth()
   if (!session?.user?.id) {
     return new Response('Unauthorized', { status: 401 })
@@ -66,4 +67,4 @@ export async function GET(req: NextRequest) {
       'Connection': 'keep-alive',
     },
   })
-}
+})

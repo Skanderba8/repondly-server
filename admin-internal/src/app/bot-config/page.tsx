@@ -17,9 +17,7 @@ type BotConfig = {
   requiredOrderFields: string[]
   requiredAppointmentFields: string[]
   handoverTriggers: string[]
-  collectName: boolean
-  collectPhone: boolean
-  collectLocation: boolean
+  collectFields: string[]
   needsRegen: boolean
   lastGeneratedAt: string | null
   business: { name: string; email: string } | null
@@ -49,13 +47,15 @@ export default function BotConfigPage() {
     
     const form = e.currentTarget
     const formData = new FormData(form)
+    const collectFields = []
+    if (formData.get('collectName') === 'true') collectFields.push('name')
+    if (formData.get('collectPhone') === 'true') collectFields.push('phone')
+    if (formData.get('collectLocation') === 'true') collectFields.push('location')
     const data = {
       requiredOrderFields: (formData.get('requiredOrderFields') as string).split(',').map(s => s.trim()).filter(Boolean),
       requiredAppointmentFields: (formData.get('requiredAppointmentFields') as string).split(',').map(s => s.trim()).filter(Boolean),
       handoverTriggers: (formData.get('handoverTriggers') as string).split(',').map(s => s.trim()).filter(Boolean),
-      collectName: formData.get('collectName') === 'true',
-      collectPhone: formData.get('collectPhone') === 'true',
-      collectLocation: formData.get('collectLocation') === 'true',
+      collectFields,
     }
     
     setSubmitting(true)
@@ -114,15 +114,15 @@ export default function BotConfigPage() {
             
             <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.ink }}>
-                <input name="collectName" type="checkbox" defaultChecked={editing.collectName} />
+                <input name="collectName" type="checkbox" defaultChecked={editing.collectFields.includes('name')} />
                 Collecter le nom
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.ink }}>
-                <input name="collectPhone" type="checkbox" defaultChecked={editing.collectPhone} />
+                <input name="collectPhone" type="checkbox" defaultChecked={editing.collectFields.includes('phone')} />
                 Collecter le téléphone
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.ink }}>
-                <input name="collectLocation" type="checkbox" defaultChecked={editing.collectLocation} />
+                <input name="collectLocation" type="checkbox" defaultChecked={editing.collectFields.includes('location')} />
                 Collecter la localisation
               </label>
             </div>

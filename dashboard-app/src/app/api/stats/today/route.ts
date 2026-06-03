@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { getConversations } from '@/lib/chatwoot'
+import { withTiming } from '@/lib/timing'
 
-export async function GET() {
+export const GET = withTiming(async () => {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -118,4 +119,4 @@ export async function GET() {
     console.error('[Stats Today] Error:', error)
     return NextResponse.json({ success: false, error: 'Failed to fetch today stats' }, { status: 500 })
   }
-}
+})

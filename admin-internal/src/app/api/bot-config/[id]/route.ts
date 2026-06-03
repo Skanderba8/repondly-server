@@ -8,7 +8,7 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await request.json()
-    const { systemPrompt, requiredOrderFields, requiredAppointmentFields, handoverTriggers, collectName, collectPhone, collectLocation } = body
+    const { systemPrompt, requiredOrderFields, requiredAppointmentFields, handoverTriggers, collectFields } = body
 
     const botConfig = await prisma.botConfig.update({
       where: { id },
@@ -17,9 +17,7 @@ export async function PATCH(
         ...(requiredOrderFields !== undefined && { requiredOrderFields }),
         ...(requiredAppointmentFields !== undefined && { requiredAppointmentFields }),
         ...(handoverTriggers !== undefined && { handoverTriggers }),
-        ...(collectName !== undefined && { collectName }),
-        ...(collectPhone !== undefined && { collectPhone }),
-        ...(collectLocation !== undefined && { collectLocation }),
+        ...(collectFields !== undefined && { collectFields }),
         needsRegen: true,
       },
     })

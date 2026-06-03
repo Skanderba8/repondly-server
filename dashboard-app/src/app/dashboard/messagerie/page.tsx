@@ -1,12 +1,7 @@
 'use client'
 
-import ConversationList from '@/components/messagerie/ConversationList'
-import PageTransition from '@/components/ui/PageTransition'
+import MessagerieClient from '@/components/messagerie/MessagerieClient'
 
 export default function MessageriePage() {
-  return (
-    <PageTransition>
-      <ConversationList />
-    </PageTransition>
-  )
+  return <MessagerieClient selectedId={null} />
 }

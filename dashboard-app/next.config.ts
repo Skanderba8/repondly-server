@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['app.repondly.com', 'localhost:3004'],
+  compress: true,
+  poweredByHeader: false,
+  experimental: {
+    optimizeCss: true,
+  },
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
   async headers() {
     return [
       {
