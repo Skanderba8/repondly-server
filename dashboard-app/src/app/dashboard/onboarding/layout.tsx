@@ -1,3 +1,5 @@
+'use client'
+
 import Image from 'next/image'
 import { signOut } from 'next-auth/react'
 import { LogOut } from 'lucide-react'

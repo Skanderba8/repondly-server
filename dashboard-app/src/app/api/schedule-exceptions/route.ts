@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const { businessId } = authResult
 
     const body = await request.json()
-    const { label, startDate, endDate, closedAllDay, openTime, closeTime, customMessage } = body
+    const { label, type, startDate, endDate, closedAllDay, openTime, closeTime, customMessage } = body
 
     if (!label || !startDate || !endDate) {
       return NextResponse.json({ success: false, error: 'label, startDate, and endDate are required' }, { status: 400 })
@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       data: {
         businessId,
         label,
+        type: type || 'CUSTOM_MESSAGE',
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         closedAllDay: closedAllDay || false,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
 import ConversationItem from '@/components/messagerie/ConversationItem'
 import ChannelFilter from '@/components/messagerie/ChannelFilter'
@@ -33,12 +34,17 @@ interface Conversation {
 type ChannelFilterValue = 'all' | 'whatsapp' | 'facebook'
 
 export default function ConversationList() {
+  const searchParams = useSearchParams()
+  const filterParam = searchParams.get('filter')
+  const pendingOnly = filterParam === 'pending'
+
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [channelFilter, setChannelFilter] = useState<ChannelFilterValue>('all')
   const [channelCounts, setChannelCounts] = useState({ whatsapp: 0, facebook_instagram: 0 })
+  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
 
   const convPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
@@ -68,6 +74,21 @@ export default function ConversationList() {
         c.inbox?.channel_type === 'Channel::FacebookPage' || c.inbox?.channel_type === 'Channel::Instagram'
       ).length
       setChannelCounts({ whatsapp: whatsappCount, facebook_instagram: fbInstaCount })
+
+      // Fetch pending conversation IDs if filter is active
+      let pendingSet = new Set<number>()
+      if (pendingOnly) {
+        try {
+          const logsRes = await fetch('/api/conversation-logs')
+          const logsData = await logsRes.json()
+          if (logsData.success) {
+            pendingSet = new Set<number>(logsData.data.map((l: { chatwootConversationId: number }) => l.chatwootConversationId))
+            setPendingIds(pendingSet)
+          }
+        } catch (e) {
+          console.error('[ConversationList] Failed to fetch pending logs:', e)
+        }
+      }
 
       // Show conversations immediately with Chatwoot's unread counts
       setConversations(withChannel)
@@ -149,6 +170,7 @@ export default function ConversationList() {
   }, [fetchConversations])
 
   const filtered = conversations.filter(conv => {
+    if (pendingOnly && !pendingIds.has(conv.id)) return false
     if (channelFilter === 'whatsapp' && conv.inbox?.channel_type !== 'Channel::Whatsapp') return false
     if (channelFilter === 'facebook' && conv.inbox?.channel_type !== 'Channel::FacebookPage' && conv.inbox?.channel_type !== 'Channel::Instagram') return false
     if (search) {
@@ -212,9 +234,13 @@ export default function ConversationList() {
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
             {error}
           </div>
+        ) : pendingOnly && pendingIds.size === 0 ? (
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+            Chargement…
+          </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
-            Aucune conversation
+            {pendingOnly ? 'Aucune conversation en attente' : 'Aucune conversation'}
           </div>
         ) : (
           filtered.map(conv => <ConversationItem key={conv.id} conv={conv} />)

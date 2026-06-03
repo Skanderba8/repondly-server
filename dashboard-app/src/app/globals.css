@@ -239,6 +239,12 @@ scrollbar-color: var(--surface-border) transparent;
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
+/* ── Spin Animation ─────────────────────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ── Pulse Animation ────────────────────────────────────────────────────────── */
 @keyframes pulse-dot {
   0%, 100% {

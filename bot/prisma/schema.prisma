@@ -54,6 +54,7 @@ model Business {
   // Business info
   alwaysOpen          Boolean @default(false)
   address             String?
+  city                String?
 
   // AI Bot Configuration
   businessType          BusinessType?
@@ -92,6 +93,7 @@ model Business {
   conversationLogs      ConversationLog[]
   conversationCRMNotes  ConversationCRMNote[]
   orders                Order[]
+  messageLogs           MessageLog[]
 }
 
 model Client {
@@ -312,6 +314,13 @@ enum RepondlyTicketStatus {
   RESOLUE
 }
 
+enum ExceptionType {
+  CLOSURE
+  PROMO
+  TEMP_HOURS
+  CUSTOM_MESSAGE
+}
+
 // ─── AI Bot Enums ────────────────────────────────────────────────────────────────
 
 enum BusinessType {
@@ -402,6 +411,7 @@ model Faq {
   businessId String
   question   String
   answer     String
+  active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -409,19 +419,20 @@ model Faq {
 }
 
 model ScheduleException {
-  id             String   @id @default(cuid())
+  id             String         @id @default(cuid())
   businessId     String
   label          String
+  type           ExceptionType  @default(CUSTOM_MESSAGE)
   startDate      DateTime
   endDate        DateTime
-  closedAllDay   Boolean  @default(false)
+  closedAllDay   Boolean        @default(false)
   openTime       String?
   closeTime      String?
   customMessage  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
-  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business       Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@index([businessId, startDate])
 }
@@ -442,6 +453,7 @@ model BotConfig {
   handoverPhone             String?
   defaultLanguage           DefaultLanguage @default(FR)
   botActive                 Boolean  @default(true)
+  personality               String?
 
   // Bot-specific extensions
   primaryLanguage           String?
@@ -541,5 +553,19 @@ model ConversationCRMNote {
   business                Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, chatwootConversationId])
+  @@index([businessId, chatwootConversationId])
+}
+
+model MessageLog {
+  id                     String   @id @default(cuid())
+  businessId             String
+  chatwootConversationId Int
+  content                String?
+  senderType             String   // 'contact' | 'agent' | 'bot'
+  createdAt              DateTime @default(now())
+
+  business               Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
   @@index([businessId, chatwootConversationId])
 }

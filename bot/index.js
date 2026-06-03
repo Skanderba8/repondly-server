@@ -321,10 +321,24 @@ app.post('/chatwoot-webhook', async (req, res) => {
   try {
     // Resolve business by inbox ID
     const business = await resolveBusinessByInboxId(inboxId);
-    
+
     if (!business) {
       console.log(`[Bot] No active business found for inbox ${inboxId}`);
       return;
+    }
+
+    // Log every incoming message for analytics
+    try {
+      await prisma.messageLog.create({
+        data: {
+          businessId: business.id,
+          chatwootConversationId: conversationId,
+          content: content?.substring(0, 2000) || null,
+          senderType: 'contact',
+        },
+      });
+    } catch (logErr) {
+      console.error(`[Bot] Failed to log message:`, logErr.message);
     }
 
     // Check if bot is enabled via ConversationLog

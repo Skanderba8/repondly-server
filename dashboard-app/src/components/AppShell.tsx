@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import TopBar from '@/components/shell/TopBar'
 import IslandNav from '@/components/shell/IslandNav'
 import Sidebar from '@/components/shell/Sidebar'
+import OnboardingGate from '@/components/onboarding/OnboardingGate'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -15,6 +16,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const isThreadView = /^\/dashboard\/messagerie\/.+/.test(pathname)
   const isMsg = pathname.startsWith('/dashboard/messagerie')
+  const isOnboarding = pathname.startsWith('/dashboard/onboarding')
 
   // SSE for real-time unread count
   useEffect(() => {
@@ -65,6 +67,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       .catch(() => {})
   }, [])
 
+  // Onboarding mode: render fullscreen without shell chrome
+  if (isOnboarding) {
+    return (
+      <div style={{ minHeight: '100dvh', background: 'var(--surface-1)' }}>
+        {children}
+      </div>
+    )
+  }
+
   return (
     <div className="rp-shell">
       {/* Desktop sidebar */}
@@ -83,6 +94,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         style={{ marginLeft: 0, background: 'var(--surface-1)' }}
       >
         <style>{`@media (min-width: 768px) { .rp-content { margin-left: var(--shell-sidebar-width) !important; } }`}</style>
+        <OnboardingGate />
         {children}
       </main>
 

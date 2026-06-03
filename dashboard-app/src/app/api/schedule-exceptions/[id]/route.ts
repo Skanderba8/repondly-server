@@ -13,7 +13,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { label, startDate, endDate, closedAllDay, openTime, closeTime, customMessage } = body
+    const { label, type, startDate, endDate, closedAllDay, openTime, closeTime, customMessage } = body
 
     const existing = await prisma.scheduleException.findUnique({
       where: { id },
@@ -30,6 +30,7 @@ export async function PATCH(
       where: { id },
       data: {
         ...(label !== undefined && { label }),
+        ...(type !== undefined && { type }),
         ...(startDate !== undefined && { startDate: new Date(startDate) }),
         ...(endDate !== undefined && { endDate: new Date(endDate) }),
         ...(closedAllDay !== undefined && { closedAllDay }),

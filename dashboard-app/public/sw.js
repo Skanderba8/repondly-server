@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3'
 const STATIC_CACHE = `repondly-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `repondly-dynamic-${CACHE_VERSION}`
 

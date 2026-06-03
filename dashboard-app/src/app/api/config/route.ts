@@ -17,6 +17,7 @@ export async function GET() {
         services: { orderBy: { createdAt: 'desc' } },
         schedules: { orderBy: { dayOfWeek: 'asc' } },
         scheduleExceptions: { orderBy: { startDate: 'desc' } },
+        faqs: { orderBy: { createdAt: 'asc' } },
         connectedPages: { where: { active: true } },
       },
     })
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
         ...(biz?.description !== undefined && { description: biz.description }),
         ...(biz?.phone !== undefined && { phone: biz.phone }),
         ...(biz?.address !== undefined && { address: biz.address }),
+        ...(biz?.city !== undefined && { city: biz.city }),
         ...(biz?.botMode !== undefined && { botMode: biz.botMode }),
         ...(biz?.botName !== undefined && { botName: biz.botName }),
         ...(biz?.greetingMessage !== undefined && { greetingMessage: biz.greetingMessage }),
@@ -68,6 +70,7 @@ export async function POST(request: Request) {
           ...(bc.handoverTriggers !== undefined && { handoverTriggers: bc.handoverTriggers }),
           ...(bc.collectFields !== undefined && { collectFields: bc.collectFields }),
           ...(bc.strictInstructionBlock !== undefined && { strictInstructionBlock: bc.strictInstructionBlock }),
+          ...(bc.personality !== undefined && { personality: bc.personality }),
           needsRegen: true,
         },
         create: {
@@ -77,6 +80,7 @@ export async function POST(request: Request) {
           handoverTriggers: bc.handoverTriggers ?? [],
           collectFields: bc.collectFields ?? [],
           strictInstructionBlock: bc.strictInstructionBlock ?? null,
+          personality: bc.personality ?? null,
           needsRegen: true,
         },
       })
