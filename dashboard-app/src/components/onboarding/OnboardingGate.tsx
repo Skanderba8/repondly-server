@@ -19,6 +19,9 @@ export default function OnboardingGate() {
 
     async function check() {
       try {
+        if (sessionStorage.getItem('onboarding-dismissed') === 'true') {
+          return
+        }
         const res = await fetch('/api/onboarding/status', { cache: 'no-store' })
         const data = await res.json()
         if (!cancelled && data.success && !data.completed) {

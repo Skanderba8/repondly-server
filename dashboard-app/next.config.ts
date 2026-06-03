@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   experimental: {
-    optimizeCss: true,
+    optimizeCss: false,
   },
   images: {
     formats: ["image/avif", "image/webp"],

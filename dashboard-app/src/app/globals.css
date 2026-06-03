@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@source "../**/*.{ts,tsx}";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
@@ -216,8 +218,10 @@ input, select, textarea, button {
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────────────────────── */
-scrollbar-width: thin;
-scrollbar-color: var(--surface-border) transparent;
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-border) transparent;
+}
 
 /* ── Shimmer Animation ──────────────────────────────────────────────────────── */
 @keyframes shimmer {

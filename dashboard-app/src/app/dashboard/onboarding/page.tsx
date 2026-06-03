@@ -22,6 +22,7 @@ import {
   Smile,
   Briefcase,
   Zap,
+  X,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -352,8 +353,20 @@ export default function OnboardingPage() {
     }
   }
 
+  const handleDismiss = () => {
+    sessionStorage.setItem('onboarding-dismissed', 'true')
+    router.push('/dashboard/accueil')
+  }
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
+      <button
+        onClick={handleDismiss}
+        className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+        aria-label="Fermer"
+      >
+        <X size={18} />
+      </button>
       <ProgressBar currentStep={step} />
 
       {/* Scrollable content */}
