@@ -17,7 +17,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { dayOfWeek, openTime, closeTime, closed } = body
+    const { dayOfWeek, openTime, closeTime, isClosed } = body
 
     const existing = await prisma.schedule.findUnique({
       where: { id },
@@ -36,14 +36,9 @@ export async function PATCH(
         ...(dayOfWeek !== undefined && { dayOfWeek: parseInt(dayOfWeek) }),
         ...(openTime !== undefined && { openTime }),
         ...(closeTime !== undefined && { closeTime }),
-        ...(closed !== undefined && { closed }),
+        ...(isClosed !== undefined && { isClosed }),
       },
     })
-
-    await prisma.botConfig.update({
-      where: { businessId: session.user.id },
-      data: { needsRegen: true },
-    }).catch(() => {})
 
     return NextResponse.json({ success: true, data: schedule })
   } catch (error) {
@@ -83,11 +78,6 @@ export async function DELETE(
     await prisma.schedule.delete({
       where: { id },
     })
-
-    await prisma.botConfig.update({
-      where: { businessId: session.user.id },
-      data: { needsRegen: true },
-    }).catch(() => {})
 
     return NextResponse.json({ success: true })
   } catch (error) {

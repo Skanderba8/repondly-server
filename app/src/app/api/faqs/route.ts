@@ -44,7 +44,7 @@ export async function POST(request: Request) {
         businessId,
         question: question.trim(),
         answer: answer.trim(),
-        active: active !== undefined ? active : true,
+        isActive: active !== undefined ? active : true,
       },
     })
 
@@ -79,7 +79,7 @@ export async function PUT(request: Request) {
         prisma.faq.update({
           where: { id: f.id, businessId },
           data: {
-            ...(f.active !== undefined && { active: f.active }),
+            ...(f.active !== undefined && { isActive: f.active }),
             ...(f.question !== undefined && { question: f.question }),
             ...(f.answer !== undefined && { answer: f.answer }),
           },

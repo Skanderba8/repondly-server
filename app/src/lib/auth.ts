@@ -59,12 +59,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!valid) return null
         const legacyAdminRole =
           process.env.ADMIN_EMAIL &&
-          business.email.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase()
+          business.email?.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase()
             ? ('ADMIN' as const)
             : undefined
         return {
           id: business.id,
-          email: business.email,
+          email: business.email ?? '',
           name: business.name,
           role: legacyAdminRole,
         }

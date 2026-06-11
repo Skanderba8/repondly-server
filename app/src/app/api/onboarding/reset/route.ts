@@ -12,16 +12,10 @@ export async function POST() {
       )
     }
 
-    await prisma.onboardingStage.upsert({
+    await prisma.onboardingProgress.upsert({
       where: { businessId: session.user.id },
       update: { stage: 'DEMO_BOOKED' },
       create: { businessId: session.user.id, stage: 'DEMO_BOOKED' },
-    })
-
-    // Also mark bot as not configured so it won't reply until re-onboarded
-    await prisma.business.update({
-      where: { id: session.user.id },
-      data: { hasConfiguredBot: false },
     })
 
     return NextResponse.json({ success: true })

@@ -17,7 +17,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { name, description, durationMinutes, price, available } = body
+    const { name, description, duration, price, isActive } = body
 
     const existing = await prisma.service.findUnique({
       where: { id },
@@ -35,16 +35,11 @@ export async function PATCH(
       data: {
         ...(name !== undefined && { name }),
         ...(description !== undefined && { description }),
-        ...(durationMinutes !== undefined && { durationMinutes: parseInt(durationMinutes) }),
+        ...(duration !== undefined && { duration: parseInt(duration) }),
         ...(price !== undefined && { price: parseFloat(price) }),
-        ...(available !== undefined && { available }),
+        ...(isActive !== undefined && { isActive }),
       },
     })
-
-    await prisma.botConfig.update({
-      where: { businessId: session.user.id },
-      data: { needsRegen: true },
-    }).catch(() => {})
 
     return NextResponse.json({ success: true, data: service })
   } catch (error) {
@@ -84,11 +79,6 @@ export async function DELETE(
     await prisma.service.delete({
       where: { id },
     })
-
-    await prisma.botConfig.update({
-      where: { businessId: session.user.id },
-      data: { needsRegen: true },
-    }).catch(() => {})
 
     return NextResponse.json({ success: true })
   } catch (error) {

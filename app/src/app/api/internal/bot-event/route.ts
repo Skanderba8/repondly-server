@@ -15,11 +15,13 @@ export async function POST(req: NextRequest) {
   const event = await prisma.botEvent.create({
     data: {
       businessId: businessId ?? null,
-      eventType,
-      channel: channel ?? null,
-      message: message ?? null,
-      ruleMatched: ruleMatched ?? null,
-      wasHandled: wasHandled ?? false,
+      event: eventType ?? 'unknown',
+      payload: {
+        channel: channel ?? null,
+        message: message ?? null,
+        ruleMatched: ruleMatched ?? null,
+        wasHandled: wasHandled ?? false,
+      },
     },
   })
 

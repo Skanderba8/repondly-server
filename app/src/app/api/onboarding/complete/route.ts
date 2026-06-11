@@ -98,13 +98,8 @@ export async function POST(request: Request) {
         where: { id: businessId },
         data: {
           name: name.trim(),
-          address: city.trim(),
           phone: phone?.trim() || undefined,
           businessType: mapSectorToBusinessType(sector) as any,
-          botMode: mapSectorToBotMode(sector) as any,
-          tone: mapPersonalityToTone(botPersonality),
-          botName: botName?.trim() || name.trim(),
-          hasConfiguredBot: true,
         },
       })
 
@@ -112,15 +107,14 @@ export async function POST(request: Request) {
       await tx.botConfig.upsert({
         where: { businessId },
         update: {
-          defaultLanguage: mapLanguage(language) as any,
-          needsRegen: true,
-          botActive: true,
+          enabled: true,
         },
         create: {
           businessId,
-          defaultLanguage: mapLanguage(language) as any,
-          needsRegen: true,
-          botActive: true,
+          systemPrompt: '',
+          fallbackMessage: '',
+          handoverMessage: '',
+          enabled: true,
         },
       })
 
@@ -132,8 +126,8 @@ export async function POST(request: Request) {
             businessId,
             name: s.name.trim(),
             price: s.price || 0,
-            durationMinutes: 60,
-            available: true,
+            duration: 60,
+            isActive: true,
           })),
         })
       }
@@ -147,7 +141,7 @@ export async function POST(request: Request) {
           dayOfWeek: DAY_MAP[key],
           openTime: day.from || '09:00',
           closeTime: day.to || '18:00',
-          closed: false,
+          isClosed: false,
         }))
       if (scheduleEntries.length > 0) {
         await tx.schedule.createMany({ data: scheduleEntries })
@@ -166,7 +160,7 @@ export async function POST(request: Request) {
       }
 
       // 6. Mark onboarding complete
-      await tx.onboardingStage.upsert({
+      await tx.onboardingProgress.upsert({
         where: { businessId },
         update: { stage: 'COMPLETE' },
         create: { businessId, stage: 'COMPLETE' },

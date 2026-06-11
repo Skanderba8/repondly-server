@@ -49,7 +49,7 @@ export const GET = withTiming(async (request: NextRequest) => {
     const logMap = new Map<number, { status: string; botEnabled: boolean }>()
     for (const log of logs) {
       logMap.set(log.chatwootConversationId, {
-        status: log.status,
+        status: log.status ?? '',
         botEnabled: log.botEnabled,
       })
     }

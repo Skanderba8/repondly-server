@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const { businessId } = authResult
 
     const body = await request.json()
-    const { name, description, price, available, outOfStock, deliveryFee, visible } = body
+    const { name, description, price, isActive } = body
 
     if (!name || price === undefined) {
       return NextResponse.json({ success: false, error: 'name and price are required' }, { status: 400 })
@@ -44,10 +44,7 @@ export async function POST(request: Request) {
         name,
         description,
         price,
-        available: available !== undefined ? available : true,
-        outOfStock: outOfStock || false,
-        deliveryFee,
-        visible: visible !== undefined ? visible : true,
+        isActive: isActive !== undefined ? isActive : true,
       },
     })
 

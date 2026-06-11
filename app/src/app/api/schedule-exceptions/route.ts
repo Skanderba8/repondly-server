@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
     const exceptions = await prisma.scheduleException.findMany({
       where: { businessId },
-      orderBy: { startDate: 'asc' },
+      orderBy: { date: 'asc' },
     })
 
     return NextResponse.json({ success: true, data: exceptions })
@@ -27,23 +27,20 @@ export async function POST(request: Request) {
     const { businessId } = authResult
 
     const body = await request.json()
-    const { label, type, startDate, endDate, closedAllDay, openTime, closeTime, customMessage } = body
+    const { date, isClosed, openTime, closeTime, reason } = body
 
-    if (!label || !startDate || !endDate) {
-      return NextResponse.json({ success: false, error: 'label, startDate, and endDate are required' }, { status: 400 })
+    if (!date) {
+      return NextResponse.json({ success: false, error: 'date is required' }, { status: 400 })
     }
 
     const exception = await prisma.scheduleException.create({
       data: {
         businessId,
-        label,
-        type: type || 'CUSTOM_MESSAGE',
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        closedAllDay: closedAllDay || false,
+        date: new Date(date),
+        isClosed: isClosed || false,
         openTime,
         closeTime,
-        customMessage,
+        reason,
       },
     })
 

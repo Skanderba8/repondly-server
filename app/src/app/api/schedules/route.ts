@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { dayOfWeek, openTime, closeTime, closed } = body
+    const { dayOfWeek, openTime, closeTime, isClosed } = body
 
     if (dayOfWeek === undefined) {
       return NextResponse.json(
@@ -55,16 +55,8 @@ export async function POST(request: Request) {
         dayOfWeek: parseInt(dayOfWeek),
         openTime,
         closeTime,
-        closed: closed !== undefined ? closed : false,
+        isClosed: isClosed !== undefined ? isClosed : false,
       },
-    })
-
-    // Trigger prompt regeneration
-    await prisma.botConfig.update({
-      where: { businessId: session.user.id },
-      data: { needsRegen: true },
-    }).catch(() => {
-      // Bot config might not exist yet, ignore error
     })
 
     return NextResponse.json({ success: true, data: schedule })

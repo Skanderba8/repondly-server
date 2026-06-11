@@ -32,28 +32,34 @@ model Business {
   chatwootApiToken   String?
   chatwootAgentId    Int?
   channels           String[]
-  activityLogs       ActivityLog[]
-  adminNotes         AdminNote[]
-  autoRules          AutoRule[]
-  botConfig          BotConfig?
-  botEvents          BotEvent[]
-  Broadcast          Broadcast[]
-  connectedPages     ConnectedPage[]
-  Contact            Contact[]
-  Conversation       Conversation[]
-  conversationLogs   ConversationLog[]
-  faqs               Faq[]
-  Inbox              Inbox[]
-  Message            Message[]
-  Notification       Notification[]
-  OAuthState         OAuthState[]
-  orders             Order[]
-  products           Product[]
-  PushSubscription   PushSubscription[]
-  schedules          Schedule[]
-  scheduleExceptions ScheduleException[]
-  services           Service[]
-  WebhookEvent       WebhookEvent[]
+  activityLogs          ActivityLog[]
+  adminNotes            AdminNote[]
+  autoRules             AutoRule[]
+  bookings              Booking[]
+  botConfig             BotConfig?
+  botEvents             BotEvent[]
+  Broadcast             Broadcast[]
+  connectedPages        ConnectedPage[]
+  Contact               Contact[]
+  Conversation          Conversation[]
+  conversationLogs      ConversationLog[]
+  conversationStatusRecords ConversationStatus[]
+  conversationViews     ConversationView[]
+  conversationCRMNotes  ConversationCRMNote[]
+  faqs                  Faq[]
+  Inbox                 Inbox[]
+  messageLogs           MessageLog[]
+  messages              Message[]
+  Notification          Notification[]
+  OAuthState            OAuthState[]
+  onboardingProgress    OnboardingProgress?
+  orders                Order[]
+  products              Product[]
+  PushSubscription      PushSubscription[]
+  schedules             Schedule[]
+  scheduleExceptions    ScheduleException[]
+  services              Service[]
+  WebhookEvent          WebhookEvent[]
 }
 
 model AutoRule {
@@ -280,7 +286,7 @@ model Conversation {
   businessId    String
   inboxId       String
   contactId     String
-  status        ConversationStatus
+  status        ConversationStatusEnum
   assignedTo    String?
   lastMessageAt DateTime?
   createdAt     DateTime           @default(now())
@@ -428,6 +434,107 @@ model ConversationLog {
   @@index([businessId])
 }
 
+model Booking {
+  id              String   @id @default(cuid())
+  businessId      String
+  clientId        String
+  service         String
+  datetime        DateTime
+  status          String   @default("PENDING")
+  calendarEventId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, status])
+  @@index([businessId, createdAt])
+}
+
+model OnboardingProgress {
+  id        String   @id @default(cuid())
+  businessId String  @unique
+  stage     String   @default("DEMO_BOOKED")
+  updatedAt DateTime @updatedAt
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model MessageLog {
+  id                   String   @id @default(cuid())
+  businessId           String
+  chatwootConversationId Int
+  content              String?
+  senderType           String
+  createdAt            DateTime @default(now())
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
+  @@index([businessId, chatwootConversationId])
+}
+
+model ConversationStatus {
+  id             String   @id @default(cuid())
+  businessId     String
+  conversationId Int
+  status         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId])
+  @@index([businessId])
+}
+
+model ConversationView {
+  id             String   @id @default(cuid())
+  businessId     String
+  conversationId Int
+  lastViewedAt   DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, conversationId])
+  @@index([businessId])
+}
+
+model ConversationCRMNote {
+  id                   String   @id @default(cuid())
+  businessId           String
+  chatwootConversationId Int
+  customerName         String?
+  customerPhone        String?
+  customerEmail        String?
+  customerLocation     String?
+  preferredLanguage    String?
+  serviceOfInterest    String?
+  budget               String?
+  orderIntent          String?
+  urgency              String?
+  purchaseStage        String?
+  objections           String[] @default([])
+  preferences          String[] @default([])
+  needsSummary         String?
+  importantContext     String?
+  painPoints           String[] @default([])
+  customRequests       String[] @default([])
+  sentiment            String?
+  frustrationLevel     Int?
+  appointmentRequested Boolean  @default(false)
+  quoteRequested       Boolean  @default(false)
+  orderRequested       Boolean  @default(false)
+  supportRequested     Boolean  @default(false)
+  followUpNeeded       Boolean  @default(false)
+  humanHandoverStatus  String?
+  lastExtractedAt      DateTime @default(now())
+  extractionCount      Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, chatwootConversationId])
+  @@index([businessId, chatwootConversationId])
+}
+
 enum Plan {
   TRIAL
   STARTER
@@ -452,7 +559,7 @@ enum BotLanguage {
   DARIJA
 }
 
-enum ConversationStatus {
+enum ConversationStatusEnum {
   OPEN
   BOT
   HUMAN

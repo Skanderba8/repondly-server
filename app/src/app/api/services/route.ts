@@ -32,10 +32,10 @@ export async function POST(request: Request) {
     const { businessId } = authResult
 
     const body = await request.json()
-    const { name, description, durationMinutes, price, available, outOfStock, deliveryFee, visible } = body
+    const { name, description, duration, price, isActive } = body
 
-    if (!name || durationMinutes === undefined || price === undefined) {
-      return NextResponse.json({ success: false, error: 'name, durationMinutes, and price are required' }, { status: 400 })
+    if (!name || duration === undefined || price === undefined) {
+      return NextResponse.json({ success: false, error: 'name, duration, and price are required' }, { status: 400 })
     }
 
     const service = await prisma.service.create({
@@ -43,12 +43,9 @@ export async function POST(request: Request) {
         businessId,
         name,
         description,
-        durationMinutes,
+        duration,
         price,
-        available: available !== undefined ? available : true,
-        outOfStock: outOfStock || false,
-        deliveryFee,
-        visible: visible !== undefined ? visible : true,
+        isActive: isActive !== undefined ? isActive : true,
       },
     })
 

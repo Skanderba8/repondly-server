@@ -12,7 +12,7 @@ export async function GET() {
       )
     }
 
-    const onboarding = await prisma.onboardingStage.findUnique({
+    const onboarding = await prisma.onboardingProgress.findUnique({
       where: { businessId: session.user.id },
     })
 

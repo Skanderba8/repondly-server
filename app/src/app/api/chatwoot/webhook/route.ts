@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   // Resolve business by Chatwoot account ID
   const business = await prisma.business.findFirst({
-    where: { chatwootAccountId: Number(accountId), active: true },
+    where: { chatwootAccountId: Number(accountId) },
   })
 
   if (!business) {
