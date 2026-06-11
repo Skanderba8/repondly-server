@@ -1,8 +1,8 @@
 module.exports = {
   apps: [
     {
-      name: 'marketing-site',
-      cwd: '/opt/repondly/marketing-site',
+      name: 'landing',
+      cwd: '/opt/repondly/landing',
       script: 'node_modules/.bin/next',
       args: 'start -p 3005',
       env: { NODE_ENV: 'production' },
@@ -11,8 +11,8 @@ module.exports = {
       min_uptime: '10s',
     },
     {
-      name: 'dashboard-app',
-      cwd: '/opt/repondly/dashboard-app',
+      name: 'app',
+      cwd: '/opt/repondly/app',
       script: 'node_modules/.bin/next',
       args: 'start -p 3004',
       env: { NODE_ENV: 'production' },

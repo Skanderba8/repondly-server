@@ -28,13 +28,20 @@ model Business {
   updatedAt          DateTime            @updatedAt
   businessType       String?
   ownerWhatsapp      String?
+  chatwootAccountId  Int?                @unique
+  chatwootApiToken   String?
+  chatwootAgentId    Int?
+  channels           String[]
+  activityLogs       ActivityLog[]
   adminNotes         AdminNote[]
   autoRules          AutoRule[]
   botConfig          BotConfig?
   botEvents          BotEvent[]
   Broadcast          Broadcast[]
+  connectedPages     ConnectedPage[]
   Contact            Contact[]
   Conversation       Conversation[]
+  conversationLogs   ConversationLog[]
   faqs               Faq[]
   Inbox              Inbox[]
   Message            Message[]
@@ -375,6 +382,50 @@ model WebhookEvent {
   Business   Business? @relation(fields: [businessId], references: [id])
 
   @@index([businessId, createdAt])
+}
+
+model ActivityLog {
+  id         String    @id @default(cuid())
+  businessId String?
+  action     String
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+  Business   Business? @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, createdAt])
+}
+
+model ConnectedPage {
+  id             String   @id @default(cuid())
+  businessId     String
+  pageId         String
+  pageName       String
+  pageToken      String
+  channel        String
+  chatwootInboxId Int?
+  igAccountId    String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, pageId, channel])
+  @@index([businessId])
+}
+
+model ConversationLog {
+  id                   String   @id @default(cuid())
+  businessId           String
+  chatwootConversationId Int
+  status               String?
+  botEnabled           Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, chatwootConversationId])
+  @@index([businessId])
 }
 
 enum Plan {

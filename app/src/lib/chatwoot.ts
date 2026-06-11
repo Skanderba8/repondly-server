@@ -1,4 +1,4 @@
-// dashboard-app/src/lib/chatwoot.ts
+// app/src/lib/chatwoot.ts
 const BASE_URL = process.env.CHATWOOT_BASE_URL || 'https://inbox.repondly.com'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────

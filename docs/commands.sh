@@ -2,8 +2,8 @@ npm run build && pm2 restart admin
 tree -I "node_modules|.next" > structure.txt
 
 
-Increment CACHE_VERSION in /dashboard-app/public/sw.js (e.g., v4 → v5)
-Increment version in /dashboard-app/public/manifest.json (e.g., 1.0.4 → 1.0.5)
+Increment CACHE_VERSION in /app/public/sw.js (e.g., v4 → v5)
+Increment version in /app/public/manifest.json (e.g., 1.0.4 → 1.0.5)
 Deploy
 
 sudo systemctl start opencode
@@ -16,8 +16,8 @@ sudo systemctl disable opencode
 db:generate:all() {
   echo "Generating Prisma client for admin..."
   (cd admin && npx prisma generate)
-  echo "Generating Prisma client for dashboard-app..."
-  (cd dashboard-app && npx prisma generate)
+  echo "Generating Prisma client for app..."
+  (cd app && npx prisma generate)
   echo "Generating Prisma client for bot..."
   (cd bot && npx prisma generate)
   echo "Done. All clients up to date."

@@ -8,8 +8,8 @@ B2B SaaS automating WhatsApp/Facebook/Instagram for Tunisian SMBs.
 
 | App | Dir | Port | Lang | PM2 name |
 |-----|-----|------|------|----------|
-| Marketing site | `marketing-site/` | 3005 | TS (Next.js 15) | `marketing-site` |
-| Dashboard | `dashboard-app/` | 3004 | TS (Next.js 15) | `dashboard-app` |
+| Marketing site | `landing/` | 3005 | TS (Next.js 15) | `landing` |
+| Dashboard | `app/` | 3004 | TS (Next.js 15) | `app` |
 | Admin | `admin/` | 3006 | TS (Next.js 15) | `admin` |
 | Bot engine | `bot/` | 3001 | JS (Express) | `repondly-bot` |
 
@@ -22,8 +22,8 @@ All share a single PostgreSQL 16 database (`DATABASE_URL`, port 5433).
 Run all commands from the relevant app directory:
 
 ```
-# Build & deploy (dashboard-app example)
-npm run build && pm2 restart dashboard-app
+# Build & deploy (app example)
+npm run build && pm2 restart app
 
 # Dev servers (each app has its own)
 npm run dev                    # Next.js dev on app-specific port
@@ -59,12 +59,12 @@ Terminal states: `order_complete`, `appointment_complete`, `human_handover`. Eac
 
 **Schema location**: `admin/prisma/schema.prisma` — this is the only schema file.
 Bot and dashboard symlink to it. Never edit `bot/prisma/schema.prisma` or
-`dashboard-app/prisma/schema.prisma` directly (they are symlinks, not real files).
+`app/prisma/schema.prisma` directly (they are symlinks, not real files).
 
 **After any schema change**, regenerate all clients:
 ```
   cd admin && npm run db:generate
-  cd ../dashboard-app && npm run db:generate
+  cd ../app && npm run db:generate
   cd ../bot && npm run db:generate
 ```
 Or use the root helper: `source commands.sh && db:generate:all`
@@ -73,7 +73,7 @@ Or use the root helper: `source commands.sh && db:generate:all`
 ```
   cd admin && npm run db:migrate
 ```
-Never run migrations from bot/ or dashboard-app/.
+Never run migrations from bot/ or app/.
 
 ## Auth
 
@@ -116,9 +116,9 @@ Each app has its own `.env` (gitignored) and `.env.example`. Key shared vars:
 
 ## PWA update flow
 
-When updating the PWA (dashboard-app):
-1. Increment `CACHE_VERSION` in `dashboard-app/public/sw.js`
-2. Increment version in `dashboard-app/public/manifest.json`
+When updating the PWA (app):
+1. Increment `CACHE_VERSION` in `app/public/sw.js`
+2. Increment version in `app/public/manifest.json`
 
 ## Additional docs
 
