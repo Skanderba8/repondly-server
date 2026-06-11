@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, Users, Server, ChevronLeft, ChevronRight,
   LogOut, Shield, Database,
@@ -34,20 +35,22 @@ export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
 
   const activeLinks = ACTIVE_LINKS.filter(l => !l.superAdminOnly || (adminUser && adminUser.role === 'SUPER_ADMIN'))
 
+  useEffect(() => {
+    document.documentElement.style.setProperty('--admin-sidebar-width', collapsed ? '64px' : '220px')
+  }, [collapsed])
+
   function isActive(href: string, exact: boolean) {
     return exact ? pathname === href : pathname.startsWith(href)
   }
 
   return (
     <aside
+      className="admin-sidebar"
       style={{
-        width: collapsed ? 64 : 220, minWidth: collapsed ? 64 : 220,
-        height: '100vh',
+        width: collapsed ? 64 : 220,
         background: C.bg, borderRight: `1px solid ${C.border}`,
         display: 'flex', flexDirection: 'column',
-        position: 'sticky', top: 0, overflow: 'hidden', zIndex: 20,
-        boxShadow: '2px 0 12px rgba(13,27,46,0.04)',
-        transition: 'width 0.25s ease, min-width 0.25s ease',
+        overflow: 'hidden', boxShadow: '2px 0 12px rgba(13,27,46,0.04)',
       }}
     >
       {/* Logo */}
@@ -59,26 +62,26 @@ export default function AdminSidebar({ adminUser }: AdminSidebarProps) {
       }}>
         {!collapsed ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 8,
-              background: 'linear-gradient(135deg, #1a6bff 0%, #0047cc 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <Shield size={15} color="#fff" />
-            </div>
+            <Image
+              src="/logo.png"
+              alt=""
+              width={28}
+              height={28}
+              style={{ borderRadius: 7, flexShrink: 0 }}
+            />
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: C.ink, lineHeight: 1.2 }}>Répondly</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, color: C.ink, lineHeight: 1.2 }}>Répondly</div>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#ff3b30', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Admin</div>
             </div>
           </div>
         ) : (
-          <div style={{
-            width: 30, height: 30, borderRadius: 8,
-            background: 'linear-gradient(135deg, #1a6bff 0%, #0047cc 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Shield size={15} color="#fff" />
-          </div>
+          <Image
+            src="/logo.png"
+            alt=""
+            width={28}
+            height={28}
+            style={{ borderRadius: 7 }}
+          />
         )}
         <button onClick={() => setCollapsed(!collapsed)} style={{
           background: 'transparent', border: `1px solid ${C.border}`,

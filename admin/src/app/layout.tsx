@@ -21,9 +21,9 @@ export default async function RootLayout({
       <body>
         <Providers>
           {session?.user ? (
-            <div className="flex h-screen overflow-hidden bg-gray-100">
+            <div className="admin-shell">
               <AdminSidebar adminUser={session.user as any} />
-              <main className="flex-1 overflow-y-auto p-8">
+              <main className="admin-content">
                 {children}
               </main>
             </div>

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { requireAdmin } from '@/lib/admin-auth'
 
-export async function GET() {
+export async function GET(req: Request) {
+  const authResult = await requireAdmin(req as any)
+  if (authResult instanceof NextResponse) return authResult
+
   try {
     const clients = await prisma.business.findMany({
       orderBy: { createdAt: 'desc' },
@@ -23,6 +27,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const authResult = await requireAdmin(req as any)
+  if (authResult instanceof NextResponse) return authResult
+
   try {
     const body = await req.json()
     const { name, email, password, plan, planStatus, trialEndsAt } = body
@@ -35,12 +42,13 @@ export async function POST(req: Request) {
     const validStatus = ['ACTIVE', 'SUSPENDED', 'CANCELLED'].includes(planStatus?.toUpperCase()) ? planStatus.toUpperCase() : 'ACTIVE'
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Math.random().toString(36).slice(2, 6)
+    const phone = 'np-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 
     const newClient = await prisma.business.create({
       data: {
         name,
         email,
-        phone: '',
+        phone,
         slug,
         passwordHash: await bcrypt.hash(password, 12),
         plan: validPlan,

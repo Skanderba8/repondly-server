@@ -35,7 +35,7 @@ export default function NewClientPage() {
     })
     if (res.ok) {
       const data = await res.json()
-      router.push(`/clients/${data.id}`)
+      router.push(`/clients/${data.client.id}`)
     } else {
       const data = await res.json()
       setError(data.error ?? 'Une erreur est survenue')
