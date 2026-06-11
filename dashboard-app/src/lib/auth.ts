@@ -7,6 +7,7 @@ import { authConfig } from '@/lib/auth.config'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {
@@ -25,9 +26,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             name: string
             passwordHash: string
             role: 'SUPER_ADMIN' | 'ADMIN'
-            active: boolean
+            isActive: boolean
           }>>`
-            SELECT id, email, name, "passwordHash", role, active
+            SELECT id, email, name, "passwordHash", role, "isActive"
             FROM "AdminUser"
             WHERE email = ${email}
             LIMIT 1
@@ -35,7 +36,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const adminUser = adminRows[0]
 
           if (adminUser) {
-            if (!adminUser.active) return null
+            if (!adminUser.isActive) return null
             const validAdmin = await bcrypt.compare(password, adminUser.passwordHash)
             if (!validAdmin) return null
             return {

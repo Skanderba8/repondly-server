@@ -22,20 +22,14 @@ Internet
   │
   ▼
 Nginx (reverse proxy, SSL termination)
-  ├── repondly.com / www.repondly.com  ──────────► marketing-site     :3005
-  └── app.repondly.com / inbox.repondly.com
-        ├── /admin/*                  ──────────► admin-internal      :3006
-        ├── /api/admin/*              ──────────► admin-internal      :3006
-        ├── /bot/*                    ──────────► bot (Node.js)       :3001
-        ├── /chatwoot-webhook         ──────────► bot (Node.js)       :3001
-        └── /*  (everything else)     ──────────► dashboard-app       :3004
-
-Chatwoot (Docker)                                                      :3000
-  └── internal only — not exposed to Nginx directly
-      (bot and dashboard call it via http://127.0.0.1:3000)
+  ├── repondly.com / www.repondly.com   ──────────► marketing-site   :3005
+  ├── admin.repondly.com                ──────────► admin            :3006
+  └── app.repondly.com
+        ├── /bot/*                     ──────────► bot (Node.js)    :3001
+        └── /*  (everything else)      ──────────► dashboard-app    :3004
 
 PostgreSQL                                                             :5433
-  └── shared DB — used by dashboard-app and admin-internal via Prisma
+  └── shared DB — used by dashboard-app and admin via Prisma
 ```
 
 ---
@@ -45,12 +39,11 @@ PostgreSQL                                                             :5433
 This is a **monorepo**. All services live in one repo, deployed on a single VPS.
 
 ```
-repondly-server/
+repondly/
 ├── marketing-site/        # Public-facing website (repondly.com)
 ├── dashboard-app/         # Client-facing Next.js app (app.repondly.com)
-├── admin-internal/        # Internal admin panel (app.repondly.com/admin)
+├── admin/                 # Internal admin panel (admin.repondly.com)
 ├── bot/                   # Node.js automation/webhook engine (:3001)
-├── chatwoot/              # Docker Compose for self-hosted Chatwoot
 ├── nginx.conf             # Nginx reverse proxy config (source of truth)
 └── README.md              # This file
 ```
@@ -63,9 +56,8 @@ repondly-server/
 |---|---|---|---|---|
 | `marketing-site` | Next.js 15, TypeScript | 3005 | PM2 | `repondly.com` |
 | `dashboard-app` | Next.js 15, TypeScript | 3004 | PM2 | `app.repondly.com` |
-| `admin-internal` | Next.js 15, TypeScript | 3006 | PM2 | `app.repondly.com/admin` |
+| `admin` | Next.js 15, TypeScript | 3006 | PM2 | `admin.repondly.com` |
 | `bot` | Node.js 20, JavaScript | 3001 | PM2 | `app.repondly.com/bot/` |
-| `chatwoot` | Ruby on Rails, Docker | 3000 | Docker Compose | Internal only |
 | `postgresql` | PostgreSQL 16 | 5433 | systemd | `127.0.0.1:5433` |
 
 ---
@@ -77,15 +69,12 @@ repondly-server/
 | `repondly.com` | `marketing-site` :3005 | Public marketing + legal pages |
 | `www.repondly.com` | `marketing-site` :3005 | Same as above |
 | `app.repondly.com` | `dashboard-app` :3004 | Client dashboard |
-| `app.repondly.com/admin` | `admin-internal` :3006 | Internal Repondly staff only |
-| `app.repondly.com/api/admin/*` | `admin-internal` :3006 | Admin API routes |
+| `admin.repondly.com` | `admin` :3006 | Internal Repondly staff only |
 | `app.repondly.com/bot/` | `bot` :3001 | Bot REST endpoints |
-| `app.repondly.com/chatwoot-webhook` | `bot` :3001 | Chatwoot fires webhooks here |
-| `inbox.repondly.com` | same as `app.repondly.com` | Alias — same SSL cert block |
 
 **HTTP → HTTPS:** All HTTP traffic on port 80 is redirected 301 to HTTPS.
 
-**Static asset routing trick:** Nginx uses a `map` on `$http_referer` to route `/_next/` static files to either `:3004` (dashboard) or `:3006` (admin) depending on which app the request came from.
+
 
 ---
 
@@ -98,11 +87,11 @@ repondly-server/
 | Reverse Proxy | Nginx 1.24.0 |
 | SSL | Let's Encrypt via Certbot |
 | Process Manager | PM2 (for all Node.js/Next.js apps) |
-| Containers | Docker + Docker Compose (Chatwoot) |
+| Containers | None (all apps are native Node.js/PM2) |
 
 **SSL certificates:**
 - `repondly.com` uses `/etc/letsencrypt/live/repondly.com-0001/`
-- `app.repondly.com` / `inbox.repondly.com` uses `/etc/letsencrypt/live/repondly.com/`
+- `app.repondly.com` / `admin.repondly.com` uses `/etc/letsencrypt/live/repondly.com/`
 
 ---
 
@@ -120,7 +109,6 @@ repondly-server/
 | Database | PostgreSQL | 16.x (port 5433) |
 | Bot engine | Node.js | 20.x |
 | Process manager | PM2 | latest |
-| Chatwoot | Self-hosted open-source | Docker |
 | Nginx | 1.24.0 | Ubuntu package |
 | SSL | Let's Encrypt / Certbot | — |
 
@@ -187,72 +175,41 @@ dashboard-app/src/app/
 
 **Auth:** NextAuth v5 (JWT sessions, credentials provider + Meta OAuth).
 
-**DB:** Prisma → PostgreSQL :5433 (same DB as admin-internal).
+**DB:** Prisma → PostgreSQL :5433 (same DB as admin).
 
 ---
 
-### `admin-internal` — Internal Admin Panel (:3006)
+### `admin` — Internal Admin Panel (:3006)
 
-**Purpose:** Internal Repondly staff tool. Manage clients, onboarding, billing, bot config, Chatwoot accounts, access control, and database operations.
+**Purpose:** Internal Repondly staff tool. Manage clients, access control, database operations, and system status.
 
-**Access:** `app.repondly.com/admin` — protected by separate admin auth.
+**Access:** `admin.repondly.com` — protected by separate admin auth.
 
 ```
-admin-internal/src/app/
-├── admin/
-│   ├── page.tsx                        # Overview / dashboard
-│   ├── OverviewClient.tsx
-│   ├── layout.tsx                      # Admin shell layout
-│   ├── clients/
-│   │   ├── page.tsx                    # Clients list
-│   │   ├── ClientsHeader.tsx
-│   │   ├── new/page.tsx                # Create new client
-│   │   └── [id]/page.tsx              # Client detail page
-│   ├── onboarding/
-│   │   ├── page.tsx                    # Onboarding flow
-│   │   └── OnboardingClient.tsx
-│   ├── billing/page.tsx                # Billing management
-│   ├── bot/page.tsx                    # Bot config + events
-│   ├── chatwoot/page.tsx               # Chatwoot account management
-│   ├── access/page.tsx                 # Access control (admin users)
-│   ├── database/page.tsx               # DB management + migrations
-│   └── system/page.tsx                 # System status
-└── api/admin/
-    ├── clients/
-    │   ├── route.ts                    # GET list, POST create
-    │   └── [id]/
-    │       ├── route.ts                # GET, PATCH, DELETE client
-    │       ├── notes/route.ts          # POST note on client
-    │       ├── stage/route.ts          # PATCH client stage (kanban)
-    │       └── sync/route.ts           # POST sync client to Chatwoot
-    ├── access/
-    │   ├── route.ts                    # GET/POST admin access entries
-    │   └── [id]/route.ts              # PATCH/DELETE access entry
-    ├── auto-rules/[id]/route.ts        # PATCH/DELETE automation rule
-    ├── badges/route.ts                 # GET dashboard badge counts
-    ├── bot/
-    │   ├── events/route.ts             # GET recent bot events
-    │   └── restart/route.ts            # POST restart bot via PM2
-    ├── chatwoot/route.ts               # GET/POST Chatwoot account mgmt
-    ├── database/
-    │   ├── route.ts                    # GET DB stats
-    │   └── migrate/route.ts            # POST run migrations
-    └── system/route.ts                 # GET system health/info
+admin/src/app/
+├── page.tsx                            # Overview / stats
+├── layout.tsx                          # Admin shell layout
+├── auth/signin/page.tsx                # Admin login
+├── clients/
+│   ├── page.tsx                        # Clients list
+│   ├── new/page.tsx                    # Create new client
+│   └── [id]/page.tsx                   # Client detail page
+├── access/page.tsx                     # Access control (admin users)
+├── database/page.tsx                   # DB management + migrations
+└── system/page.tsx                     # System status
 ```
 
 **Key admin UI components:**
-- `KanbanBoard.tsx` — drag-and-drop client pipeline
 - `ClientsTable.tsx` — searchable client list
 - `AccessManager.tsx` — admin user permissions
 - `DatabaseManager.tsx` — DB health + migration trigger
-- `ChatwootPanel.tsx` — Chatwoot account management
 - `RoutingMap.tsx` — visual routing overview
 
 ---
 
 ### `bot` — Automation Engine (:3001)
 
-**Purpose:** Node.js webhook receiver and automation engine. Sits between Chatwoot and the outside world.
+**Purpose:** Node.js webhook receiver and automation engine.
 
 ```
 bot/
@@ -263,29 +220,10 @@ bot/
 ```
 
 **What it does:**
-- Receives `POST /chatwoot-webhook` from Chatwoot when a message arrives
+- Receives webhooks from messaging channels
 - Evaluates AutoRules from the DB (keyword match, channel, trigger type)
-- Sends auto-replies back to Chatwoot via internal REST API (`http://127.0.0.1:3000/api/v1/...`)
+- Sends auto-replies via channel APIs
 - Exposes `GET /bot/` health endpoint
-- Can be restarted remotely via `POST /api/admin/bot/restart` from admin-internal
-
----
-
-### `chatwoot` — Self-Hosted Inbox
-
-**Purpose:** Open-source omnichannel inbox. Handles all inbound messages from WhatsApp, Instagram, Facebook, Email. Fires webhook events to the bot.
-
-- Runs via `docker-compose.yml` in `/chatwoot/`
-- Accessible internally at `http://127.0.0.1:3000`
-- **Not exposed directly through Nginx** (Chatwoot's own web UI is NOT customer-facing)
-- Key internal API endpoints used by the bot and dashboard:
-
-```
-POST /api/v1/accounts/:id/conversations/:convId/messages   # send message
-PATCH /api/v1/accounts/:id/conversations/:convId           # update status
-GET  /api/v1/accounts/:id/contacts                         # list contacts
-GET  /api/v1/accounts/:id/conversations                    # list conversations
-```
 
 ---
 
@@ -300,7 +238,7 @@ User:     repondly_user
 Database: repondly
 ```
 
-Shared between `dashboard-app` and `admin-internal`. Both use Prisma v7 with `@prisma/adapter-pg`.
+Shared between `dashboard-app` and `admin`. Both use Prisma v7 with `@prisma/adapter-pg`.
 
 **Prisma config location:** `prisma.config.ts` (root of each Next.js app) + `prisma/schema.prisma`
 
@@ -308,12 +246,12 @@ Shared between `dashboard-app` and `admin-internal`. Both use Prisma v7 with `@p
 
 | Model | Description |
 |---|---|
-| `Business` | One account per client business — email, passwordHash, Chatwoot account ID + token, plan |
-| `Client` | Contacts/leads belonging to a business, linked to Chatwoot contact ID |
+| `Business` | One account per client business — email, passwordHash, plan |
+| `Client` | Contacts/leads belonging to a business |
 | `AutoRule` | Automation rules — trigger, conditions (JSON), action, response template |
 | `Reminder` | Scheduled messages to clients |
 | `Booking` | Appointments with calendar sync |
-| Admin models | Access control, onboarding state, etc. (admin-internal only) |
+| Admin models | Access control, onboarding state, etc. (admin only) |
 
 ---
 
@@ -330,13 +268,13 @@ META_APP_ID="<facebook app id>"
 META_APP_SECRET="<facebook app secret>"
 ```
 
-### `admin-internal/.env`
+### `admin/.env`
 ```env
 DATABASE_URL="postgresql://repondly_user:<password>@127.0.0.1:5433/repondly"
 NEXTAUTH_SECRET="<admin-specific secret>"
-NEXTAUTH_URL="https://app.repondly.com/admin"
-CHATWOOT_BASE_URL="http://127.0.0.1:3000"
-CHATWOOT_API_TOKEN="<admin chatwoot token>"
+NEXTAUTH_URL="https://admin.repondly.com"
+ADMIN_EMAIL="admin@repondly.com"
+INTERNAL_SECRET="repondly-internal-secret"
 ```
 
 ### `marketing-site/.env`
@@ -348,9 +286,9 @@ CONTACT_EMAIL="contact@repondly.com"
 ### `bot/.env`
 ```env
 DATABASE_URL="postgresql://repondly_user:<password>@127.0.0.1:5433/repondly"
-CHATWOOT_BASE_URL="http://127.0.0.1:3000"
-CHATWOOT_API_TOKEN="<bot agent token>"
 PORT=3001
+GROQ_API_KEY="<groq api key>"
+INTERNAL_SECRET="repondly-internal-secret"
 ```
 
 ---
@@ -366,14 +304,14 @@ File: `nginx.conf` (copy/symlink to `/etc/nginx/sites-enabled/repondly`)
 # repondly.com / www.repondly.com
 443 → proxy :3005 (marketing-site)
 
-# app.repondly.com / inbox.repondly.com
+# app.repondly.com
 443:
-  /admin          → proxy :3006 (admin-internal)
-  /api/admin/*    → proxy :3006 (admin-internal)
   /bot/           → proxy :3001 (bot)
-  /chatwoot-webhook → proxy :3001 (bot)
-  /_next/         → proxy :3004 or :3006 (smart routing via Referer header map)
   /               → proxy :3004 (dashboard-app)
+
+# admin.repondly.com
+443:
+  /               → proxy :3006 (admin)
 ```
 
 ---
@@ -383,10 +321,10 @@ File: `nginx.conf` (copy/symlink to `/etc/nginx/sites-enabled/repondly`)
 ```bash
 pm2 list                                    # see all processes
 pm2 logs repondly-dashboard --lines 50      # dashboard logs
-pm2 logs repondly-admin --lines 50          # admin logs
-pm2 logs repondly-marketing --lines 50      # marketing logs
+pm2 logs admin --lines 50                   # admin logs
+pm2 logs marketing-site --lines 50           # marketing logs
 pm2 logs repondly-bot --lines 50            # bot logs
-pm2 restart repondly-dashboard
+pm2 restart dashboard-app
 pm2 save                                    # persist across reboots
 ```
 
@@ -418,10 +356,7 @@ cd /opt/repondly/dashboard-app
 npx prisma db push       # push schema changes
 npx prisma studio        # GUI for DB
 
-# Docker services
-cd /opt/repondly/chatwoot && docker compose up -d
-docker compose ps        # check running containers
-docker compose logs -f   # follow logs
+
 
 # PM2 status
 pm2 list
@@ -433,50 +368,20 @@ tree -I "node_modules|.next|.git|dist" > project_tree.txt
 
 ---
 
-## Request Flow: How a WhatsApp Message Gets Auto-Replied
-
-```
-1. Customer sends WhatsApp message
-      ↓
-2. WhatsApp Business API (connected via Chatwoot inbox)
-      ↓
-3. Chatwoot receives message → creates conversation
-      ↓
-4. Chatwoot fires POST to app.repondly.com/chatwoot-webhook
-      ↓
-5. Nginx routes /chatwoot-webhook → bot :3001
-      ↓
-6. Bot parses event, looks up AutoRules from PostgreSQL
-      ↓
-7. If rule matches → bot calls Chatwoot internal API to send reply
-      ↓
-8. Chatwoot delivers reply back to WhatsApp
-      ↓
-9. Bot POSTs event log to dashboard-app via /api/internal/bot-event
-      ↓
-10. Client sees conversation + auto-reply in their dashboard
-```
-
----
-
 ## Request Flow: Admin Managing a Client
 
 ```
-1. Repondly staff visits app.repondly.com/admin
+1. Repondly staff visits admin.repondly.com
       ↓
-2. Nginx routes /admin → admin-internal :3006
+2. Nginx routes → admin :3006
       ↓
 3. Admin logs in (separate NextAuth session)
       ↓
-4. Admin views KanbanBoard — cards loaded from PostgreSQL via Prisma
+4. Admin views clients list — loaded from PostgreSQL via Prisma
       ↓
-5. Admin changes client stage → PATCH /api/admin/clients/:id/stage
+5. Admin creates or edits a client → POST/PATCH /api/clients/:id
       ↓
-6. Nginx routes /api/admin/* → admin-internal :3006
-      ↓
-7. Admin can sync client to Chatwoot → POST /api/admin/clients/:id/sync
-      ↓
-8. admin-internal calls Chatwoot internal REST API to create account/contact
+6. Admin can manage database → /api/database or /api/database/migrate
 ```
 
 ---
@@ -485,9 +390,8 @@ tree -I "node_modules|.next|.git|dist" > project_tree.txt
 
 - Marketing site live at `repondly.com` (multilingual FR/AR, legal pages, contact form)
 - Dashboard app live at `app.repondly.com` (client auth, WhatsApp status, messagerie view)
-- Admin panel live at `app.repondly.com/admin` (kanban, client management, onboarding, Chatwoot, DB manager)
-- Bot engine running on :3001 (Chatwoot webhook receiver, auto-reply logic)
-- Self-hosted Chatwoot on Docker
+- Admin panel live at `admin.repondly.com` (clients, access control, database, system)
+- Bot engine running on :3001 (webhook receiver, auto-reply logic)
 - PostgreSQL 16 on :5433 with full Prisma schema
 - Nginx routing all 4 domains/subdomains correctly
 - PM2 managing all Node processes (survives reboots)
@@ -517,8 +421,7 @@ tree -I "node_modules|.next|.git|dist" > project_tree.txt
 3. The DB is shared — changes to `prisma/schema.prisma` in one app should be reflected in the other
 4. Nginx is the router — to understand what goes where, read `nginx.conf` first
 5. The bot is plain JavaScript (`bot/index.js`) — no TypeScript, no framework
-6. Chatwoot is a black box (open-source) — we only interact with it via its REST API and webhooks
-7. Admin sessions are completely separate from client sessions — different NextAuth instances, different secrets
+6. Admin sessions are completely separate from client sessions — different NextAuth instances, different secrets
 8. Port 5433 (not 5432) — always double-check DB connection strings
 
 ---

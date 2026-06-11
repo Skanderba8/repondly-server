@@ -1,4 +1,4 @@
-npm run build && pm2 restart admin-internal
+npm run build && pm2 restart admin
 tree -I "node_modules|.next" > structure.txt
 
 
@@ -14,8 +14,8 @@ sudo systemctl disable opencode
 # ── Database ────────────────────────────────────────────
 # Run after any schema change to regenerate all Prisma clients
 db:generate:all() {
-  echo "Generating Prisma client for admin-internal..."
-  (cd admin-internal && npx prisma generate)
+  echo "Generating Prisma client for admin..."
+  (cd admin && npx prisma generate)
   echo "Generating Prisma client for dashboard-app..."
   (cd dashboard-app && npx prisma generate)
   echo "Generating Prisma client for bot..."
@@ -23,8 +23,8 @@ db:generate:all() {
   echo "Done. All clients up to date."
 }
 
-# Run migrations (always from admin-internal only)
+# Run migrations (always from admin only)
 db:migrate() {
-  echo "Running migrations from admin-internal..."
-  (cd admin-internal && npx prisma migrate dev)
+  echo "Running migrations from admin..."
+  (cd admin && npx prisma migrate dev)
 }

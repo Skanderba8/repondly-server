@@ -103,24 +103,9 @@ export async function GET(req: NextRequest) {
     await prisma.business.update({
       where: { email: session.user.email },
       data: {
-        wabaId,
-        whatsappPhoneNumberId: phoneNumberId,
-        whatsappInboxId: inboxData.id,
-        whatsappConnected: true,
-        channels: { push: 'WHATSAPP' },
+        ownerWhatsapp: phoneNumber,
       },
     })
-
-    const business = await prisma.business.findUnique({ where: { email: session.user.email } })
-    if (business) {
-      await prisma.activityLog.create({
-        data: {
-          businessId: business.id,
-          action: 'WHATSAPP_CONNECTED',
-          metadata: { wabaId, phoneNumberId, phoneNumber, inboxId: inboxData.id },
-        },
-      })
-    }
 
     return NextResponse.redirect(new URL('https://app.repondly.com/dashboard?success=whatsapp_connected'))
   } catch (err) {

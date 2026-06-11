@@ -1,22 +1,43 @@
 module.exports = {
-  apps : [{
-    script: 'index.js',
-    watch: '.'
-  }, {
-    script: './service-worker/',
-    watch: ['./service-worker']
-  }],
-
-  deploy : {
-    production : {
-      user : 'SSH_USERNAME',
-      host : 'SSH_HOSTMACHINE',
-      ref  : 'origin/master',
-      repo : 'GIT_REPOSITORY',
-      path : 'DESTINATION_PATH',
-      'pre-deploy-local': '',
-      'post-deploy' : 'npm install && pm2 reload ecosystem.config.js --env production',
-      'pre-setup': ''
-    }
-  }
+  apps: [
+    {
+      name: 'marketing-site',
+      cwd: '/opt/repondly/marketing-site',
+      script: 'node_modules/.bin/next',
+      args: 'start -p 3005',
+      env: { NODE_ENV: 'production' },
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+    },
+    {
+      name: 'dashboard-app',
+      cwd: '/opt/repondly/dashboard-app',
+      script: 'node_modules/.bin/next',
+      args: 'start -p 3004',
+      env: { NODE_ENV: 'production' },
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+    },
+    {
+      name: 'admin',
+      cwd: '/opt/repondly/admin',
+      script: 'node_modules/.bin/next',
+      args: 'start -p 3006',
+      env: { NODE_ENV: 'production' },
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+    },
+    {
+      name: 'repondly-bot',
+      cwd: '/opt/repondly/bot',
+      script: 'index.js',
+      env: { NODE_ENV: 'production' },
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+    },
+  ],
 };

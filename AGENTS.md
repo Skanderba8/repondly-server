@@ -10,12 +10,12 @@ B2B SaaS automating WhatsApp/Facebook/Instagram for Tunisian SMBs.
 |-----|-----|------|------|----------|
 | Marketing site | `marketing-site/` | 3005 | TS (Next.js 15) | `marketing-site` |
 | Dashboard | `dashboard-app/` | 3004 | TS (Next.js 15) | `dashboard-app` |
-| Admin internal | `admin-internal/` | 3006 | TS (Next.js 15) | `admin-internal` |
+| Admin | `admin/` | 3006 | TS (Next.js 15) | `admin` |
 | Bot engine | `bot/` | 3001 | JS (Express) | `repondly-bot` |
 
-All share a single PostgreSQL 16 database (`DATABASE_URL`, port 5433). Docker services: Chatwoot (`chatwoot/`) on port 3000.
+All share a single PostgreSQL 16 database (`DATABASE_URL`, port 5433).
 
-**Nginx routing critical detail:** `/_next/` static assets are routed via `$http_referer` — requests from `/admin` pages go to port 3006, all others to 3004. If you add a new app under `app.repondly.com`, update the Nginx map block.
+**Nginx routing:** `admin.repondly.com` → port 3006. `app.repondly.com` → port 3004 (dashboard).
 
 ## Commands
 
@@ -38,7 +38,7 @@ npm run lint                   # ESLint (Next.js apps only)
 npm run test
 
 # Prisma
-npx prisma migrate dev         # from admin-internal/ (migrations live here)
+npx prisma migrate dev         # from admin/ (migrations live here)
 npx prisma generate            # from any app dir after schema changes
 npx prisma studio               # from any app dir
 
@@ -53,25 +53,25 @@ pm2 save                       # persist across reboots
 
 All AI responses use JSON envelope: `{ reply, action, extraction }`.
 
-Terminal states: `order_complete`, `appointment_complete`, `human_handover`. Each triggers a Chatwoot API call (assign conversation + add private note) and a WhatsApp notification to the business owner.
+Terminal states: `order_complete`, `appointment_complete`, `human_handover`. Each triggers a WhatsApp notification to the business owner.
 
 ## Database
 
-**Schema location**: `admin-internal/prisma/schema.prisma` — this is the only schema file.
+**Schema location**: `admin/prisma/schema.prisma` — this is the only schema file.
 Bot and dashboard symlink to it. Never edit `bot/prisma/schema.prisma` or
 `dashboard-app/prisma/schema.prisma` directly (they are symlinks, not real files).
 
 **After any schema change**, regenerate all clients:
 ```
-  cd admin-internal && npm run db:generate
+  cd admin && npm run db:generate
   cd ../dashboard-app && npm run db:generate
   cd ../bot && npm run db:generate
 ```
 Or use the root helper: `source commands.sh && db:generate:all`
 
-**Migrations**: always run from admin-internal only:
+**Migrations**: always run from admin only:
 ```
-  cd admin-internal && npm run db:migrate
+  cd admin && npm run db:migrate
 ```
 Never run migrations from bot/ or dashboard-app/.
 
@@ -111,7 +111,7 @@ Each app has its own `.env` (gitignored) and `.env.example`. Key shared vars:
 - `DATABASE_URL` — PostgreSQL connection (all apps)
 - `GROQ_API_KEY` — Groq LLM (bot only)
 - `NEXTAUTH_SECRET`, `NEXTAUTH_URL` — NextAuth (dashboard, admin)
-- `CHATWOOT_API_URL`, `CHATWOOT_API_TOKEN` — Chatwoot API (bot, admin)
+- `CHATWOOT_API_URL`, `CHATWOOT_API_TOKEN` — Chatwoot API (bot only)
 - `INTERNAL_SECRET` — shared secret for bot↔dashboard internal calls
 
 ## PWA update flow
