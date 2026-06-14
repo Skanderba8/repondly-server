@@ -16,8 +16,8 @@ export function SuggestionChips({ suggestions, onSelect }: SuggestionChipsProps)
           type="button"
           onClick={() => onSelect(suggestion)}
           className={cn(
-            'cursor-pointer rounded border border-[var(--border)] bg-white px-3 py-1.5 text-xs text-[var(--text-primary)] transition-colors duration-100',
-            'hover:bg-[var(--surface-2)]',
+            'inline-flex h-8 items-center rounded-[4px] border border-[color:var(--surface-border)] bg-[color:var(--surface-0)] px-3 text-xs font-medium text-[color:var(--text-secondary)] shadow-[var(--shadow-card)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+            'hover:-translate-y-[1px] hover:border-[color:var(--surface-border-strong)] hover:bg-[color:var(--surface-2)] hover:text-[color:var(--text-primary)]',
           )}
         >
           {suggestion}

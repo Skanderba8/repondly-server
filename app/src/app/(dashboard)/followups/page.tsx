@@ -33,36 +33,40 @@ export default function FollowupsPage() {
     })
 
     return [
-      { title: 'EN RETARD', items: overdue },
-      { title: "AUJOURD'HUI", items: todayItems },
-      { title: 'CETTE SEMAINE', items: weekItems },
+      { title: 'En retard', items: overdue },
+      { title: 'Aujourdhui', items: todayItems },
+      { title: 'Cette semaine', items: weekItems },
     ]
   }, [completedIds])
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[var(--surface-1)]">
-      <div className="px-4 pb-4 pt-4">
-        <h1 className="text-base font-semibold text-[var(--text-primary)]">Relances</h1>
-      </div>
+    <div className="rp-page !gap-4">
+      <section className="rp-page-header">
+        <div>
+          <p className="rp-section-label">Suivi client</p>
+          <h1 className="rp-page-title">Relances</h1>
+        </div>
+      </section>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="space-y-4">
         {sections.map((section) => {
           if (section.items.length === 0) {
             return null
           }
 
           return (
-            <section key={section.title}>
-              <div className="sticky top-0 z-10 bg-[var(--surface-1)] px-4 py-2 text-xs uppercase tracking-wide text-[var(--text-muted)]">
+            <section key={section.title} className="rp-panel overflow-hidden p-0">
+              <div className="border-b border-[color:var(--surface-border)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--text-muted)]">
                 {section.title}
               </div>
-              <div className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white">
+              <div className="space-y-1 p-2">
                 {section.items.map((followUp) => {
                   const conversation =
-                    mockConversations.find((item) => item.contact.id === followUp.contact.id) ?? mockConversations[0]
+                    mockConversations.find((item) => item.contact.id === followUp.contact.id) ??
+                    mockConversations[0]
 
                   return (
-                    <div key={followUp.id} className="flex items-center gap-2 pr-3">
+                    <div key={followUp.id} className="flex flex-col gap-2 rounded-[4px] md:flex-row md:items-center">
                       <div className="min-w-0 flex-1">
                         <ConversationCard
                           conversation={conversation}
@@ -70,14 +74,16 @@ export default function FollowupsPage() {
                           onClick={() => undefined}
                         />
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="shrink-0 text-xs text-[var(--text-secondary)]"
-                        onClick={() => setCompletedIds((current) => [...current, followUp.id])}
-                      >
-                        Marquer fait
-                      </Button>
+                      <div className="px-3 pb-3 md:px-0 md:pb-0 md:pr-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full md:w-auto"
+                          onClick={() => setCompletedIds((current) => [...current, followUp.id])}
+                        >
+                          Marquer fait
+                        </Button>
+                      </div>
                     </div>
                   )
                 })}

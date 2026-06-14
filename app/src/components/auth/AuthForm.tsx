@@ -1,10 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import type { FormEvent, InputHTMLAttributes, ReactNode } from 'react'
+import { useState } from 'react'
 import { mapSupabaseAuthErrorMessage } from '@/lib/supabase/auth-errors'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
 
@@ -29,6 +28,30 @@ const INITIAL_STATE: FormState = {
   password: '',
 }
 
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <label className="rp-auth-field">
+      <span>{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function AuthInput(props: InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className={["rp-auth-input", props.className].filter(Boolean).join(' ')}
+    />
+  )
+}
+
 export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
   const router = useRouter()
   const supabase = createBrowserSupabaseClient()
@@ -43,16 +66,11 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
   }
 
   async function handleSignIn(email: string, password: string) {
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
     if (signInError) {
       setError(mapSupabaseAuthErrorMessage(signInError.message, 'Email ou mot de passe invalide.'))
       return false
     }
-
     router.replace(callbackUrl)
     router.refresh()
     return true
@@ -62,28 +80,23 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
     const {
       data: { session },
     } = await supabase.auth.getSession()
-
     if (session) {
       router.replace(callbackUrl)
       router.refresh()
       return
     }
-
     await handleSignIn(email, password)
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     setPending(true)
-
     try {
       if (isSignup) {
         const response = await fetch('/api/auth/register', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: form.businessName,
             phone: form.phone,
@@ -91,18 +104,14 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
             password: form.password,
           }),
         })
-
         const payload = (await response.json()) as { success: boolean; error?: string }
-
         if (!response.ok || !payload.success) {
           setError(payload.error ?? 'Impossible de créer le compte.')
           return
         }
-
         await ensureSessionAfterSignup(form.email, form.password)
         return
       }
-
       await handleSignIn(form.email, form.password)
     } catch {
       setError('Une erreur est survenue. Réessayez dans un instant.')
@@ -112,50 +121,44 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
   }
 
   return (
-    <form className="grid gap-4" onSubmit={handleSubmit}>
-      {isSignup ? (
+    <form onSubmit={handleSubmit} className="rp-auth-form">
+      {isSignup && (
         <>
-          <label className="grid gap-1.5">
-            <span className="text-sm font-medium text-[var(--text-primary)]">Nom de l&apos;entreprise</span>
-            <Input
+          <Field label="Nom de l'entreprise">
+            <AuthInput
               value={form.businessName}
               onChange={(event) => updateField('businessName', event.target.value)}
               placeholder="Clinique Atlas"
               autoComplete="organization"
               required
-              className="h-10 rounded-[4px]"
             />
-          </label>
-          <label className="grid gap-1.5">
-            <span className="text-sm font-medium text-[var(--text-primary)]">Téléphone</span>
-            <Input
+          </Field>
+          <Field label="Téléphone">
+            <AuthInput
+              type="tel"
               value={form.phone}
               onChange={(event) => updateField('phone', event.target.value)}
               placeholder="+216 20 000 000"
               autoComplete="tel"
               required
-              className="h-10 rounded-[4px]"
             />
-          </label>
+          </Field>
         </>
-      ) : null}
+      )}
 
-      <label className="grid gap-1.5">
-        <span className="text-sm font-medium text-[var(--text-primary)]">Email</span>
-        <Input
+      <Field label="Email professionnel">
+        <AuthInput
           type="email"
           value={form.email}
           onChange={(event) => updateField('email', event.target.value)}
           placeholder="vous@entreprise.com"
           autoComplete="email"
           required
-          className="h-10 rounded-[4px]"
         />
-      </label>
+      </Field>
 
-      <label className="grid gap-1.5">
-        <span className="text-sm font-medium text-[var(--text-primary)]">Mot de passe</span>
-        <Input
+      <Field label="Mot de passe">
+        <AuthInput
           type="password"
           value={form.password}
           onChange={(event) => updateField('password', event.target.value)}
@@ -163,25 +166,23 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
           autoComplete={isSignup ? 'new-password' : 'current-password'}
           required
           minLength={8}
-          className="h-10 rounded-[4px]"
         />
-      </label>
+      </Field>
 
-      {error ? (
-        <p className="rounded-[4px] border border-[color-mix(in_srgb,var(--danger)_28%,transparent)] bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] px-3 py-2 text-sm text-[var(--danger)]">
-          {error}
-        </p>
-      ) : null}
+      {error && <p className="rp-auth-error">{error}</p>}
 
-      <Button type="submit" disabled={pending} className="mt-2 h-10 rounded-[4px]">
+      <button type="submit" disabled={pending} className="rp-auth-submit">
         {pending ? 'Chargement...' : isSignup ? 'Créer mon compte' : 'Se connecter'}
-      </Button>
+      </button>
 
-      <p className="text-sm text-[var(--text-secondary)]">
-        {isSignup ? 'Vous avez déjà un compte ? ' : "Vous n'avez pas encore de compte ? "}
+      <p className="rp-auth-switch">
+        {isSignup ? 'Déjà un compte ? ' : 'Pas encore de compte ? '}
         <Link
-          href={isSignup ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-          className="font-medium text-[var(--brand)] no-underline"
+          href={
+            isSignup
+              ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`
+              : `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`
+          }
         >
           {isSignup ? 'Se connecter' : 'Créer un compte'}
         </Link>

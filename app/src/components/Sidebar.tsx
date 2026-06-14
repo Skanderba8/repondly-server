@@ -2,16 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Clock, MessageSquare, Settings, Users } from 'lucide-react'
+import { Clock3, MessageSquareText, Settings2, Users2 } from 'lucide-react'
 import { SignOutButton } from '@/components/SignOutButton'
-import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
+import { cn } from '@/lib/utils'
 
 const items = [
-  { href: '/inbox', label: 'Inbox', icon: MessageSquare },
-  { href: '/followups', label: 'Relances', icon: Clock },
-  { href: '/contacts', label: 'Contacts', icon: Users },
-  { href: '/settings', label: 'Paramètres', icon: Settings },
+  { href: '/inbox', label: 'Inbox', icon: MessageSquareText },
+  { href: '/followups', label: 'Relances', icon: Clock3 },
+  { href: '/contacts', label: 'Contacts', icon: Users2 },
+  { href: '/settings', label: 'Paramètres', icon: Settings2 },
 ]
 
 type SidebarProps = {
@@ -36,12 +37,24 @@ export function Sidebar({ business }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden h-full w-[220px] flex-col border-r border-[var(--border)] bg-[var(--surface-1)] md:flex">
-      <div className="px-4 pb-6 pt-4">
-        <p className="text-sm font-semibold text-[var(--text-primary)]">Répondly</p>
+    <aside className="hidden h-full w-[248px] flex-col border-r border-[color:var(--surface-border)] bg-[color:var(--surface-0)]/92 backdrop-blur md:flex">
+      <div className="px-5 pb-5 pt-5">
+        <div className="flex items-center gap-3 rounded-[4px] border border-[color:var(--surface-border)] bg-[color:var(--surface-0)] px-3 py-3 shadow-[var(--shadow-card)]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-[4px] bg-[color:var(--brand-primary-soft)] font-heading text-sm font-semibold text-[color:var(--brand)]">
+            R.
+          </div>
+          <div>
+            <p className="font-heading text-[13px] font-semibold text-[color:var(--text-primary)]">
+              Répondly
+            </p>
+            <p className="text-[11px] text-[color:var(--text-secondary)]">
+              Console messagerie
+            </p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex flex-col gap-1 px-2">
+      <nav className="flex flex-1 flex-col gap-1 px-3">
         {items.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
           const Icon = item.icon
@@ -50,33 +63,43 @@ export function Sidebar({ business }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={cn(
-                'flex h-8 items-center gap-2 rounded px-3 text-sm transition-colors duration-100',
-                active
-                  ? 'bg-[var(--brand-soft)] font-medium text-[var(--brand)]'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]',
-              )}
+              data-active={active}
+              className={cn('rp-sidebar-link group', active && 'is-active')}
             >
-              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span
+                className={cn(
+                  'flex h-8 w-8 items-center justify-center rounded-[4px] border transition-all duration-200',
+                  active
+                    ? 'border-[color:var(--brand-primary-border)] bg-[color:var(--brand-primary-soft)] text-[color:var(--brand)]'
+                    : 'border-transparent bg-transparent text-[color:var(--text-secondary)] group-hover:border-[color:var(--surface-border)] group-hover:bg-[color:var(--surface-2)] group-hover:text-[color:var(--text-primary)]',
+                )}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" />
+              </span>
               <span>{item.label}</span>
             </Link>
           )
         })}
       </nav>
 
-      <div className="mt-auto border-t border-[var(--border)] px-4 py-4">
-        <div className="flex items-center gap-3">
-          <Avatar initials={getInitials(business.name)} size="sm" />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-xs font-medium text-[var(--text-primary)]">{business.name}</span>
-              <span className="inline-flex items-center rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] font-medium uppercase leading-none text-[var(--text-secondary)]">
-                {business.plan}
-              </span>
+      <div className="border-t border-[color:var(--surface-border)] p-4">
+        <div className="rounded-[4px] border border-[color:var(--surface-border)] bg-[color:var(--surface-0)] p-3 shadow-[var(--shadow-card)]">
+          <div className="flex items-center gap-3">
+            <Avatar initials={getInitials(business.name)} size="lg" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-[color:var(--text-primary)]">
+                {business.name}
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <Badge variant={business.plan} />
+                <span className="text-[11px] text-[color:var(--text-secondary)]">
+                  Espace actif
+                </span>
+              </div>
             </div>
           </div>
+          <SignOutButton className="mt-4 inline-flex h-9 w-full items-center justify-center rounded-[4px] border border-[color:var(--surface-border)] bg-[color:var(--surface-0)] px-3 text-sm font-medium text-[color:var(--text-secondary)] transition-all duration-200 hover:border-[color:var(--surface-border-strong)] hover:bg-[color:var(--surface-2)] hover:text-[color:var(--text-primary)]" />
         </div>
-        <SignOutButton className="mt-3 text-xs text-[var(--text-secondary)] transition-colors duration-100 hover:text-[var(--text-primary)]" />
       </div>
     </aside>
   )

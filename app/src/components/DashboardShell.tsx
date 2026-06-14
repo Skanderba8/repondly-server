@@ -42,12 +42,14 @@ export function DashboardShell({ children, business }: DashboardShellProps) {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--surface-1)] md:flex-row">
+    <div className="rp-app-shell">
       <Sidebar business={business} />
-      <TopBar title={getTitle(pathname)} />
-      <main className="flex min-h-0 flex-1 flex-col overflow-hidden pb-[calc(56px+env(safe-area-inset-bottom))] pt-12 md:pb-0 md:pt-0">
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-      </main>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <TopBar title={getTitle(pathname)} />
+        <main className="rp-shell-main">
+          <div className="rp-shell-content">{children}</div>
+        </main>
+      </div>
       <BottomNav />
     </div>
   )
