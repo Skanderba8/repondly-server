@@ -41,6 +41,9 @@ html {
   --brand-warning-soft: rgba(245, 158, 11, 0.12);
   --brand-danger: #EF4444;
   --brand-danger-soft: rgba(239, 68, 68, 0.12);
+  --brand: var(--brand-primary);
+  --brand-soft: var(--brand-primary-soft);
+  --danger: var(--brand-danger);
 
   /* Surface layers */
   --surface-0: #FFFFFF;
@@ -120,6 +123,9 @@ html {
   --brand-primary: #7C74FF;
   --brand-primary-hover: #6C63FF;
   --brand-primary-soft: rgba(124, 116, 255, 0.15);
+  --brand: var(--brand-primary);
+  --brand-soft: var(--brand-primary-soft);
+  --danger: var(--brand-danger);
 
   /* Surface layers (dark) */
   --surface-0: #0F0F14;
