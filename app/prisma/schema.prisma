@@ -34,77 +34,135 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  channelConnections BusinessChannelConnection[]
+  contacts           Contact[]
+  conversations      Conversation[]
+  messages           Message[]
+  notifications      Notification[]
+  webhookEvents      WebhookEvent[]
+}
+
+model BusinessChannelConnection {
+  id                     String           @id @default(cuid())
+  businessId             String
+  channel                ChannelType
+  status                 ConnectionStatus @default(PENDING)
+  label                  String?
+  metaAppId              String?
+  metaUserId             String?
+  metaBusinessAccountId  String?
+  metaBusinessName       String?
+  metaPhoneNumberId      String?          @unique
+  metaPhoneNumber        String?
+  metaPageId             String?          @unique
+  metaPageName           String?
+  metaInstagramAccountId String?          @unique
+  metaInstagramUsername  String?
+  accessToken            String?
+  tokenExpiresAt         DateTime?
+  webhookVerifyToken     String?
+  metadata               Json?
+  lastSyncedAt           DateTime?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  business      Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   contacts      Contact[]
   conversations Conversation[]
   messages      Message[]
-  notifications Notification[]
+  webhookEvents WebhookEvent[]
+
+  @@index([businessId, channel, status])
 }
 
 model Contact {
-  id           String   @id @default(cuid())
-  businessId   String
-  waId         String
-  name         String?
-  phone        String?
-  avatarUrl    String?
-  notes        String?
-  lastSeen     DateTime?
-  totalConversations Int @default(0)
-  tags         String[] @default([])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  businessId         String
+  connectionId       String
+  channel            ChannelType
+  externalId         String
+  name               String?
+  username           String?
+  phone              String?
+  avatarUrl          String?
+  notes              String?
+  lastSeen           DateTime?
+  totalConversations Int      @default(0)
+  tags               String[] @default([])
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business      Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  connection    BusinessChannelConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   conversations Conversation[]
 
-  @@unique([businessId, waId])
-  @@index([businessId])
+  @@unique([businessId, channel, externalId])
+  @@index([businessId, connectionId])
 }
 
 model Conversation {
-  id           String             @id @default(cuid())
-  businessId   String
-  contactId    String
-  status       ConversationStatus @default(NEW)
-  intent       String?
-  needsFollowUp Boolean @default(false)
-  followUpAt   DateTime?
-  followUpNote String?
-  lastMessageAt DateTime?
-  firstReplyAt DateTime?
-  resolvedAt   DateTime?
-  summary      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                   String             @id @default(cuid())
+  businessId           String
+  connectionId         String
+  channel              ChannelType
+  contactId            String
+  status               ConversationStatus @default(NEW)
+  intent               String?
+  needsFollowUp        Boolean            @default(false)
+  followUpAt           DateTime?
+  followUpNote         String?
+  unreadCount          Int                @default(0)
+  lastMessageAt        DateTime?
+  lastInboundMessageAt DateTime?
+  lastOutboundMessageAt DateTime?
+  firstReplyAt         DateTime?
+  resolvedAt           DateTime?
+  externalThreadId     String?
+  summary              String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  contact  Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  messages Message[]
+  business   Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  connection BusinessChannelConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  contact    Contact                   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages   Message[]
 
   @@index([businessId, status])
   @@index([businessId, lastMessageAt])
   @@index([businessId, needsFollowUp])
+  @@index([businessId, channel, connectionId, status])
 }
 
 model Message {
-  id             String        @id @default(cuid())
-  businessId     String
-  conversationId String
-  direction      Direction
-  senderType     SenderType
-  content        String
-  mediaUrl       String?
-  mediaType      String?
-  waMessageId    String?       @unique
-  status         MessageStatus @default(SENT)
-  replySuggestions Json?
-  createdAt      DateTime @default(now())
+  id                String        @id @default(cuid())
+  businessId        String
+  connectionId      String
+  channel           ChannelType
+  conversationId    String
+  direction         Direction
+  senderType        SenderType
+  type              MessageType   @default(TEXT)
+  content           String
+  mediaUrl          String?
+  mediaType         String?
+  externalMessageId String?
+  status            MessageStatus @default(SENT)
+  externalStatus    String?
+  rawPayload        Json?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  failedAt          DateTime?
+  replySuggestions  Json?
+  createdAt         DateTime @default(now())
 
-  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  business     Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  connection   BusinessChannelConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  conversation Conversation              @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
   @@index([businessId, createdAt])
+  @@unique([channel, externalMessageId])
+  @@index([businessId, channel, connectionId, createdAt])
 }
 
 model Notification {
@@ -124,14 +182,26 @@ model Notification {
 }
 
 model WebhookEvent {
-  id        String   @id @default(cuid())
-  source    String   @default("WHATSAPP")
-  payload   Json
-  processed Boolean  @default(false)
-  error     String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  businessId   String?
+  connectionId String?
+  channel      ChannelType?
+  source       String   @default("WHATSAPP")
+  eventType    String?
+  deliveryId   String?
+  headers      Json?
+  payload      Json
+  processed    Boolean  @default(false)
+  error        String?
+  processedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  business   Business?                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  connection BusinessChannelConnection? @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   @@index([processed, createdAt])
+  @@index([businessId, channel, createdAt])
+  @@unique([channel, deliveryId])
 }
 
 enum Plan {
@@ -151,6 +221,19 @@ enum Language {
   FRENCH
   ARABIC
   DARIJA
+}
+
+enum ChannelType {
+  WHATSAPP
+  MESSENGER
+  INSTAGRAM
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACTIVE
+  DISCONNECTED
+  ERROR
 }
 
 enum ConversationStatus {
@@ -176,6 +259,18 @@ enum MessageStatus {
   DELIVERED
   READ
   FAILED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  STICKER
+  REACTION
+  SYSTEM
+  UNSUPPORTED
 }
 
 enum NotificationType {

@@ -1,14 +1,16 @@
 import { notFound } from 'next/navigation'
 import { InboxThread } from '@/components/InboxThread'
-import { mockConversations } from '@/lib/mock'
+import { requireBusinessSession } from '@/lib/auth'
+import { getInboxConversationById } from '@/lib/inbox'
 
 export default async function InboxConversationPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
+  const session = await requireBusinessSession()
   const { id } = await params
-  const conversation = mockConversations.find((item) => item.id === id)
+  const conversation = await getInboxConversationById(session.user.id, id)
 
   if (!conversation) {
     notFound()

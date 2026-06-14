@@ -4,7 +4,12 @@ import { isSupabaseAuthenticated, updateSupabaseSession } from '@/lib/supabase/m
 
 const AUTH_PAGES = ['/auth/signin', '/auth/signup']
 const PROTECTED_PAGES = ['/dashboard', '/inbox', '/contacts', '/followups', '/settings', '/onboarding']
-const PUBLIC_API_PREFIXES = ['/api/auth/register', '/api/webhook']
+
+const PUBLIC_API_PREFIXES = [
+  '/api/auth/register',
+  '/api/webhook',
+  '/api/meta/webhooks',
+]
 
 function matchesPrefix(pathname: string, prefixes: string[]) {
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))

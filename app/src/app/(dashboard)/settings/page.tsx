@@ -1,69 +1,125 @@
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SignOutButton } from '@/components/SignOutButton'
+import { SettingsPageClient } from '@/components/SettingsPageClient'
 import { requireBusinessSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+function normalizeValue(value?: string | null) {
+  return value ?? ''
+}
+
 export default async function SettingsPage() {
   const session = await requireBusinessSession()
-  const business = await prisma.business.findUnique({
-    where: { id: session.user.id },
-    select: { name: true, email: true, phone: true, plan: true, businessType: true, tone: true },
-  })
+  const [business, channelConnections] = await Promise.all([
+    prisma.business.findUnique({
+      where: { id: session.user.id },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        plan: true,
+        businessType: true,
+        tone: true,
+      },
+    }),
+    prisma.businessChannelConnection.findMany({
+      where: { businessId: session.user.id },
+      select: {
+        channel: true,
+        status: true,
+        label: true,
+        metaAppId: true,
+        metaUserId: true,
+        metaBusinessAccountId: true,
+        metaBusinessName: true,
+        metaPhoneNumberId: true,
+        metaPhoneNumber: true,
+        metaPageId: true,
+        metaPageName: true,
+        metaInstagramAccountId: true,
+        metaInstagramUsername: true,
+        accessToken: true,
+        webhookVerifyToken: true,
+      },
+    }),
+  ])
+
+  const connectionMap = {
+    WHATSAPP: channelConnections.find((item) => item.channel === 'WHATSAPP'),
+    MESSENGER: channelConnections.find((item) => item.channel === 'MESSENGER'),
+    INSTAGRAM: channelConnections.find((item) => item.channel === 'INSTAGRAM'),
+  }
 
   return (
-    <div className="rp-page max-w-3xl">
-      <PageHeader eyebrow="Configuration" title="Paramètres" description="Gardez les informations de l'entreprise, la connexion WhatsApp et l'abonnement sous contrôle." />
-
-      <section className="rp-panel p-4 md:p-5">
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Mon entreprise</h2>
-          <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Informations visibles et ton de réponse préféré.</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="rp-field-label">Nom de l'entreprise<Input defaultValue={business?.name ?? ''} placeholder="Nom de l'entreprise" /></label>
-          <label className="rp-field-label">Téléphone<Input defaultValue={business?.phone ?? ''} placeholder="Téléphone" /></label>
-          <label className="rp-field-label md:col-span-2">Email<Input defaultValue={business?.email ?? ''} placeholder="Email" type="email" /></label>
-          <label className="rp-field-label">Type d'activité<select defaultValue={business?.businessType ?? 'other'} className="rp-field-control h-9 w-full px-3 text-[13.5px]"><option value="clinic">Clinique</option><option value="salon">Salon</option><option value="ecom">E-commerce</option><option value="garage">Garage</option><option value="other">Autre</option></select></label>
-          <label className="rp-field-label">Ton<select defaultValue={business?.tone ?? 'friendly'} className="rp-field-control h-9 w-full px-3 text-[13.5px]"><option value="formal">Formel</option><option value="friendly">Amical</option></select></label>
-        </div>
-        <div className="mt-4"><Button>Sauvegarder</Button></div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2">
-        <article className="rp-panel p-4 md:p-5">
-          <div>
-            <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">WhatsApp</h2>
-            <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Connexion et identifiants de synchronisation.</p>
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-sm font-medium text-[color:var(--text-primary)]"><span className="h-2 w-2 rounded-full bg-[color:var(--tone-success)]" />Connecté</div>
-          <div className="mt-4"><label className="rp-field-label">Phone Number ID<Input type="password" placeholder="Phone Number ID" /></label></div>
-          <div className="mt-4"><Button variant="secondary">Reconnecter</Button></div>
-        </article>
-
-        <article className="rp-panel p-4 md:p-5">
-          <div>
-            <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Abonnement</h2>
-            <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Usage et niveau de plan actuel.</p>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-3"><Badge variant={business?.plan ?? 'TRIAL'} /><span className="text-sm text-[color:var(--text-secondary)]">47 / 500 conversations ce mois</span></div>
-          <div className="mt-4 h-2 overflow-hidden rounded-[var(--radius-sm)] bg-[color:var(--surface-2)]"><div className="h-full w-[9.4%] rounded-[var(--radius-sm)] bg-[color:var(--brand-primary)]" /></div>
-          <div className="mt-4"><Button>Passer au Pro</Button></div>
-        </article>
-      </section>
-
-      <section className="rp-panel p-4 md:p-5">
+    <>
+      <PageHeader eyebrow="Configuration" title="Paramètres" description="Branchez les actifs Meta réels de chaque client pour que l’inbox reçoive les messages." actions={<SignOutButton className="inline-flex h-9 w-fit items-center rounded-[var(--radius-sm)] border border-[color:var(--tone-danger-border)] bg-[color:var(--tone-danger-soft)] px-3 text-[13px] font-semibold text-[color:var(--tone-danger)] transition-opacity duration-[var(--transition-fast)] hover:opacity-80" />} />
+      <SettingsPageClient
+        initialBusiness={{
+          name: business?.name ?? '',
+          email: business?.email ?? '',
+          phone: business?.phone ?? '',
+          businessType: business?.businessType ?? 'other',
+          tone: business?.tone ?? 'friendly',
+          plan: business?.plan ?? 'TRIAL',
+        }}
+        initialChannels={{
+          WHATSAPP: {
+            channel: 'WHATSAPP',
+            status: connectionMap.WHATSAPP?.status ?? 'NOT_CONNECTED',
+            label: normalizeValue(connectionMap.WHATSAPP?.label),
+            metaAppId: normalizeValue(connectionMap.WHATSAPP?.metaAppId),
+            metaUserId: normalizeValue(connectionMap.WHATSAPP?.metaUserId),
+            metaBusinessAccountId: normalizeValue(connectionMap.WHATSAPP?.metaBusinessAccountId),
+            metaBusinessName: normalizeValue(connectionMap.WHATSAPP?.metaBusinessName),
+            metaPhoneNumberId: normalizeValue(connectionMap.WHATSAPP?.metaPhoneNumberId),
+            metaPhoneNumber: normalizeValue(connectionMap.WHATSAPP?.metaPhoneNumber),
+            metaPageId: normalizeValue(connectionMap.WHATSAPP?.metaPageId),
+            metaPageName: normalizeValue(connectionMap.WHATSAPP?.metaPageName),
+            metaInstagramAccountId: normalizeValue(connectionMap.WHATSAPP?.metaInstagramAccountId),
+            metaInstagramUsername: normalizeValue(connectionMap.WHATSAPP?.metaInstagramUsername),
+            accessToken: normalizeValue(connectionMap.WHATSAPP?.accessToken),
+            webhookVerifyToken: normalizeValue(connectionMap.WHATSAPP?.webhookVerifyToken),
+          },
+          MESSENGER: {
+            channel: 'MESSENGER',
+            status: connectionMap.MESSENGER?.status ?? 'NOT_CONNECTED',
+            label: normalizeValue(connectionMap.MESSENGER?.label),
+            metaAppId: normalizeValue(connectionMap.MESSENGER?.metaAppId),
+            metaUserId: normalizeValue(connectionMap.MESSENGER?.metaUserId),
+            metaBusinessAccountId: normalizeValue(connectionMap.MESSENGER?.metaBusinessAccountId),
+            metaBusinessName: normalizeValue(connectionMap.MESSENGER?.metaBusinessName),
+            metaPhoneNumberId: normalizeValue(connectionMap.MESSENGER?.metaPhoneNumberId),
+            metaPhoneNumber: normalizeValue(connectionMap.MESSENGER?.metaPhoneNumber),
+            metaPageId: normalizeValue(connectionMap.MESSENGER?.metaPageId),
+            metaPageName: normalizeValue(connectionMap.MESSENGER?.metaPageName),
+            metaInstagramAccountId: normalizeValue(connectionMap.MESSENGER?.metaInstagramAccountId),
+            metaInstagramUsername: normalizeValue(connectionMap.MESSENGER?.metaInstagramUsername),
+            accessToken: normalizeValue(connectionMap.MESSENGER?.accessToken),
+            webhookVerifyToken: normalizeValue(connectionMap.MESSENGER?.webhookVerifyToken),
+          },
+          INSTAGRAM: {
+            channel: 'INSTAGRAM',
+            status: connectionMap.INSTAGRAM?.status ?? 'NOT_CONNECTED',
+            label: normalizeValue(connectionMap.INSTAGRAM?.label),
+            metaAppId: normalizeValue(connectionMap.INSTAGRAM?.metaAppId),
+            metaUserId: normalizeValue(connectionMap.INSTAGRAM?.metaUserId),
+            metaBusinessAccountId: normalizeValue(connectionMap.INSTAGRAM?.metaBusinessAccountId),
+            metaBusinessName: normalizeValue(connectionMap.INSTAGRAM?.metaBusinessName),
+            metaPhoneNumberId: normalizeValue(connectionMap.INSTAGRAM?.metaPhoneNumberId),
+            metaPhoneNumber: normalizeValue(connectionMap.INSTAGRAM?.metaPhoneNumber),
+            metaPageId: normalizeValue(connectionMap.INSTAGRAM?.metaPageId),
+            metaPageName: normalizeValue(connectionMap.INSTAGRAM?.metaPageName),
+            metaInstagramAccountId: normalizeValue(connectionMap.INSTAGRAM?.metaInstagramAccountId),
+            metaInstagramUsername: normalizeValue(connectionMap.INSTAGRAM?.metaInstagramUsername),
+            accessToken: normalizeValue(connectionMap.INSTAGRAM?.accessToken),
+            webhookVerifyToken: normalizeValue(connectionMap.INSTAGRAM?.webhookVerifyToken),
+          },
+        }}
+      />
+      <section className="rp-panel mt-4 p-4 md:p-5">
         <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Compte</h2>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <button type="button" className="text-sm font-medium text-[color:var(--text-secondary)] transition-colors duration-[var(--transition-fast)] hover:text-[color:var(--text-primary)]">Changer le mot de passe</button>
-            <p className="mt-2 text-sm text-[color:var(--text-secondary)]">Session active jusqu'au {new Date(session.sessionExpiresAt).toLocaleString('fr-FR')}</p>
-          </div>
-          <SignOutButton className="inline-flex h-9 w-fit items-center rounded-[var(--radius-sm)] border border-[color:var(--tone-danger-border)] bg-[color:var(--tone-danger-soft)] px-3 text-[13px] font-semibold text-[color:var(--tone-danger)] transition-opacity duration-[var(--transition-fast)] hover:opacity-80" />
-        </div>
+        <p className="mt-2 text-sm text-[color:var(--text-secondary)]">Session active jusqu'au {new Date(session.sessionExpiresAt).toLocaleString('fr-FR')}</p>
       </section>
-    </div>
+    </>
   )
 }
