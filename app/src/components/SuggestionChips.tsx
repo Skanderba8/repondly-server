@@ -9,15 +9,15 @@ interface SuggestionChipsProps {
 
 export function SuggestionChips({ suggestions, onSelect }: SuggestionChipsProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex gap-2 overflow-x-auto pb-1">
       {suggestions.map((suggestion) => (
         <button
           key={suggestion}
           type="button"
           onClick={() => onSelect(suggestion)}
           className={cn(
-            'inline-flex h-8 items-center rounded-[4px] border border-[color:var(--surface-border)] bg-[color:var(--surface-0)] px-3 text-xs font-medium text-[color:var(--text-secondary)] shadow-[var(--shadow-card)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
-            'hover:-translate-y-[1px] hover:border-[color:var(--surface-border-strong)] hover:bg-[color:var(--surface-2)] hover:text-[color:var(--text-primary)]',
+            'inline-flex h-[30px] shrink-0 items-center whitespace-nowrap rounded-[var(--radius-pill)] border border-[color:var(--surface-border)] bg-[color:var(--surface-0)] px-3 text-[12px] font-medium text-[color:var(--text-secondary)] transition-[background-color,color,border-color,box-shadow,transform] duration-[var(--transition-fast)]',
+            'hover:border-[color:var(--surface-border-strong)] hover:bg-[color:var(--surface-1)] hover:text-[color:var(--text-primary)] active:scale-[0.98]',
           )}
         >
           {suggestion}

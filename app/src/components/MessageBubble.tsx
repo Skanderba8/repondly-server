@@ -10,19 +10,13 @@ export function MessageBubble({ message, isLast }: MessageBubbleProps) {
   const outbound = message.direction === 'OUTBOUND'
 
   return (
-    <div
-      className={cn(
-        'flex max-w-[80%] flex-col',
-        outbound ? 'ml-auto items-end' : 'mr-auto items-start',
-        !isLast && 'mb-2',
-      )}
-    >
+    <div className={cn('flex max-w-[72%] flex-col', outbound ? 'ml-auto items-end' : 'mr-auto items-start', !isLast && 'mb-2')}>
       <div
         className={cn(
-          'rounded-[4px] border px-3 py-2.5 text-sm leading-6 shadow-[var(--shadow-card)]',
+          'px-[14px] py-[10px] text-[14px] leading-[1.5]',
           outbound
-            ? 'border-[color:var(--brand-primary-border)] bg-[color:var(--brand)] text-[color:var(--text-on-brand)]'
-            : 'border-[color:var(--surface-border)] bg-[color:var(--surface-0)] text-[color:var(--text-primary)]',
+            ? 'rounded-tl-[12px] rounded-tr-[12px] rounded-bl-[2px] rounded-br-[12px] bg-[color:var(--brand-primary)] text-[color:var(--text-on-brand)]'
+            : 'rounded-tl-[12px] rounded-tr-[12px] rounded-bl-[12px] rounded-br-[2px] bg-[color:var(--surface-2)] text-[color:var(--text-primary)]',
         )}
       >
         {message.content}

@@ -7,17 +7,18 @@ interface TopBarProps {
 
 export function TopBar({ title, action }: TopBarProps) {
   return (
-    <header
-      className="fixed left-0 right-0 top-0 z-50 border-b border-[color:var(--surface-border)] bg-[color:var(--surface-0)]/88 backdrop-blur md:hidden"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
-    >
-      <div className="flex h-12 items-center gap-3 px-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-[4px] border border-[color:var(--surface-border)] bg-[color:var(--surface-0)] text-[11px] font-semibold text-[color:var(--brand)] shadow-[var(--shadow-card)]">
-          R.
+    <header className="rp-topbar" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="rp-topbar-inner">
+        <div className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] bg-[color:var(--brand-primary)] text-[11px] font-semibold text-[color:var(--text-on-brand)]">
+          R
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] uppercase tracking-[0.14em] text-[color:var(--text-muted)]">Répondly</p>
-          <h1 className="truncate text-sm font-semibold text-[color:var(--text-primary)]">{title}</h1>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
+            Répondly
+          </p>
+          <h1 className="truncate text-[14px] font-semibold leading-[1.1] text-[color:var(--text-primary)]">
+            {title}
+          </h1>
         </div>
         {action}
       </div>

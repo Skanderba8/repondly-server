@@ -1,7 +1,6 @@
 import type { Contact } from '@/types'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
 
 interface ContactPanelProps {
   contact: Contact
@@ -9,74 +8,63 @@ interface ContactPanelProps {
 
 export function ContactPanel({ contact }: ContactPanelProps) {
   return (
-    <aside className="hidden w-[300px] shrink-0 flex-col border-l border-[color:var(--surface-border)] bg-[color:var(--surface-0)] xl:flex">
-      <div className="border-b border-[color:var(--surface-border)] px-5 py-5">
+    <aside className="hidden h-full w-[280px] shrink-0 flex-col border-l border-[color:var(--surface-border)] bg-[color:var(--surface-0)] lg:flex">
+      <div className="flex-1 overflow-y-auto px-4 py-5">
         <div className="flex items-center gap-3">
-          <Avatar initials={contact.initials} size="lg" />
+          <Avatar initials={contact.initials} size="lg" className="h-10 w-10 rounded-full bg-[color:var(--brand-primary)] text-[color:var(--text-on-brand)]" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-[color:var(--text-primary)]">
+            <p className="truncate text-[15px] font-semibold leading-[1.1] text-[color:var(--text-primary)]">
               {contact.name ?? 'Contact'}
             </p>
-            <p className="truncate text-[13px] text-[color:var(--text-secondary)]">
+            <p className="truncate text-[13px] leading-[1.5] text-[color:var(--text-secondary)]">
               {contact.phone ?? 'Aucun numéro'}
             </p>
           </div>
         </div>
-      </div>
 
-      <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
-        <section className="rp-panel-muted space-y-3 p-4">
-          <p className="rp-section-label">Statistiques</p>
-          <div className="grid grid-cols-2 gap-3">
+        <section className="rp-contact-section">
+          <p className="rp-micro-label">Statistiques</p>
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.1em] text-[color:var(--text-muted)]">
-                Conversations
-              </p>
-              <p className="mt-1 text-lg font-semibold text-[color:var(--text-primary)]">
-                {contact.totalConversations}
-              </p>
+              <p className="text-[11px] text-[color:var(--text-muted)]">Conversations</p>
+              <p className="mt-1 text-[20px] font-semibold leading-[1.1] text-[color:var(--text-primary)]">{contact.totalConversations}</p>
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-[0.1em] text-[color:var(--text-muted)]">
-                Dernière activité
-              </p>
-              <p className="mt-1 text-sm font-medium text-[color:var(--text-primary)]">
-                {contact.lastSeen ?? 'N/A'}
-              </p>
+              <p className="text-[11px] text-[color:var(--text-muted)]">Dernière activité</p>
+              <p className="mt-1 text-[13px] font-medium leading-[1.5] text-[color:var(--text-primary)]">{contact.lastSeen ?? 'N/A'}</p>
             </div>
           </div>
         </section>
 
-        <section className="rp-panel-muted space-y-3 p-4">
+        <section className="rp-contact-section">
           <div className="flex items-center justify-between gap-3">
-            <p className="rp-section-label">Tags</p>
-            <Button variant="ghost" size="sm">
+            <p className="rp-micro-label">Tags</p>
+            <button type="button" className="text-[12px] font-medium text-[color:var(--brand-primary)] transition-[color] duration-[var(--transition-fast)] hover:text-[color:var(--brand-primary-hover)]">
               Ajouter
-            </Button>
+            </button>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             {contact.tags.map((tag) => (
               <Badge key={tag} variant={tag} />
             ))}
           </div>
         </section>
 
-        <section className="rp-panel-muted space-y-3 p-4">
-          <p className="rp-section-label">Notes</p>
+        <section className="rp-contact-section">
+          <p className="rp-micro-label">Notes</p>
           <textarea
             defaultValue={contact.notes ?? ''}
             placeholder="Ajouter une note..."
-            className="rp-field-control min-h-[140px] w-full resize-none px-3 py-2.5 text-sm leading-6"
+            className="mt-3 min-h-20 w-full resize-none rounded-[var(--radius-sm)] border-none bg-[color:var(--surface-1)] px-3 py-2.5 text-[13px] leading-[1.5] text-[color:var(--text-secondary)] outline-none transition-[box-shadow] duration-[var(--transition-fast)] focus-visible:shadow-[var(--shadow-focus)]"
           />
         </section>
 
-        <section className="rp-panel-muted p-4">
-          <label className="flex items-center justify-between gap-3 text-sm text-[color:var(--text-primary)]">
+        <section className="rp-contact-section">
+          <label className="flex items-center justify-between gap-3 text-[13px] text-[color:var(--text-primary)]">
             <span className="font-medium">Relance automatique</span>
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded-[4px] border-[color:var(--surface-border-strong)] bg-[color:var(--surface-0)] text-[color:var(--brand)] accent-[color:var(--brand)]"
-            />
+            <span className="relative inline-flex h-[18px] w-8 rounded-[var(--radius-pill)] bg-[color:var(--brand-primary)] transition-[background-color] duration-[var(--transition-base)]">
+              <span className="absolute right-[2px] top-[2px] h-[14px] w-[14px] rounded-full bg-[color:var(--surface-0)]" />
+            </span>
           </label>
         </section>
       </div>

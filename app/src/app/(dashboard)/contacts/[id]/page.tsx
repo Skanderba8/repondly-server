@@ -1,4 +1,5 @@
 import { Avatar } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
 import { ConversationCard } from '@/components/ConversationCard'
 import { mockContacts, mockConversations } from '@/lib/mock'
 
@@ -9,57 +10,57 @@ export default async function ContactDetailPage({
 }) {
   const { id } = await params
   const contact = mockContacts.find((item) => item.id === id) ?? mockContacts[0]
+  const relatedConversations = mockConversations.filter((conversation) => conversation.contact.id === contact.id)
 
   return (
-    <div className="grid gap-6 px-4 py-6 md:grid-cols-[360px_minmax(0,1fr)]">
-      <section className="rounded-[4px] border border-[var(--border)] bg-white p-4">
+    <div className="grid gap-4 md:grid-cols-[320px_minmax(0,1fr)]">
+      <section className="rp-panel p-4 md:p-5">
         <div className="flex items-center gap-3">
-          <Avatar initials={contact.initials} size="lg" />
+          <Avatar initials={contact.initials} size="lg" className="h-10 w-10 rounded-full bg-[color:var(--brand-primary)] text-[color:var(--text-on-brand)]" />
           <div>
-            <h1 className="text-base font-semibold text-[var(--text-primary)]">{contact.name}</h1>
-            <p className="text-sm text-[var(--text-secondary)]">{contact.phone}</p>
+            <h1 className="text-[18px] font-semibold leading-[1.1] text-[color:var(--text-primary)]">{contact.name}</h1>
+            <p className="mt-1 text-[13px] text-[color:var(--text-secondary)]">{contact.phone}</p>
           </div>
         </div>
 
-        <div className="mt-4 space-y-1 text-sm text-[var(--text-secondary)]">
-          <p>Première conversation : il y a 3 mois</p>
-          <p>Total conversations : {contact.totalConversations}</p>
+        <div className="mt-5 grid grid-cols-2 gap-3 border-t border-[color:var(--surface-border)] pt-4">
+          <div>
+            <p className="rp-micro-label">Conversations</p>
+            <p className="mt-2 text-[20px] font-semibold text-[color:var(--text-primary)]">{contact.totalConversations}</p>
+          </div>
+          <div>
+            <p className="rp-micro-label">Dernière activité</p>
+            <p className="mt-2 text-[13px] text-[color:var(--text-secondary)]">{contact.lastSeen}</p>
+          </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {contact.tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-[2px] bg-[var(--surface-2)] px-2 py-1 text-xs text-[var(--text-secondary)]"
-            >
-              {tag}
-            </span>
-          ))}
-          <button
-            type="button"
-            className="text-xs text-[var(--text-secondary)] transition-colors duration-100 hover:text-[var(--text-primary)]"
-          >
-            + Ajouter
-          </button>
+        <div className="mt-5 border-t border-[color:var(--surface-border)] pt-4">
+          <p className="rp-micro-label">Tags</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {contact.tags.map((tag) => (
+              <Badge key={tag} variant={tag} />
+            ))}
+          </div>
         </div>
 
-        <div className="my-4 h-px bg-[var(--border)]" />
-
-        <div>
-          <p className="mb-2 text-xs uppercase tracking-wide text-[var(--text-muted)]">Notes</p>
+        <div className="mt-5 border-t border-[color:var(--surface-border)] pt-4">
+          <p className="rp-micro-label">Notes</p>
           <textarea
             defaultValue={contact.notes ?? ''}
-            rows={4}
+            rows={5}
             placeholder="Ajouter une note..."
-            className="w-full resize-none rounded-[4px] border border-[var(--border)] bg-white p-2 text-sm text-[var(--text-primary)] outline-none transition-colors duration-100 placeholder:text-[var(--text-muted)] focus:border-[var(--brand)]"
+            className="mt-3 w-full resize-none rounded-[var(--radius-sm)] border-none bg-[color:var(--surface-1)] p-3 text-[13px] text-[color:var(--text-secondary)] outline-none"
           />
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-3 text-xs uppercase tracking-wide text-[var(--text-muted)]">Historique</h2>
-        <div className="overflow-hidden rounded-[4px] border border-[var(--border)] bg-white">
-          {mockConversations.slice(0, 3).map((conversation) => (
+      <section className="rp-table-shell">
+        <div className="border-b border-[color:var(--surface-border)] px-4 py-3 md:px-5">
+          <p className="rp-section-label">Historique</p>
+          <h2 className="mt-1 text-[15px] font-semibold text-[color:var(--text-primary)]">Conversations associées</h2>
+        </div>
+        <div>
+          {(relatedConversations.length ? relatedConversations : mockConversations.slice(0, 3)).map((conversation) => (
             <ConversationCard
               key={conversation.id}
               conversation={conversation}

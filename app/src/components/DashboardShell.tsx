@@ -40,14 +40,15 @@ function getTitle(pathname: string) {
 
 export function DashboardShell({ children, business }: DashboardShellProps) {
   const pathname = usePathname()
+  const inboxRoute = pathname.startsWith('/inbox')
 
   return (
-    <div className="rp-app-shell">
+    <div className="rp-dashboard-shell">
       <Sidebar business={business} />
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="rp-dashboard-stage">
         <TopBar title={getTitle(pathname)} />
-        <main className="rp-shell-main">
-          <div className="rp-shell-content">{children}</div>
+        <main className={inboxRoute ? 'rp-dashboard-main rp-dashboard-main-inbox' : 'rp-dashboard-main'}>
+          <div className="rp-dashboard-content">{children}</div>
         </main>
       </div>
       <BottomNav />

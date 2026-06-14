@@ -11,7 +11,7 @@ interface ConversationCardProps {
 }
 
 const statusDots: Record<Conversation['status'], string> = {
-  NEW: 'var(--tone-info)',
+  NEW: 'var(--brand-primary)',
   IN_PROGRESS: 'var(--tone-warning)',
   CONFIRMED: 'var(--tone-success)',
   FOLLOW_UP: 'var(--tone-followup)',
@@ -19,24 +19,23 @@ const statusDots: Record<Conversation['status'], string> = {
 }
 
 export function ConversationCard({ conversation, isSelected, onClick }: ConversationCardProps) {
-  const contactName =
-    conversation.contact.name ?? conversation.contact.phone ?? conversation.contact.initials
+  const contactName = conversation.contact.name ?? conversation.contact.phone ?? conversation.contact.initials
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex w-full items-start gap-3 rounded-[4px] border px-3 py-3 text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'group flex h-[72px] w-full items-start gap-3 border-b border-[color:var(--surface-border)] px-[14px] py-[10px] text-left transition-[background-color,color,border-color,box-shadow,transform] duration-[var(--transition-base)]',
         isSelected
-          ? 'border-[color:var(--brand-primary-border)] bg-[color:var(--brand-primary-soft)] shadow-[var(--shadow-card)]'
-          : 'border-transparent bg-transparent hover:border-[color:var(--surface-border)] hover:bg-[color:var(--surface-0)] hover:shadow-[var(--shadow-card)]',
+          ? 'bg-[color:color-mix(in_srgb,var(--brand-primary-soft)_45%,var(--surface-0)_55%)] shadow-[inset_2px_0_0_var(--brand-primary)]'
+          : 'bg-transparent hover:bg-[color:var(--surface-1)]',
       )}
     >
-      <div className="relative shrink-0 pt-0.5">
-        <Avatar initials={conversation.contact.initials} size="md" />
+      <div className="relative shrink-0">
+        <Avatar initials={conversation.contact.initials} size="sm" />
         <span
-          className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border border-[color:var(--surface-0)]"
+          className="absolute -left-0.5 -top-0.5 h-1.5 w-1.5 rounded-full"
           style={{ backgroundColor: statusDots[conversation.status] }}
           aria-hidden="true"
         />
@@ -46,35 +45,28 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'truncate text-sm text-[color:var(--text-primary)]',
-                  conversation.unread ? 'font-semibold' : 'font-medium',
-                )}
-              >
+              <span className={cn('truncate text-[13px] leading-[1.2] text-[color:var(--text-primary)]', conversation.unread ? 'font-semibold' : 'font-medium')}>
                 {contactName}
               </span>
-              {conversation.unread ? (
-                <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--brand)]" aria-hidden="true" />
-              ) : null}
+              {conversation.unread ? <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--brand-primary)]" aria-hidden="true" /> : null}
             </div>
-            <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-[color:var(--text-secondary)]">
+            <p className="mt-1 line-clamp-1 text-[12px] leading-[1.5] text-[color:var(--text-secondary)]">
               {conversation.summary ?? conversation.lastMessage}
             </p>
           </div>
-          <span className="shrink-0 pt-0.5 text-[11px] font-medium uppercase tracking-[0.08em] text-[color:var(--text-muted)]">
-            {conversation.time}
-          </span>
+          <span className="shrink-0 pt-0.5 text-[11px] font-medium text-[color:var(--text-muted)]">{conversation.time}</span>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-1">
           <Badge intent={conversation.intent} />
-          <Badge status={conversation.status} />
-          {conversation.needsFollowUp ? (
-            <span className="text-[11px] font-medium text-[color:var(--text-secondary)]">
-              Relance prévue
-            </span>
+          {conversation.status === 'NEW' ? <Badge variant="NEW" tone="success" /> : null}
+          {conversation.status === 'FOLLOW_UP' ? (
+            <Badge
+              variant="RELANCE"
+              className="border-[color:var(--tone-followup-border)] bg-[color:var(--tone-followup-soft)] text-[color:var(--tone-followup)]"
+            />
           ) : null}
+          {conversation.status === 'RESOLVED' ? <Badge variant="RÉSOLU" /> : null}
         </div>
       </div>
     </button>

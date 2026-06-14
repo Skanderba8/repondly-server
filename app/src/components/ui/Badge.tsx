@@ -20,14 +20,14 @@ type BadgePalette = {
 
 const toneStyles: Record<BadgeTone, BadgePalette> = {
   neutral: {
-    bg: 'var(--surface-2)',
+    bg: 'var(--surface-1)',
     text: 'var(--text-secondary)',
     border: 'var(--surface-border)',
   },
   brand: {
-    bg: 'var(--tone-info-soft)',
-    text: 'var(--tone-info)',
-    border: 'var(--tone-info-border)',
+    bg: 'var(--brand-primary-soft)',
+    text: 'var(--brand-primary)',
+    border: 'var(--brand-primary-border)',
   },
   success: {
     bg: 'var(--tone-success-soft)',
@@ -96,7 +96,7 @@ export function Badge({ intent, status, variant, tone, className, ...props }: Ba
   return (
     <span
       className={cn(
-        'inline-flex h-6 items-center rounded-[4px] border px-2 text-[11px] font-medium uppercase tracking-[0.08em]',
+        'inline-flex h-5 items-center rounded-[var(--radius-pill)] border px-2 text-[10px] font-semibold uppercase tracking-[0.08em]',
         className,
       )}
       style={{
