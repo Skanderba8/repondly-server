@@ -1,39 +1,50 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { isSupabaseAuthenticated, updateSupabaseSession } from '@/lib/supabase/middleware'
 
 const AUTH_PAGES = ['/auth/signin', '/auth/signup']
 const PROTECTED_PAGES = ['/dashboard', '/inbox', '/contacts', '/followups', '/settings', '/onboarding']
-const PUBLIC_API_PREFIXES = ['/api/auth', '/api/webhook']
+const PUBLIC_API_PREFIXES = ['/api/auth/register', '/api/webhook']
 
 function matchesPrefix(pathname: string, prefixes: string[]) {
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
+function withSupabaseCookies(target: NextResponse, source: NextResponse) {
+  source.cookies.getAll().forEach((cookie) => {
+    target.cookies.set(cookie)
+  })
+
+  return target
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
-  const isAuthenticated = Boolean(token?.businessId)
+  const { response, user } = await updateSupabaseSession(request)
+  const isAuthenticated = isSupabaseAuthenticated(user)
   const isAuthPage = AUTH_PAGES.includes(pathname)
   const isProtectedPage = matchesPrefix(pathname, PROTECTED_PAGES)
   const isApiRoute = pathname.startsWith('/api/')
   const isPublicApiRoute = matchesPrefix(pathname, PUBLIC_API_PREFIXES)
 
-  if (isAuthPage && isAuthenticated) {
-    return NextResponse.redirect(new URL('/inbox', request.url))
+  if (isAuthPage) {
+    return response
   }
 
   if (isProtectedPage && !isAuthenticated) {
     const signInUrl = new URL('/auth/signin', request.url)
     signInUrl.searchParams.set('callbackUrl', `${pathname}${search}`)
-    return NextResponse.redirect(signInUrl)
+    return withSupabaseCookies(NextResponse.redirect(signInUrl), response)
   }
 
   if (isApiRoute && !isPublicApiRoute && !isAuthenticated) {
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    return withSupabaseCookies(
+      NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }),
+      response,
+    )
   }
 
-  return NextResponse.next()
+  return response
 }
 
 export const config = {

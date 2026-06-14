@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { mapSupabaseAuthErrorMessage } from '@/lib/supabase/auth-errors'
+import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
 
 type AuthMode = 'signin' | 'signup'
 
@@ -30,6 +31,7 @@ const INITIAL_STATE: FormState = {
 
 export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
   const router = useRouter()
+  const supabase = createBrowserSupabaseClient()
   const [form, setForm] = useState<FormState>(INITIAL_STATE)
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
@@ -41,20 +43,33 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
   }
 
   async function handleSignIn(email: string, password: string) {
-    const result = await signIn('credentials', {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
-      redirect: false,
-      redirectTo: callbackUrl,
     })
 
-    if (!result?.ok || result.error) {
-      setError('Email ou mot de passe invalide.')
+    if (signInError) {
+      setError(mapSupabaseAuthErrorMessage(signInError.message, 'Email ou mot de passe invalide.'))
+      return false
+    }
+
+    router.replace(callbackUrl)
+    router.refresh()
+    return true
+  }
+
+  async function ensureSessionAfterSignup(email: string, password: string) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (session) {
+      router.replace(callbackUrl)
+      router.refresh()
       return
     }
 
-    router.replace(result.url ?? callbackUrl)
-    router.refresh()
+    await handleSignIn(email, password)
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -83,6 +98,9 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
           setError(payload.error ?? 'Impossible de créer le compte.')
           return
         }
+
+        await ensureSessionAfterSignup(form.email, form.password)
+        return
       }
 
       await handleSignIn(form.email, form.password)

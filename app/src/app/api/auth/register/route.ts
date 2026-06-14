@@ -1,4 +1,6 @@
-import bcrypt from 'bcryptjs'
+import type { CookieOptions } from '@supabase/ssr'
+import { Prisma } from '@prisma/client'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import {
   buildUniqueBusinessSlug,
@@ -9,8 +11,9 @@ import {
   normalizePhone,
 } from '@/lib/auth-utils'
 import { prisma } from '@/lib/prisma'
-
-const PASSWORD_SALT_ROUNDS = 12
+import { mapSupabaseAuthErrorMessage } from '@/lib/supabase/auth-errors'
+import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { createRouteHandlerSupabaseClient } from '@/lib/supabase/server'
 
 type RegisterBody = {
   name?: string
@@ -54,28 +57,86 @@ export async function POST(request: Request) {
     )
   }
 
-  const slug = await buildUniqueBusinessSlug(name)
-  const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS)
-
-  const business = await prisma.business.create({
-    data: {
-      name,
-      phone,
-      email,
-      slug,
-      passwordHash,
+  const cookieStore = await cookies()
+  const pendingCookies: Array<{ name: string; value: string; options: CookieOptions }> = []
+  const supabase = createRouteHandlerSupabaseClient({
+    getAll() {
+      return cookieStore.getAll().map(({ name, value }) => ({ name, value }))
     },
-    select: {
-      id: true,
-      slug: true,
+    setAll(cookiesToSet) {
+      pendingCookies.push(...cookiesToSet)
     },
   })
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      id: business.id,
-      slug: business.slug,
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        businessName: name,
+      },
     },
   })
+
+  if (signUpError || !signUpData.user?.id) {
+    return NextResponse.json(
+      { success: false, error: mapSupabaseAuthErrorMessage(signUpError?.message, 'Impossible de créer le compte.') },
+      { status: 400 },
+    )
+  }
+
+  const authUserId = signUpData.user.id
+
+  try {
+    const slug = await buildUniqueBusinessSlug(name)
+    const business = await prisma.business.create({
+      data: {
+        authUserId,
+        name,
+        phone,
+        email,
+        slug,
+      },
+      select: {
+        id: true,
+        slug: true,
+      },
+    })
+
+    const response = NextResponse.json({
+      success: true,
+      data: {
+        id: business.id,
+        slug: business.slug,
+      },
+    })
+
+    pendingCookies.forEach(({ name: cookieName, value, options }) => {
+      response.cookies.set(cookieName, value, options)
+    })
+
+    return response
+  } catch (error) {
+    const adminClient = createAdminSupabaseClient()
+    const { error: rollbackError } = await adminClient.auth.admin.deleteUser(authUserId)
+
+    if (rollbackError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Le compte d'authentification a été créé mais le profil entreprise n'a pas pu être finalisé. Supprimez l'utilisateur Supabase orphelin avant de réessayer.",
+        },
+        { status: 500 },
+      )
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json(
+        { success: false, error: 'Impossible de créer le compte avec ces informations.' },
+        { status: 409 },
+      )
+    }
+
+    return NextResponse.json({ success: false, error: 'Impossible de créer le compte.' }, { status: 500 })
+  }
 }

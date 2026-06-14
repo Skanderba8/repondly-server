@@ -25,11 +25,11 @@ CREATE TYPE "NotificationType" AS ENUM ('NEW_MESSAGE', 'FOLLOW_UP_DUE', 'DAILY_S
 -- CreateTable
 CREATE TABLE "Business" (
     "id" TEXT NOT NULL,
+    "authUserId" TEXT,
     "name" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
     "email" TEXT,
     "slug" TEXT NOT NULL,
-    "passwordHash" TEXT NOT NULL,
     "plan" "Plan" NOT NULL DEFAULT 'TRIAL',
     "planStatus" "PlanStatus" NOT NULL DEFAULT 'ACTIVE',
     "trialEndsAt" TIMESTAMP(3),
@@ -129,6 +129,9 @@ CREATE TABLE "WebhookEvent" (
 
     CONSTRAINT "WebhookEvent_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Business_authUserId_key" ON "Business"("authUserId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Business_phone_key" ON "Business"("phone");

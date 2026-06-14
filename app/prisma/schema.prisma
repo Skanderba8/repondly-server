@@ -6,30 +6,26 @@ datasource db {
   provider  = "postgresql"
 }
 
-// ─────────────────────────────────────────────
 // BUSINESS
-// The core tenant. One business = one Répondly account.
-// ─────────────────────────────────────────────
+// The core tenant. One business = one Repondly account.
 
 model Business {
-  id           String      @id @default(cuid())
-  name         String
-  phone        String      @unique
-  email        String?     @unique
-  slug         String      @unique
-  passwordHash String
-  plan         Plan        @default(TRIAL)
-  planStatus   PlanStatus  @default(ACTIVE)
-  trialEndsAt  DateTime?
-  isPaid       Boolean     @default(false)
+  id         String     @id @default(cuid())
+  authUserId String?    @unique
+  name       String
+  phone      String     @unique
+  email      String?    @unique
+  slug       String     @unique
+  plan       Plan       @default(TRIAL)
+  planStatus PlanStatus @default(ACTIVE)
+  trialEndsAt DateTime?
+  isPaid     Boolean    @default(false)
 
-  // Business profile — feeds AI context
-  businessType String?     // "clinic" | "salon" | "ecom" | "garage" | "other"
-  tone         String?     // "formal" | "friendly"
-  language     Language    @default(FRENCH)
-  timezone     String      @default("Africa/Tunis")
+  businessType String?
+  tone         String?
+  language     Language  @default(FRENCH)
+  timezone     String    @default("Africa/Tunis")
 
-  // WhatsApp connection
   waPhoneNumberId String?
   wabaId          String?
   waAccessToken   String?
@@ -44,28 +40,19 @@ model Business {
   notifications Notification[]
 }
 
-// ─────────────────────────────────────────────
-// CONTACT
-// A customer who has messaged the business.
-// Auto-created on first inbound message.
-// ─────────────────────────────────────────────
-
 model Contact {
-  id         String   @id @default(cuid())
-  businessId String
-  waId       String   // WhatsApp phone number ID (their number)
-  name       String?  // from WhatsApp profile or manually set
-  phone      String?
-  avatarUrl  String?
-  notes      String?  // owner can add context manually
-
-  // CRM-lite: auto-extracted from conversations
-  lastSeen         DateTime?
-  totalConversations Int     @default(0)
-  tags             String[]  @default([])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  businessId   String
+  waId         String
+  name         String?
+  phone        String?
+  avatarUrl    String?
+  notes        String?
+  lastSeen     DateTime?
+  totalConversations Int @default(0)
+  tags         String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversations Conversation[]
@@ -74,35 +61,21 @@ model Contact {
   @@index([businessId])
 }
 
-// ─────────────────────────────────────────────
-// CONVERSATION
-// One continuous thread with a contact.
-// Status drives the smart inbox columns.
-// ─────────────────────────────────────────────
-
 model Conversation {
-  id         String             @id @default(cuid())
-  businessId String
-  contactId  String
-
-  status     ConversationStatus @default(NEW)
-  intent     String?            // AI-labeled: "appointment" | "price_inquiry" | "complaint" | "product_question" | "returning_customer" | "other"
-  
-  // Follow-up tracking
-  needsFollowUp   Boolean   @default(false)
-  followUpAt      DateTime? // when to resurface this
-  followUpNote    String?   // what the follow-up is about
-
-  // Timing
-  lastMessageAt   DateTime?
-  firstReplyAt    DateTime? // tracks response time
-  resolvedAt      DateTime?
-
-  // AI-generated summary (updated after each message, used in context panel)
+  id           String             @id @default(cuid())
+  businessId   String
+  contactId    String
+  status       ConversationStatus @default(NEW)
+  intent       String?
+  needsFollowUp Boolean @default(false)
+  followUpAt   DateTime?
+  followUpNote String?
+  lastMessageAt DateTime?
+  firstReplyAt DateTime?
+  resolvedAt   DateTime?
   summary      String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   contact  Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
@@ -113,32 +86,19 @@ model Conversation {
   @@index([businessId, needsFollowUp])
 }
 
-// ─────────────────────────────────────────────
-// MESSAGE
-// Individual messages inside a conversation.
-// ─────────────────────────────────────────────
-
 model Message {
-  id             String          @id @default(cuid())
+  id             String        @id @default(cuid())
   businessId     String
   conversationId String
-  
-  direction  Direction     // INBOUND | OUTBOUND
-  senderType SenderType    // CUSTOMER | AGENT (no BOT anymore)
-  content    String
-  
-  // Media
-  mediaUrl   String?
-  mediaType  String?       // "image" | "audio" | "video" | "document"
-
-  // WhatsApp delivery tracking
-  waMessageId String?      @unique
-  status      MessageStatus @default(SENT)
-
-  // AI quick reply suggestions (stored as JSON array of strings)
+  direction      Direction
+  senderType     SenderType
+  content        String
+  mediaUrl       String?
+  mediaType      String?
+  waMessageId    String?       @unique
+  status         MessageStatus @default(SENT)
   replySuggestions Json?
-
-  createdAt DateTime @default(now())
+  createdAt      DateTime @default(now())
 
   business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -146,12 +106,6 @@ model Message {
   @@index([conversationId, createdAt])
   @@index([businessId, createdAt])
 }
-
-// ─────────────────────────────────────────────
-// NOTIFICATION
-// In-app notifications for the business owner.
-// Powers the daily summary + follow-up alerts.
-// ─────────────────────────────────────────────
 
 model Notification {
   id         String           @id @default(cuid())
@@ -169,26 +123,16 @@ model Notification {
   @@index([businessId, createdAt])
 }
 
-// ─────────────────────────────────────────────
-// WEBHOOK EVENT
-// Raw inbound webhook payloads from WhatsApp.
-// Stored before processing so nothing is lost.
-// ─────────────────────────────────────────────
-
 model WebhookEvent {
-  id          String   @id @default(cuid())
-  source      String   @default("WHATSAPP")
-  payload     Json
-  processed   Boolean  @default(false)
-  error       String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  source    String   @default("WHATSAPP")
+  payload   Json
+  processed Boolean  @default(false)
+  error     String?
+  createdAt DateTime @default(now())
 
   @@index([processed, createdAt])
 }
-
-// ─────────────────────────────────────────────
-// ENUMS
-// ─────────────────────────────────────────────
 
 enum Plan {
   TRIAL
@@ -210,11 +154,11 @@ enum Language {
 }
 
 enum ConversationStatus {
-  NEW           // just came in, not yet looked at
-  IN_PROGRESS   // owner is handling it
-  CONFIRMED     // appointment/order confirmed
-  RESOLVED      // done, closed
-  FOLLOW_UP     // needs action later
+  NEW
+  IN_PROGRESS
+  CONFIRMED
+  RESOLVED
+  FOLLOW_UP
 }
 
 enum Direction {
