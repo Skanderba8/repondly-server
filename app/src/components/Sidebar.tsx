@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Clock, MessageSquare, Settings, Users } from 'lucide-react'
+import { SignOutButton } from '@/components/SignOutButton'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 
@@ -13,7 +14,25 @@ const items = [
   { href: '/settings', label: 'Paramètres', icon: Settings },
 ]
 
-export function Sidebar() {
+type SidebarProps = {
+  business: {
+    name: string
+    plan: string
+  }
+}
+
+function getInitials(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('') || 'ME'
+  )
+}
+
+export function Sidebar({ business }: SidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -45,16 +64,19 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto flex items-center gap-3 px-4 py-4">
-        <Avatar initials="ME" size="sm" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-xs font-medium text-[var(--text-primary)]">Mon Entreprise</span>
-            <span className="inline-flex items-center rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] font-medium uppercase leading-none text-[var(--text-secondary)]">
-              TRIAL
-            </span>
+      <div className="mt-auto border-t border-[var(--border)] px-4 py-4">
+        <div className="flex items-center gap-3">
+          <Avatar initials={getInitials(business.name)} size="sm" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="truncate text-xs font-medium text-[var(--text-primary)]">{business.name}</span>
+              <span className="inline-flex items-center rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] font-medium uppercase leading-none text-[var(--text-secondary)]">
+                {business.plan}
+              </span>
+            </div>
           </div>
         </div>
+        <SignOutButton className="mt-3 text-xs text-[var(--text-secondary)] transition-colors duration-100 hover:text-[var(--text-primary)]" />
       </div>
     </aside>
   )
