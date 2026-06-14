@@ -1,1 +1,242 @@
-../../admin/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// BUSINESS
+// The core tenant. One business = one Répondly account.
+// ─────────────────────────────────────────────
+
+model Business {
+  id           String      @id @default(cuid())
+  name         String
+  phone        String      @unique
+  email        String?     @unique
+  slug         String      @unique
+  passwordHash String
+  plan         Plan        @default(TRIAL)
+  planStatus   PlanStatus  @default(ACTIVE)
+  trialEndsAt  DateTime?
+  isPaid       Boolean     @default(false)
+
+  // Business profile — feeds AI context
+  businessType String?     // "clinic" | "salon" | "ecom" | "garage" | "other"
+  tone         String?     // "formal" | "friendly"
+  language     Language    @default(FRENCH)
+  timezone     String      @default("Africa/Tunis")
+
+  // WhatsApp connection
+  waPhoneNumberId String?
+  wabaId          String?
+  waAccessToken   String?
+  waVerifyToken   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts      Contact[]
+  conversations Conversation[]
+  messages      Message[]
+  notifications Notification[]
+}
+
+// ─────────────────────────────────────────────
+// CONTACT
+// A customer who has messaged the business.
+// Auto-created on first inbound message.
+// ─────────────────────────────────────────────
+
+model Contact {
+  id         String   @id @default(cuid())
+  businessId String
+  waId       String   // WhatsApp phone number ID (their number)
+  name       String?  // from WhatsApp profile or manually set
+  phone      String?
+  avatarUrl  String?
+  notes      String?  // owner can add context manually
+
+  // CRM-lite: auto-extracted from conversations
+  lastSeen         DateTime?
+  totalConversations Int     @default(0)
+  tags             String[]  @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@unique([businessId, waId])
+  @@index([businessId])
+}
+
+// ─────────────────────────────────────────────
+// CONVERSATION
+// One continuous thread with a contact.
+// Status drives the smart inbox columns.
+// ─────────────────────────────────────────────
+
+model Conversation {
+  id         String             @id @default(cuid())
+  businessId String
+  contactId  String
+
+  status     ConversationStatus @default(NEW)
+  intent     String?            // AI-labeled: "appointment" | "price_inquiry" | "complaint" | "product_question" | "returning_customer" | "other"
+  
+  // Follow-up tracking
+  needsFollowUp   Boolean   @default(false)
+  followUpAt      DateTime? // when to resurface this
+  followUpNote    String?   // what the follow-up is about
+
+  // Timing
+  lastMessageAt   DateTime?
+  firstReplyAt    DateTime? // tracks response time
+  resolvedAt      DateTime?
+
+  // AI-generated summary (updated after each message, used in context panel)
+  summary      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact  Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([businessId, status])
+  @@index([businessId, lastMessageAt])
+  @@index([businessId, needsFollowUp])
+}
+
+// ─────────────────────────────────────────────
+// MESSAGE
+// Individual messages inside a conversation.
+// ─────────────────────────────────────────────
+
+model Message {
+  id             String          @id @default(cuid())
+  businessId     String
+  conversationId String
+  
+  direction  Direction     // INBOUND | OUTBOUND
+  senderType SenderType    // CUSTOMER | AGENT (no BOT anymore)
+  content    String
+  
+  // Media
+  mediaUrl   String?
+  mediaType  String?       // "image" | "audio" | "video" | "document"
+
+  // WhatsApp delivery tracking
+  waMessageId String?      @unique
+  status      MessageStatus @default(SENT)
+
+  // AI quick reply suggestions (stored as JSON array of strings)
+  replySuggestions Json?
+
+  createdAt DateTime @default(now())
+
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([businessId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATION
+// In-app notifications for the business owner.
+// Powers the daily summary + follow-up alerts.
+// ─────────────────────────────────────────────
+
+model Notification {
+  id         String           @id @default(cuid())
+  businessId String
+  type       NotificationType
+  title      String
+  body       String
+  data       Json?
+  isRead     Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, isRead])
+  @@index([businessId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// WEBHOOK EVENT
+// Raw inbound webhook payloads from WhatsApp.
+// Stored before processing so nothing is lost.
+// ─────────────────────────────────────────────
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  source      String   @default("WHATSAPP")
+  payload     Json
+  processed   Boolean  @default(false)
+  error       String?
+  createdAt   DateTime @default(now())
+
+  @@index([processed, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Plan {
+  TRIAL
+  STARTER
+  PRO
+  AGENCY
+}
+
+enum PlanStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum Language {
+  FRENCH
+  ARABIC
+  DARIJA
+}
+
+enum ConversationStatus {
+  NEW           // just came in, not yet looked at
+  IN_PROGRESS   // owner is handling it
+  CONFIRMED     // appointment/order confirmed
+  RESOLVED      // done, closed
+  FOLLOW_UP     // needs action later
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+enum SenderType {
+  CUSTOMER
+  AGENT
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum NotificationType {
+  NEW_MESSAGE
+  FOLLOW_UP_DUE
+  DAILY_SUMMARY
+  SYSTEM
+}
