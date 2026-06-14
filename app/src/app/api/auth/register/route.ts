@@ -80,7 +80,11 @@ export async function POST(request: Request) {
 
   if (signUpError || !signUpData.user?.id) {
     return NextResponse.json(
-      { success: false, error: mapSupabaseAuthErrorMessage(signUpError?.message, 'Impossible de créer le compte.') },
+      {
+        success: false,
+        error: mapSupabaseAuthErrorMessage(signUpError?.message, 'Impossible de créer le compte.'),
+        debug: signUpError?.message ?? 'No user returned from Supabase signup.',
+      },
       { status: 400 },
     )
   }
@@ -117,14 +121,30 @@ export async function POST(request: Request) {
 
     return response
   } catch (error) {
-    const adminClient = createAdminSupabaseClient()
-    const { error: rollbackError } = await adminClient.auth.admin.deleteUser(authUserId)
+    let rollbackErrorMessage: string | undefined
 
-    if (rollbackError) {
+    try {
+      const adminClient = createAdminSupabaseClient()
+      const { error: rollbackError } = await adminClient.auth.admin.deleteUser(authUserId)
+      rollbackErrorMessage = rollbackError?.message
+
+      if (rollbackError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Le compte d'authentification a été créé mais le profil entreprise n'a pas pu être finalisé. Supprimez l'utilisateur Supabase orphelin avant de réessayer.",
+            debug: rollbackError.message,
+          },
+          { status: 500 },
+        )
+      }
+    } catch (rollbackError) {
+      const message = rollbackError instanceof Error ? rollbackError.message : 'Rollback failed without an Error message.'
       return NextResponse.json(
         {
           success: false,
-          error: "Le compte d'authentification a été créé mais le profil entreprise n'a pas pu être finalisé. Supprimez l'utilisateur Supabase orphelin avant de réessayer.",
+          error: 'Impossible de créer le compte.',
+          debug: `Rollback error: ${message}`,
         },
         { status: 500 },
       )
@@ -132,11 +152,15 @@ export async function POST(request: Request) {
 
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return NextResponse.json(
-        { success: false, error: 'Impossible de créer le compte avec ces informations.' },
+        { success: false, error: 'Impossible de créer le compte avec ces informations.', debug: error.message },
         { status: 409 },
       )
     }
 
-    return NextResponse.json({ success: false, error: 'Impossible de créer le compte.' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Unknown create account error.'
+    return NextResponse.json(
+      { success: false, error: 'Impossible de créer le compte.', debug: rollbackErrorMessage ? `${message} | rollback: ${rollbackErrorMessage}` : message },
+      { status: 500 },
+    )
   }
 }
