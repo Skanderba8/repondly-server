@@ -15,26 +15,11 @@ type DashboardShellProps = {
 }
 
 function getTitle(pathname: string) {
-  if (pathname.startsWith('/contacts/')) {
-    return 'Contact'
-  }
-
-  if (pathname.startsWith('/contacts')) {
-    return 'Contacts'
-  }
-
-  if (pathname.startsWith('/followups')) {
-    return 'Relances'
-  }
-
-  if (pathname.startsWith('/settings')) {
-    return 'Paramètres'
-  }
-
-  if (pathname.startsWith('/dashboard')) {
-    return 'Accueil'
-  }
-
+  if (pathname.startsWith('/contacts/')) return 'Contact'
+  if (pathname.startsWith('/contacts')) return 'Contacts'
+  if (pathname.startsWith('/followups')) return 'Relances'
+  if (pathname.startsWith('/settings')) return 'Paramètres'
+  if (pathname.startsWith('/dashboard')) return 'Tableau de bord'
   return 'Inbox'
 }
 
@@ -46,7 +31,7 @@ export function DashboardShell({ children, business }: DashboardShellProps) {
     <div className="rp-dashboard-shell">
       <Sidebar business={business} />
       <div className="rp-dashboard-stage">
-        <TopBar title={getTitle(pathname)} />
+        <TopBar title={getTitle(pathname)} businessName={business.name} />
         <main className={inboxRoute ? 'rp-dashboard-main rp-dashboard-main-inbox' : 'rp-dashboard-main'}>
           <div className="rp-dashboard-content">{children}</div>
         </main>

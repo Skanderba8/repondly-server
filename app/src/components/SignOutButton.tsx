@@ -25,7 +25,7 @@ export function SignOutButton({ className }: SignOutButtonProps) {
         void handleSignOut()
       }}
     >
-      Se déconnecter
+      Déconnexion
     </button>
   )
 }

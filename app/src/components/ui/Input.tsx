@@ -6,5 +6,11 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'classN
 }
 
 export function Input({ className, type = 'text', ...props }: InputProps) {
-  return <input type={type} className={cn('rp-field-control h-11 w-full px-3.5 text-[14px]', className)} {...props} />
+  return (
+    <input
+      type={type}
+      className={cn('rp-field-control h-9 w-full px-3 text-[13.5px]', className)}
+      {...props}
+    />
+  )
 }

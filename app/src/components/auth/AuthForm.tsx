@@ -28,13 +28,7 @@ const INITIAL_STATE: FormState = {
   password: '',
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string
-  children: ReactNode
-}) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="rp-auth-field">
       <span>{label}</span>
@@ -44,12 +38,7 @@ function Field({
 }
 
 function AuthInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={["rp-auth-input", props.className].filter(Boolean).join(' ')}
-    />
-  )
+  return <input {...props} className={["rp-auth-input", props.className].filter(Boolean).join(' ')} />
 }
 
 export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
@@ -58,7 +47,6 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
   const [form, setForm] = useState<FormState>(INITIAL_STATE)
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
-
   const isSignup = mode === 'signup'
 
   function updateField(field: keyof FormState, value: string) {
@@ -122,54 +110,26 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="rp-auth-form">
-      {isSignup && (
+      {isSignup ? (
         <>
           <Field label="Nom de l'entreprise">
-            <AuthInput
-              value={form.businessName}
-              onChange={(event) => updateField('businessName', event.target.value)}
-              placeholder="Clinique Atlas"
-              autoComplete="organization"
-              required
-            />
+            <AuthInput value={form.businessName} onChange={(event) => updateField('businessName', event.target.value)} placeholder="Clinique Atlas" autoComplete="organization" required />
           </Field>
           <Field label="Téléphone">
-            <AuthInput
-              type="tel"
-              value={form.phone}
-              onChange={(event) => updateField('phone', event.target.value)}
-              placeholder="+216 20 000 000"
-              autoComplete="tel"
-              required
-            />
+            <AuthInput type="tel" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="+216 20 000 000" autoComplete="tel" required />
           </Field>
         </>
-      )}
+      ) : null}
 
       <Field label="Email professionnel">
-        <AuthInput
-          type="email"
-          value={form.email}
-          onChange={(event) => updateField('email', event.target.value)}
-          placeholder="vous@entreprise.com"
-          autoComplete="email"
-          required
-        />
+        <AuthInput type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} placeholder="vous@entreprise.com" autoComplete="email" required />
       </Field>
 
       <Field label="Mot de passe">
-        <AuthInput
-          type="password"
-          value={form.password}
-          onChange={(event) => updateField('password', event.target.value)}
-          placeholder={isSignup ? '8 caractères minimum' : 'Votre mot de passe'}
-          autoComplete={isSignup ? 'new-password' : 'current-password'}
-          required
-          minLength={8}
-        />
+        <AuthInput type="password" value={form.password} onChange={(event) => updateField('password', event.target.value)} placeholder={isSignup ? '8 caractères minimum' : 'Votre mot de passe'} autoComplete={isSignup ? 'new-password' : 'current-password'} required minLength={8} />
       </Field>
 
-      {error && <p className="rp-auth-error">{error}</p>}
+      {error ? <p className="rp-auth-error">{error}</p> : null}
 
       <button type="submit" disabled={pending} className="rp-auth-submit">
         {pending ? 'Chargement...' : isSignup ? 'Créer mon compte' : 'Se connecter'}
@@ -177,13 +137,7 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
 
       <p className="rp-auth-switch">
         {isSignup ? 'Déjà un compte ? ' : 'Pas encore de compte ? '}
-        <Link
-          href={
-            isSignup
-              ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`
-              : `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`
-          }
-        >
+        <Link href={isSignup ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
           {isSignup ? 'Se connecter' : 'Créer un compte'}
         </Link>
       </p>
