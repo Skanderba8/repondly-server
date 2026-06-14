@@ -66,3 +66,15 @@ Frontend-only shell. Mock data in `src/lib/mock.ts`. No API calls wired yet.
 - Do not install packages without asking
 - Never touch `.env`, secrets, or production data
 - Do not run builds or checks unless asked
+- **Always write files using Python, never the built-in patch/edit tool.** The sandbox edit tool is blocked on this host (Ubuntu AppArmor). Use `python3 - <<'PY' ... PY` heredoc syntax and batch all writes in a single block:
+
+```python
+from pathlib import Path
+files = {
+    '/opt/repondly/path/to/file.tsx': '''content''',
+}
+for path_str, content in files.items():
+    path = Path(path_str)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
+```

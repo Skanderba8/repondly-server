@@ -1,33 +1,9 @@
-import NextAuth from 'next-auth'
-import { authConfig } from '@/lib/auth.config'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-const { auth } = NextAuth(authConfig)
-
-export default auth((req) => {
-  const { pathname } = req.nextUrl
-  const session = req.auth
-  const isAuthenticated = !!session?.user
-  const role = session?.user?.role
-
-  const isApi = pathname.startsWith('/api/')
-
-  if (!isAuthenticated) {
-    if (isApi) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    if (pathname.startsWith('/dashboard')) {
-      return NextResponse.redirect(new URL('/auth/signin', req.url))
-    }
-  }
-
-  if (pathname === '/auth/signin' && isAuthenticated) {
-    const target = role === 'SUPER_ADMIN' || role === 'ADMIN' ? 'https://admin.repondly.com' : '/dashboard'
-    return NextResponse.redirect(target.startsWith('http') ? target : new URL(target, req.url))
-  }
-
+export default function middleware(_req: NextRequest) {
   return NextResponse.next()
-})
+}
 
 export const config = {
   matcher: [

@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import Providers from '@/components/Providers'
-import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils'
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
   title: 'Répondly',
@@ -35,7 +35,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={cn("font-sans", geist.variable)}>
+    <html lang="fr" className={cn('font-sans', inter.variable)}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -43,12 +43,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Syne:wght@200;400;600;800&family=DM+Sans:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('rp_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.classList.toggle('dark', t === 'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();` }} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('rp_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.classList.toggle('dark', t === 'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
+          }}
+        />
       </head>
       <body>
         <Providers>{children}</Providers>
-        <script dangerouslySetInnerHTML={{
-          __html: `
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
@@ -57,17 +62,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       const newSW = reg.installing;
                       newSW.addEventListener('statechange', function() {
                         if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-                          // New version available — could show update banner
+                          // New version available, could show update banner
                           window.dispatchEvent(new CustomEvent('sw-update-available'));
                         }
                       });
                     });
                   })
-                  .catch(function(err) { console.warn('SW registration failed:', err); });
+                  .catch(function() {});
               });
             }
-          `
-        }} />
+          `,
+          }}
+        />
       </body>
     </html>
   )
