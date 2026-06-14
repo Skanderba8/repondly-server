@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -27,49 +28,6 @@ const INITIAL_STATE: FormState = {
   password: '',
 }
 
-async function getCsrfToken() {
-  const response = await fetch('/api/auth/csrf', { cache: 'no-store' })
-
-  if (!response.ok) {
-    throw new Error('CSRF token unavailable')
-  }
-
-  const payload = (await response.json()) as { csrfToken?: string }
-
-  if (!payload.csrfToken) {
-    throw new Error('CSRF token unavailable')
-  }
-
-  return payload.csrfToken
-}
-
-async function submitCredentials(email: string, password: string, callbackUrl: string) {
-  const csrfToken = await getCsrfToken()
-  const body = new URLSearchParams({
-    csrfToken,
-    email,
-    password,
-    callbackUrl,
-  })
-
-  const response = await fetch('/api/auth/callback/credentials', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-    redirect: 'follow',
-  })
-
-  const responseUrl = new URL(response.url)
-
-  if (responseUrl.pathname === '/auth/signin' && responseUrl.searchParams.has('error')) {
-    return { ok: false as const, error: responseUrl.searchParams.get('error') ?? undefined }
-  }
-
-  return { ok: true as const, url: responseUrl.toString() }
-}
-
 export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
   const router = useRouter()
   const [form, setForm] = useState<FormState>(INITIAL_STATE)
@@ -83,14 +41,19 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
   }
 
   async function handleSignIn(email: string, password: string) {
-    const result = await submitCredentials(email, password, callbackUrl)
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+      redirectTo: callbackUrl,
+    })
 
-    if (!result.ok) {
+    if (!result?.ok || result.error) {
       setError('Email ou mot de passe invalide.')
       return
     }
 
-    router.replace(result.url)
+    router.replace(result.url ?? callbackUrl)
     router.refresh()
   }
 
