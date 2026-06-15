@@ -15,6 +15,7 @@ export default async function DashboardHomePage() {
       stats={stats}
       recentConversations={recentConversations}
       followUpConversations={followUpConversations}
+      userName={session.user.name}
     />
   )
 }

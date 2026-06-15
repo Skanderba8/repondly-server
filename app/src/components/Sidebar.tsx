@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Bell, Bot, ChevronUp, Inbox, LayoutDashboard, Package, Settings, ShoppingBag, Users } from 'lucide-react'
+import { BarChart3, Bell, Bot, ChevronDown, Inbox, LayoutDashboard, Package, Settings, ShoppingBag, UserPlus, Users } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
 
@@ -11,7 +11,7 @@ const sections = [
     label: 'GÉNÉRAL',
     items: [
       { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-      { href: '/inbox', label: 'Boîte de réception', icon: Inbox, badge: 3 },
+      { href: '/inbox', label: 'Boîte de réception', icon: Inbox },
       { href: '/contacts', label: 'Contacts', icon: Users },
       { href: '/orders', label: 'Commandes', icon: ShoppingBag },
     ],
@@ -56,11 +56,13 @@ export function Sidebar({ business }: SidebarProps) {
   return (
     <aside className="nx-sidebar">
       <div className="nx-sidebar-logo">
-        <div className="nx-sidebar-mark">R</div>
-        <span className="text-[13px] font-bold text-[color:var(--text-primary)]">Répondly</span>
+        <div className="nx-sidebar-mark">
+          <img src="/logo.png" alt="" />
+        </div>
+        <span>Répondly</span>
       </div>
 
-      <nav className="flex flex-1 flex-col overflow-y-auto py-1" aria-label="Navigation principale">
+      <nav className="flex flex-1 flex-col overflow-y-auto py-3" aria-label="Navigation principale">
         {sections.map((section) => (
           <div key={section.label} className="nx-nav-section">
             <span className="nx-nav-label">{section.label}</span>
@@ -77,7 +79,6 @@ export function Sidebar({ business }: SidebarProps) {
                   >
                     <Icon aria-hidden="true" />
                     <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                    {item.badge ? <span className="nx-nav-badge">{item.badge}</span> : null}
                   </Link>
                 )
               })}
@@ -87,16 +88,29 @@ export function Sidebar({ business }: SidebarProps) {
       </nav>
 
       <div className="nx-sidebar-bottom">
-        <div className="nx-team-block">
-          <Avatar initials={initials} size="sm" />
+        <div className="nx-workspace-card">
+          <div className="nx-sidebar-mark">
+            <img src="/logo.png" alt="" />
+          </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[12px] font-semibold leading-tight text-[color:var(--text-primary)]">{displayName}</p>
+            <p className="truncate text-[12px] font-semibold leading-tight text-[color:var(--text-primary)]">Répondly</p>
             <p className="truncate text-[11px] leading-tight text-[color:var(--text-muted)]">Plan {business.plan}</p>
           </div>
-          <ChevronUp className="h-3.5 w-3.5 text-[color:var(--text-muted)]" aria-hidden="true" />
+          <ChevronDown className="h-3.5 w-3.5 text-[color:var(--text-muted)]" aria-hidden="true" />
+        </div>
+        <button type="button" className="nx-invite-btn">
+          <UserPlus size={15} aria-hidden="true" />
+          Inviter un membre
+        </button>
+        <div className="nx-team-block">
+          <Avatar initials={initials} size="lg" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[12px] font-semibold leading-tight text-[color:var(--text-primary)]">{displayName}</p>
+            <p className="truncate text-[11px] leading-tight text-[color:var(--text-muted)]">Administrateur</p>
+          </div>
+          <span className="nx-kebab" aria-hidden="true">•••</span>
         </div>
         {business.plan === 'TRIAL' ? <button type="button" className="nx-upgrade-btn">Mettre à niveau</button> : null}
-        <p className="py-2 text-center text-[10px] text-[color:var(--text-muted)]">© 2024 Répondly Inc.</p>
       </div>
     </aside>
   )

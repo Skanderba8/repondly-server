@@ -31,7 +31,7 @@ export function DashboardShell({ children, business }: DashboardShellProps) {
     <div className="nx-shell">
       <Sidebar business={business} />
       <div className="nx-stage">
-        <TopBar title={getTitle(pathname)} businessName={business.name} />
+        <TopBar title={getTitle(pathname)} businessName={business.name} plan={business.plan} />
         <main className="nx-main">
           <div className={inboxRoute ? 'nx-content-inbox' : 'nx-content'}>{children}</div>
         </main>
