@@ -34,7 +34,7 @@ function formatPlannedLabel(dateValue: string, now: Date) {
 }
 function getStatusBadge(status: FollowUpStatus) {
   if (status === 'OVERDUE') return <Badge variant="En retard" tone="danger" />
-  if (status === 'TODAY') return <Badge variant="Aujourdhui" tone="warning" />
+  if (status === 'TODAY') return <Badge variant="Aujourdhuii" tone="warning" />
   return <Badge variant="Planifiée" tone="success" />
 }
 
