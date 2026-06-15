@@ -29,7 +29,7 @@ export function BottomNav() {
               className={cn('rp-bottom-nav-link', active && 'is-active')}
               aria-current={active ? 'page' : undefined}
             >
-              <Icon className="h-4 w-4" aria-hidden="true" />
+              <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
               <span className="truncate">{item.label}</span>
             </Link>
           )

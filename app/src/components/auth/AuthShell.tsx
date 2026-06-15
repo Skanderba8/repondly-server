@@ -17,30 +17,9 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
             <span>Répondly<em>.</em></span>
           </div>
 
-          <div className="mt-16 max-w-[420px] rounded-[var(--radius-sm)] border border-[color:var(--surface-border)] bg-[color:var(--surface-0)] p-4 shadow-[var(--shadow-card)]">
-            <div className="flex items-center justify-between border-b border-[color:var(--surface-border)] pb-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[color:var(--text-muted)]">Inbox</p>
-                <p className="mt-1 text-[13px] font-semibold text-[color:var(--text-primary)]">3 messages à prioriser</p>
-              </div>
-              <span className="h-2 w-2 rounded-full bg-[color:var(--brand-primary)]" />
-            </div>
-            <div className="space-y-3 pt-3">
-              {['Rendez-vous à confirmer', 'Devis en attente', 'Relance urgente'].map((item) => (
-                <div key={item} className="flex items-center gap-3">
-                  <span className="h-7 w-7 rounded-[var(--radius-sm)] bg-[color:var(--brand-primary-soft)]" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium text-[color:var(--text-primary)]">{item}</p>
-                    <p className="mt-0.5 text-[12px] text-[color:var(--text-muted)]">Réponse client prête à reprendre</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="rp-auth-panel-copy">
-            <p>Un espace calme pour répondre vite et suivre chaque client.</p>
-            <p>Répondly centralise les conversations et donne à votre équipe une file de travail claire, fiable et quotidienne.</p>
+            <p>Chaque client mérite une réponse rapide.</p>
+            <p>Répondly centralise vos conversations et donne à votre équipe une file de travail claire, fiable et quotidienne.</p>
           </div>
         </div>
       </section>

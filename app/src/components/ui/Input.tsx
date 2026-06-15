@@ -9,7 +9,7 @@ export function Input({ className, type = 'text', ...props }: InputProps) {
   return (
     <input
       type={type}
-      className={cn('rp-field-control h-9 w-full px-3 text-[13.5px]', className)}
+      className={cn('rp-field-control h-9 w-full px-3 text-[13px]', className)}
       {...props}
     />
   )

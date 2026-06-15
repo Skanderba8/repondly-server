@@ -39,41 +39,33 @@ export function Sidebar({ business }: SidebarProps) {
     <aside className="rp-sidebar">
       <div className="rp-sidebar-brand">
         <div className="rp-sidebar-logo">R</div>
-        <div className="min-w-0">
-          <p className="truncate text-[13.5px] font-semibold leading-tight text-[color:var(--text-primary)]">Répondly</p>
-          <p className="truncate text-[11.5px] leading-tight text-[color:var(--text-muted)]">Messagerie client</p>
-        </div>
+        <span className="text-[13.5px] font-bold text-[color:var(--color-text-primary)]">Répondly</span>
       </div>
 
       <nav className="rp-sidebar-nav" aria-label="Navigation principale">
-        <div className="rp-sidebar-section">
-          <p className="rp-sidebar-label">Espace</p>
-          <div className="grid gap-1">
-            {navItems.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn('rp-sidebar-link', active && 'is-active')}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                  {item.badge ? <span className="rp-sidebar-count">{item.badge}</span> : null}
-                </Link>
-              )
-            })}
-          </div>
-        </div>
+        {navItems.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+          const Icon = item.icon
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn('rp-sidebar-link', active && 'is-active')}
+              aria-current={active ? 'page' : undefined}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              {item.badge ? <span className="rp-sidebar-count">{item.badge}</span> : null}
+            </Link>
+          )
+        })}
       </nav>
 
       <div className="rp-sidebar-user">
         <Avatar initials={initials} size="sm" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[12.5px] font-semibold leading-tight text-[color:var(--text-primary)]">{displayName}</p>
-          <p className="truncate text-[11.5px] leading-tight text-[color:var(--text-muted)]">Plan {business.plan}</p>
+          <p className="truncate text-[12.5px] font-semibold leading-tight text-[color:var(--color-text-primary)]">{displayName}</p>
+          <p className="truncate text-[11.5px] leading-tight text-[color:var(--color-text-muted)]">Plan {business.plan}</p>
         </div>
         <SignOutButton className="rp-sidebar-signout" />
       </div>

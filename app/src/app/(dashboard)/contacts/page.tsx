@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowUpDown, Plus, Search, Users } from 'lucide-react'
+import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -18,6 +19,8 @@ const filters: Array<{ id: ContactFilter; label: string }> = [
   { id: 'VIP', label: 'VIP' },
   { id: 'ACTIVE', label: 'Actifs' },
 ]
+
+const COLUMNS = 'grid-cols-[2fr_1.35fr_1.5fr_0.7fr_1.1fr]'
 
 export default function ContactsPage() {
   const router = useRouter()
@@ -48,14 +51,14 @@ export default function ContactsPage() {
       <PageHeader
         eyebrow="Base client"
         title="Contacts"
-        description="Tous vos contacts WhatsApp avec un historique lisible, des tags et des signaux utiles pour l'équipe."
-        actions={<Button className="w-full sm:w-auto"><Plus className="h-4 w-4" aria-hidden="true" />Nouveau contact</Button>}
+        description="Tous vos contacts avec un historique lisible, des tags et des signaux utiles pour l'équipe."
+        actions={<Button variant="secondary" className="w-full sm:w-auto"><Plus className="h-4 w-4" aria-hidden="true" />Nouveau contact</Button>}
       />
 
-      <section className="rp-panel overflow-hidden p-0">
-        <div className="border-b border-[color:var(--surface-border)] px-4 py-3 md:px-5 md:py-4">
+      <section className="rp-table-shell overflow-hidden">
+        <div className="border-b border-[color:var(--color-border)] px-4 py-3 md:px-5 md:py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="rp-no-scrollbar flex gap-2 overflow-x-auto">
               {filters.map((filter) => (
                 <button key={filter.id} type="button" onClick={() => setActiveFilter(filter.id)} className={activeFilter === filter.id ? 'rp-filter-chip is-active shrink-0' : 'rp-filter-chip shrink-0'}>
                   <span>{filter.label}</span>
@@ -66,12 +69,12 @@ export default function ContactsPage() {
 
             <div className="flex flex-col gap-2 lg:w-[430px] lg:flex-row">
               <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--text-muted)]" aria-hidden="true" />
-                <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un contact" className="pl-9" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-muted)]" aria-hidden="true" />
+                <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un contact" className="pl-9" aria-label="Rechercher un contact" />
               </div>
-              <label className="rp-field-control flex h-9 items-center gap-2 px-3 text-[13px] text-[color:var(--text-secondary)]">
+              <label className="rp-field-control flex h-9 items-center gap-2 px-3 text-[13px] text-[color:var(--color-text-secondary)]">
                 <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
-                <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} className="h-full border-none bg-transparent outline-none">
+                <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} className="h-full border-none bg-transparent outline-none" aria-label="Trier les contacts">
                   <option value="recent">Activité</option>
                   <option value="name">Nom</option>
                 </select>
@@ -80,26 +83,31 @@ export default function ContactsPage() {
           </div>
         </div>
 
+        {/* Desktop table */}
         <div className="hidden md:block">
-          <div className="rp-table-head grid-cols-[2fr_1.35fr_1.5fr_0.8fr_1.1fr]"><span>Nom</span><span>Téléphone</span><span>Tags</span><span>Messages</span><span>Dernière act.</span></div>
+          <div className={`rp-table-head ${COLUMNS}`}><span>Nom</span><span>Téléphone</span><span>Tags</span><span>Messages</span><span>Dernière act.</span></div>
           <div>
             {contacts.map((contact) => (
-              <button key={contact.id} type="button" onClick={() => router.push(`/contacts/${contact.id}`)} className="rp-table-row grid-cols-[2fr_1.35fr_1.5fr_0.8fr_1.1fr] w-full text-left">
-                <div className="flex min-w-0 items-center gap-3"><div className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[color:var(--brand-primary-border)] bg-[color:var(--brand-primary-soft)] text-[11px] font-semibold text-[color:var(--brand-primary)]">{contact.initials}</div><span className="truncate text-[13px] font-semibold text-[color:var(--text-primary)]">{contact.name}</span></div>
-                <span className="truncate text-[13px] text-[color:var(--text-secondary)]">{contact.phone}</span>
+              <button key={contact.id} type="button" onClick={() => router.push(`/contacts/${contact.id}`)} className={`rp-table-row ${COLUMNS} w-full text-left`}>
+                <div className="flex min-w-0 items-center gap-3"><Avatar initials={contact.initials} size="sm" /><span className="truncate text-[13px] font-semibold text-[color:var(--color-text-primary)]">{contact.name}</span></div>
+                <span className="truncate text-[13px] text-[color:var(--color-text-secondary)]">{contact.phone}</span>
                 <div className="flex min-w-0 flex-wrap gap-1.5">{contact.tags.slice(0, 2).map((tag) => <Badge key={tag} variant={tag} />)}</div>
-                <span className="text-[13px] text-[color:var(--text-secondary)]">{contact.totalConversations}</span>
-                <span className="truncate text-[13px] text-[color:var(--text-secondary)]">{contact.lastSeen}</span>
+                <span className="text-[13px] text-[color:var(--color-text-secondary)]">{contact.totalConversations}</span>
+                <span className="truncate text-[13px] text-[color:var(--color-text-secondary)]">{contact.lastSeen}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="divide-y divide-[color:var(--surface-border)] md:hidden">
+        {/* Mobile rows */}
+        <div className="divide-y divide-[color:var(--color-border-subtle)] md:hidden">
           {contacts.map((contact) => (
-            <button key={contact.id} type="button" onClick={() => router.push(`/contacts/${contact.id}`)} className="w-full px-4 py-4 text-left transition-colors duration-[var(--transition-fast)] hover:bg-[color:var(--surface-1)]">
-              <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-[13px] font-semibold text-[color:var(--text-primary)]">{contact.name}</p><p className="mt-1 truncate text-[12.5px] text-[color:var(--text-muted)]">{contact.phone}</p></div><span className="text-[12px] text-[color:var(--text-secondary)]">{contact.totalConversations}</span></div>
-              <div className="mt-3 flex flex-wrap gap-1.5">{contact.tags.map((tag) => <Badge key={tag} variant={tag} />)}</div>
+            <button key={contact.id} type="button" onClick={() => router.push(`/contacts/${contact.id}`)} className="w-full px-4 py-3.5 text-left transition-colors duration-[var(--ease-fast)] hover:bg-[color:var(--color-surface-hover)]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0"><p className="truncate text-[13px] font-semibold text-[color:var(--color-text-primary)]">{contact.name}</p><p className="mt-0.5 truncate text-[12.5px] text-[color:var(--color-text-muted)]">{contact.phone}</p></div>
+                <span className="text-[12px] text-[color:var(--color-text-secondary)]">{contact.totalConversations}</span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">{contact.tags.map((tag) => <Badge key={tag} variant={tag} />)}</div>
             </button>
           ))}
         </div>

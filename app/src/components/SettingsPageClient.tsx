@@ -5,6 +5,7 @@ import type { MetaAssetOption } from '@/lib/meta/oauth'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { cn } from '@/lib/utils'
 
 type ConnectionStatus = 'PENDING' | 'ACTIVE' | 'DISCONNECTED' | 'ERROR'
 
@@ -50,7 +51,7 @@ type SaveState = {
 
 const channelTitles: Record<ChannelKey, string> = {
   WHATSAPP: 'WhatsApp',
-  MESSENGER: 'Facebook Messenger',
+  MESSENGER: 'Messenger',
   INSTAGRAM: 'Instagram',
 }
 
@@ -59,6 +60,8 @@ const channelDescriptions: Record<ChannelKey, string> = {
   MESSENGER: 'Connectez la page Facebook qui reçoit les messages clients. Cette page sera utilisée comme inbox Messenger.',
   INSTAGRAM: 'Connectez le compte Instagram professionnel lié à votre page Facebook pour recevoir les DM.',
 }
+
+const CHANNEL_ORDER: ChannelKey[] = ['WHATSAPP', 'MESSENGER', 'INSTAGRAM']
 
 function getStatusTone(status: ChannelSettings['status']) {
   if (status === 'ACTIVE') return 'success'
@@ -83,6 +86,7 @@ function buildDefaultState() {
 export function SettingsPageClient({ initialBusiness, initialChannels }: SettingsPageClientProps) {
   const [business, setBusiness] = useState(initialBusiness)
   const [channels, setChannels] = useState(initialChannels)
+  const [activeChannel, setActiveChannel] = useState<ChannelKey>('WHATSAPP')
   const [businessState, setBusinessState] = useState<SaveState>(buildDefaultState())
   const [channelStates, setChannelStates] = useState<Record<ChannelKey, SaveState>>({
     WHATSAPP: buildDefaultState(),
@@ -258,21 +262,23 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
       return
     }
 
+    const data = result.data
+
     setChannels((current) => ({
       ...current,
       [channel]: {
         ...current[channel],
-        status: result.data.status,
-        metaBusinessAccountId: result.data.metaBusinessAccountId ?? '',
-        metaBusinessName: result.data.metaBusinessName ?? '',
-        metaPhoneNumberId: result.data.metaPhoneNumberId ?? '',
-        metaPhoneNumber: result.data.metaPhoneNumber ?? '',
-        metaPageId: result.data.metaPageId ?? '',
-        metaPageName: result.data.metaPageName ?? '',
-        metaInstagramAccountId: result.data.metaInstagramAccountId ?? '',
-        metaInstagramUsername: result.data.metaInstagramUsername ?? '',
-        accessToken: result.data.accessToken ?? '',
-        webhookVerifyToken: result.data.webhookVerifyToken ?? '',
+        status: data.status,
+        metaBusinessAccountId: data.metaBusinessAccountId ?? '',
+        metaBusinessName: data.metaBusinessName ?? '',
+        metaPhoneNumberId: data.metaPhoneNumberId ?? '',
+        metaPhoneNumber: data.metaPhoneNumber ?? '',
+        metaPageId: data.metaPageId ?? '',
+        metaPageName: data.metaPageName ?? '',
+        metaInstagramAccountId: data.metaInstagramAccountId ?? '',
+        metaInstagramUsername: data.metaInstagramUsername ?? '',
+        accessToken: data.accessToken ?? '',
+        webhookVerifyToken: data.webhookVerifyToken ?? '',
       },
     }))
 
@@ -285,7 +291,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
   function renderConnectionSummary(item: ChannelSettings) {
     if (item.channel === 'WHATSAPP' && item.metaPhoneNumberId) {
       return (
-        <div className="space-y-1 text-sm text-[color:var(--text-secondary)]">
+        <div className="space-y-1 text-[12.5px] text-[color:var(--color-text-secondary)]">
           <p>Numéro connecté: {item.metaPhoneNumber || item.metaPhoneNumberId}</p>
           <p>WABA: {item.metaBusinessName || item.metaBusinessAccountId || 'Non remonté par Meta'}</p>
           <p>Verify token webhook: généré automatiquement</p>
@@ -295,7 +301,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
 
     if (item.channel === 'MESSENGER' && item.metaPageId) {
       return (
-        <div className="space-y-1 text-sm text-[color:var(--text-secondary)]">
+        <div className="space-y-1 text-[12.5px] text-[color:var(--color-text-secondary)]">
           <p>Page connectée: {item.metaPageName || item.metaPageId}</p>
           <p>Page ID: {item.metaPageId}</p>
         </div>
@@ -304,7 +310,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
 
     if (item.channel === 'INSTAGRAM' && item.metaInstagramAccountId) {
       return (
-        <div className="space-y-1 text-sm text-[color:var(--text-secondary)]">
+        <div className="space-y-1 text-[12.5px] text-[color:var(--color-text-secondary)]">
           <p>Compte connecté: {item.metaInstagramUsername ? `@${item.metaInstagramUsername.replace(/^@/, '')}` : item.metaInstagramAccountId}</p>
           <p>Page liée: {item.metaPageName || item.metaPageId || 'Non remontée'}</p>
         </div>
@@ -312,98 +318,109 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
     }
 
     return (
-      <p className="text-sm text-[color:var(--text-secondary)]">
-        La connexion OAuth Meta va remplir automatiquement les identifiants et tokens nécessaires.
+      <p className="text-[12.5px] leading-[1.6] text-[color:var(--color-text-muted)]">
+        La connexion OAuth Meta remplit automatiquement les identifiants et tokens nécessaires. Cliquez sur « Connecter avec Meta », autorisez les permissions, puis choisissez l’actif à activer si plusieurs sont trouvés.
       </p>
     )
   }
 
+  const item = channels[activeChannel]
+  const state = channelStates[activeChannel]
+  const saving = savingChannels[activeChannel]
+  const connecting = connectingChannels[activeChannel]
+
   return (
-    <div className="rp-page max-w-5xl">
+    <div className="rp-page max-w-4xl">
+      {/* Business info */}
       <section className="rp-panel p-4 md:p-5">
         <div className="mb-4">
-          <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Mon entreprise</h2>
-          <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Informations visibles dans votre espace Répondly.</p>
+          <h2 className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Mon entreprise</h2>
+          <p className="mt-1 text-[12.5px] text-[color:var(--color-text-secondary)]">Informations visibles dans votre espace Répondly.</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="rp-field-label">Nom de l'entreprise<Input value={business.name} onChange={(event) => updateBusinessField('name', event.target.value)} placeholder="Nom de l'entreprise" /></label>
           <label className="rp-field-label">Téléphone<Input value={business.phone} onChange={(event) => updateBusinessField('phone', event.target.value)} placeholder="Téléphone" /></label>
           <label className="rp-field-label md:col-span-2">Email<Input value={business.email} onChange={(event) => updateBusinessField('email', event.target.value)} placeholder="Email" type="email" /></label>
-          <label className="rp-field-label">Type d'activité<select value={business.businessType} onChange={(event) => updateBusinessField('businessType', event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13.5px]"><option value="other">Autre</option><option value="clinic">Clinique</option><option value="salon">Salon</option><option value="ecom">E-commerce</option><option value="garage">Garage</option></select></label>
-          <label className="rp-field-label">Ton<select value={business.tone} onChange={(event) => updateBusinessField('tone', event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13.5px]"><option value="friendly">Amical</option><option value="formal">Formel</option></select></label>
+          <label className="rp-field-label">Type d'activité<select value={business.businessType} onChange={(event) => updateBusinessField('businessType', event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13px]"><option value="other">Autre</option><option value="clinic">Clinique</option><option value="salon">Salon</option><option value="ecom">E-commerce</option><option value="garage">Garage</option></select></label>
+          <label className="rp-field-label">Ton<select value={business.tone} onChange={(event) => updateBusinessField('tone', event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13px]"><option value="friendly">Amical</option><option value="formal">Formel</option></select></label>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Button onClick={() => startTransition(saveBusiness)} disabled={savingBusiness}>{savingBusiness ? 'Sauvegarde...' : 'Sauvegarder'}</Button>
-          {businessState.type !== 'idle' ? <p className={businessState.type === 'success' ? 'text-sm text-[color:var(--tone-success)]' : 'text-sm text-[color:var(--tone-danger)]'}>{businessState.message}</p> : null}
+          {businessState.type !== 'idle' ? <p className={businessState.type === 'success' ? 'text-[12.5px] text-[color:var(--color-success)]' : 'text-[12.5px] text-[color:var(--color-danger)]'}>{businessState.message}</p> : null}
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-3">
-        {(['WHATSAPP', 'MESSENGER', 'INSTAGRAM'] as ChannelKey[]).map((channel) => {
-          const item = channels[channel]
-          const state = channelStates[channel]
-          const saving = savingChannels[channel]
-          const connecting = connectingChannels[channel]
+      {/* Channel connections — tabbed */}
+      <section className="rp-panel p-4 md:p-5">
+        <div className="mb-4">
+          <h2 className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Canaux connectés</h2>
+          <p className="mt-1 text-[12.5px] text-[color:var(--color-text-secondary)]">Connectez chaque canal Meta puis choisissez l’actif à utiliser dans Répondly.</p>
+        </div>
 
-          return (
-            <article key={channel} className="rp-panel p-4 md:p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">{channelTitles[channel]}</h2>
-                  <p className="mt-1 text-sm text-[color:var(--text-secondary)]">{channelDescriptions[channel]}</p>
-                </div>
-                <Badge tone={getStatusTone(item.status)} variant={getStatusLabel(item.status)} />
-              </div>
+        <div role="tablist" aria-label="Canaux" className="rp-no-scrollbar flex gap-2 overflow-x-auto border-b border-[color:var(--color-border)] pb-3">
+          {CHANNEL_ORDER.map((channel) => {
+            const channelItem = channels[channel]
+            const active = channel === activeChannel
+            return (
+              <button
+                key={channel}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveChannel(channel)}
+                className={cn('rp-filter-chip shrink-0', active && 'is-active')}
+              >
+                <span>{channelTitles[channel]}</span>
+                <Badge dot tone={getStatusTone(channelItem.status)} className="ml-0.5" />
+              </button>
+            )
+          })}
+        </div>
 
-              <div className="mt-4 space-y-3">
-                <label className="rp-field-label">Nom interne<Input value={item.label} onChange={(event) => updateChannelField(channel, 'label', event.target.value)} placeholder="Nom affiché dans Répondly" /></label>
-                {renderConnectionSummary(item)}
-                {item.oauthOptions.length > 1 ? (
-                  <label className="rp-field-label">
-                    Actif Meta
-                    <select value={selectedAssets[channel]} onChange={(event) => updateSelectedAsset(channel, event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13.5px]">
-                      <option value="">Sélectionner un actif</option>
-                      {item.oauthOptions.map((option) => (
-                        <option key={option.id} value={option.id}>{option.label}</option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-              </div>
+        <div className="mt-4 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <p className="max-w-[460px] text-[12.5px] leading-[1.55] text-[color:var(--color-text-secondary)]">{channelDescriptions[activeChannel]}</p>
+            <Badge tone={getStatusTone(item.status)} variant={getStatusLabel(item.status)} />
+          </div>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Button variant="secondary" onClick={() => startTransition(() => startMetaOAuth(channel))} disabled={connecting}>
-                  {connecting ? 'Redirection...' : item.status === 'ACTIVE' ? 'Reconnecter avec Meta' : 'Connecter avec Meta'}
-                </Button>
-                {item.oauthOptions.length > 1 ? <Button variant="secondary" onClick={() => startTransition(() => selectMetaAsset(channel))} disabled={saving}>{saving ? 'Activation...' : 'Activer la sélection'}</Button> : null}
-                <Button variant="secondary" onClick={() => startTransition(() => saveChannel(channel))} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer le nom'}</Button>
-                {state.type !== 'idle' ? <p className={state.type === 'success' ? 'text-sm text-[color:var(--tone-success)]' : 'text-sm text-[color:var(--tone-danger)]'}>{state.message}</p> : null}
-              </div>
-            </article>
-          )
-        })}
+          <label className="rp-field-label max-w-md">Nom interne<Input value={item.label} onChange={(event) => updateChannelField(activeChannel, 'label', event.target.value)} placeholder="Nom affiché dans Répondly" /></label>
+
+          <div className="rounded-[var(--radius-sm)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-subtle)] p-3">
+            {renderConnectionSummary(item)}
+          </div>
+
+          {item.oauthOptions.length > 1 ? (
+            <label className="rp-field-label max-w-md">
+              Actif Meta
+              <select value={selectedAssets[activeChannel]} onChange={(event) => updateSelectedAsset(activeChannel, event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13px]">
+                <option value="">Sélectionner un actif</option>
+                {item.oauthOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="primary" onClick={() => startTransition(() => startMetaOAuth(activeChannel))} disabled={connecting}>
+              {connecting ? 'Redirection...' : item.status === 'ACTIVE' ? 'Reconnecter avec Meta' : 'Connecter avec Meta'}
+            </Button>
+            {item.oauthOptions.length > 1 ? <Button variant="secondary" onClick={() => startTransition(() => selectMetaAsset(activeChannel))} disabled={saving}>{saving ? 'Activation...' : 'Activer la sélection'}</Button> : null}
+            <Button variant="ghost" onClick={() => startTransition(() => saveChannel(activeChannel))} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer le nom'}</Button>
+            {state.type !== 'idle' ? <p className={state.type === 'success' ? 'text-[12.5px] text-[color:var(--color-success)]' : 'text-[12.5px] text-[color:var(--color-danger)]'}>{state.message}</p> : null}
+          </div>
+        </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <article className="rp-panel p-4 md:p-5">
+      {/* Subscription */}
+      <section className="rp-panel p-4 md:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Abonnement</h2>
-            <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Usage et niveau de plan actuel.</p>
+            <h2 className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Abonnement</h2>
+            <div className="mt-2 flex items-center gap-2"><Badge variant={business.plan} /><span className="text-[12.5px] text-[color:var(--color-text-secondary)]">Plan actuel</span></div>
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-3"><Badge variant={business.plan} /><span className="text-sm text-[color:var(--text-secondary)]">Le suivi de quota sera branché sur les données réelles du plan.</span></div>
-        </article>
-
-        <article className="rp-panel p-4 md:p-5">
-          <div>
-            <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Connexion Meta</h2>
-            <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Chaque client peut connecter son compte Meta, puis choisir la page, le compte Instagram ou le numéro WhatsApp à utiliser dans Répondly.</p>
-          </div>
-          <div className="mt-4 text-sm leading-[1.6] text-[color:var(--text-secondary)]">
-            <p>1. Cliquez sur Connecter avec Meta sur le canal voulu.</p>
-            <p className="mt-2">2. Autorisez les permissions Meta demandées.</p>
-            <p className="mt-2">3. Si plusieurs actifs sont trouvés, choisissez celui à activer dans Répondly.</p>
-          </div>
-        </article>
+          <a href="#" className="text-[12.5px] font-semibold text-[color:var(--color-text-primary)] underline-offset-2 hover:underline">Mettre à niveau</a>
+        </div>
       </section>
     </div>
   )

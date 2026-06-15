@@ -9,18 +9,18 @@ interface AvatarProps {
 }
 
 const sizeStyles: Record<AvatarSize, string> = {
-  sm: 'h-8 w-8 text-[11px]',
-  md: 'h-9 w-9 text-[12px]',
-  lg: 'h-10 w-10 text-[13px]',
-  xl: 'h-12 w-12 text-[14px]',
+  sm: 'h-7 w-7 text-[11px]',
+  md: 'h-8 w-8 text-[12px]',
+  lg: 'h-[38px] w-[38px] text-[13px]',
+  xl: 'h-11 w-11 text-[15px]',
 }
 
 export function Avatar({ initials, size = 'md', className }: AvatarProps) {
   return (
     <div
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[color:var(--brand-primary-border)]',
-        'bg-[color:var(--brand-primary-soft)] font-semibold text-[color:var(--brand-primary)]',
+        'inline-flex shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[color:var(--color-border)]',
+        'bg-[color:var(--color-surface-subtle)] font-semibold text-[color:var(--color-text-secondary)]',
         sizeStyles[size],
         className,
       )}

@@ -3,28 +3,31 @@ import type { ConversationStatus, Intent, Plan } from '@/types'
 import { cn } from '@/lib/utils'
 
 type BadgeVariant = string
-type BadgeTone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'followup'
+type BadgeTone = 'neutral' | 'brand' | 'info' | 'success' | 'warning' | 'danger' | 'followup'
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   intent?: Intent
   status?: ConversationStatus
   variant?: BadgeVariant
   tone?: BadgeTone
+  /** Render as a bare 6px status dot instead of a pill. */
+  dot?: boolean
 }
 
-type BadgePalette = { bg: string; text: string; border: string }
+type BadgePalette = { bg: string; text: string; border: string; dot: string }
 
 const toneStyles: Record<BadgeTone, BadgePalette> = {
-  neutral: { bg: 'var(--surface-2)', text: 'var(--text-secondary)', border: 'var(--surface-border)' },
-  brand: { bg: 'var(--brand-primary-soft)', text: 'var(--brand-primary)', border: 'var(--brand-primary-border)' },
-  success: { bg: 'var(--tone-success-soft)', text: 'var(--tone-success)', border: 'var(--tone-success-border)' },
-  warning: { bg: 'var(--tone-warning-soft)', text: 'var(--tone-warning)', border: 'var(--tone-warning-border)' },
-  danger: { bg: 'var(--tone-danger-soft)', text: 'var(--tone-danger)', border: 'var(--tone-danger-border)' },
-  followup: { bg: 'var(--tone-followup-soft)', text: 'var(--tone-followup)', border: 'var(--tone-followup-border)' },
+  neutral: { bg: 'var(--color-surface-subtle)', text: 'var(--color-text-secondary)', border: 'var(--color-border)', dot: 'var(--color-text-muted)' },
+  brand: { bg: 'var(--color-accent-soft)', text: 'var(--color-text-primary)', border: 'var(--color-border-strong)', dot: 'var(--color-accent)' },
+  info: { bg: 'var(--color-info-soft)', text: 'var(--color-info)', border: 'var(--color-info-border)', dot: 'var(--color-info)' },
+  success: { bg: 'var(--color-success-soft)', text: 'var(--color-success)', border: 'var(--color-success-border)', dot: 'var(--color-success)' },
+  warning: { bg: 'var(--color-warning-soft)', text: 'var(--color-warning)', border: 'var(--color-warning-border)', dot: 'var(--color-warning)' },
+  danger: { bg: 'var(--color-danger-soft)', text: 'var(--color-danger)', border: 'var(--color-danger-border)', dot: 'var(--color-danger)' },
+  followup: { bg: 'var(--color-follow-up-soft)', text: 'var(--color-follow-up)', border: 'var(--color-follow-up-border)', dot: 'var(--color-follow-up)' },
 }
 
 const intentStyles: Record<Intent, BadgePalette> = {
-  RDV: toneStyles.brand,
+  RDV: toneStyles.info,
   PRIX: toneStyles.warning,
   COMMANDE: toneStyles.success,
   'RÉCLAMATION': toneStyles.danger,
@@ -32,7 +35,7 @@ const intentStyles: Record<Intent, BadgePalette> = {
 }
 
 const statusStyles: Record<ConversationStatus, BadgePalette> = {
-  NEW: toneStyles.brand,
+  NEW: toneStyles.info,
   IN_PROGRESS: toneStyles.warning,
   CONFIRMED: toneStyles.success,
   FOLLOW_UP: toneStyles.followup,
@@ -41,7 +44,7 @@ const statusStyles: Record<ConversationStatus, BadgePalette> = {
 
 const planStyles: Record<Plan, BadgePalette> = {
   TRIAL: toneStyles.neutral,
-  STARTER: toneStyles.brand,
+  STARTER: toneStyles.info,
   PRO: toneStyles.success,
   AGENCY: toneStyles.warning,
 }
@@ -69,14 +72,25 @@ function getStyles(intent?: Intent, status?: ConversationStatus, variant?: strin
   return toneStyles.neutral
 }
 
-export function Badge({ intent, status, variant, tone, className, ...props }: BadgeProps) {
+export function Badge({ intent, status, variant, tone, dot, className, ...props }: BadgeProps) {
   const styles = getStyles(intent, status, variant, tone)
+
+  if (dot) {
+    return (
+      <span
+        className={cn('inline-block h-1.5 w-1.5 shrink-0 rounded-full', className)}
+        style={{ backgroundColor: styles.dot }}
+        aria-hidden="true"
+        {...props}
+      />
+    )
+  }
 
   return (
     <span
       className={cn(
-        'inline-flex h-[20px] max-w-full items-center rounded-[var(--radius-sm)] border px-1.5',
-        'text-[10.5px] font-semibold leading-none text-nowrap',
+        'inline-flex h-[18px] max-w-full items-center rounded-[var(--radius-pill)] border px-1.5',
+        'text-[11px] font-semibold leading-none text-nowrap',
         className,
       )}
       style={{ backgroundColor: styles.bg, color: styles.text, borderColor: styles.border }}

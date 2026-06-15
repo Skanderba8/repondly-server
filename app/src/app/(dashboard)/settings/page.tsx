@@ -83,7 +83,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Configuration" title="Paramètres" description="Branchez les actifs Meta réels de chaque client pour que l’inbox reçoive les messages." actions={<SignOutButton className="inline-flex h-9 w-fit items-center rounded-[var(--radius-sm)] border border-[color:var(--tone-danger-border)] bg-[color:var(--tone-danger-soft)] px-3 text-[13px] font-semibold text-[color:var(--tone-danger)] transition-opacity duration-[var(--transition-fast)] hover:opacity-80" />} />
+      <PageHeader eyebrow="Configuration" title="Paramètres" description="Branchez les actifs Meta réels de chaque client pour que l’inbox reçoive les messages." actions={<SignOutButton className="inline-flex h-9 w-fit items-center rounded-[var(--radius-sm)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 text-[13px] font-medium text-[color:var(--color-danger)] transition-colors duration-[var(--ease-fast)] hover:bg-[color:var(--color-danger-soft)]" />} />
       <SettingsPageClient
         initialBusiness={{
           name: business?.name ?? '',

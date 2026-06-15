@@ -54,27 +54,23 @@ export function InboxView({ conversations }: InboxViewProps) {
   const selectedConversation: Conversation | null = filteredConversations.find((conversation) => conversation.id === selectedId) ?? null
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col md:overflow-hidden md:rounded-[var(--radius-sm)] md:border md:border-[color:var(--surface-border)] md:bg-[color:var(--surface-0)] md:shadow-[var(--shadow-card)]">
+    <div className="flex h-full min-h-0 flex-1 flex-col md:overflow-hidden md:rounded-[var(--radius-md)] md:border md:border-[color:var(--color-border)] md:bg-[color:var(--color-surface)] md:shadow-[var(--shadow-xs)]">
       <section className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="flex min-h-0 w-full flex-col border-r-0 border-[color:var(--surface-border)] bg-[color:var(--surface-0)] md:w-[328px] md:shrink-0 md:border-r">
-          <div className="border-b border-[color:var(--surface-border)] px-4 py-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h1 className="text-[14px] font-semibold text-[color:var(--text-primary)]">Inbox</h1>
-                <p className="mt-1 text-[12.5px] leading-[1.5] text-[color:var(--text-muted)]">{conversations.length} conversations triées par statut</p>
-              </div>
-              <div className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[color:var(--surface-border)] bg-[color:var(--surface-1)] text-[color:var(--text-secondary)]">
-                <Inbox className="h-4 w-4" aria-hidden="true" />
-              </div>
+        {/* Left pane — conversation list */}
+        <div className="flex min-h-0 w-full flex-col bg-[color:var(--color-surface)] md:w-[300px] md:shrink-0 md:border-r md:border-[color:var(--color-border)]">
+          <div className="border-b border-[color:var(--color-border)] px-4 py-3">
+            <div>
+              <h1 className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Messages</h1>
+              <p className="mt-0.5 text-[12.5px] leading-[1.4] text-[color:var(--color-text-muted)]">{conversations.length} conversations</p>
             </div>
             <div className="relative mt-3">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--text-muted)]" aria-hidden="true" />
-              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher" className="pl-9" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-muted)]" aria-hidden="true" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher" className="pl-9" aria-label="Rechercher une conversation" />
             </div>
           </div>
 
-          <div className="border-b border-[color:var(--surface-border)] px-3 py-2.5">
-            <div className="flex gap-2 overflow-x-auto">
+          <div className="border-b border-[color:var(--color-border)] px-3 py-2.5">
+            <div className="rp-no-scrollbar flex gap-2 overflow-x-auto">
               {tabs.map((tab) => {
                 const active = tab.status === activeTab
                 return (
@@ -87,7 +83,7 @@ export function InboxView({ conversations }: InboxViewProps) {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-[color:var(--surface-0)]">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-surface)]">
             {filteredConversations.map((conversation) => (
               <div key={conversation.id}>
                 <div className="block md:hidden"><ConversationCard conversation={conversation} isSelected={false} onClick={() => router.push(`/inbox/${conversation.id}`)} /></div>
@@ -98,12 +94,13 @@ export function InboxView({ conversations }: InboxViewProps) {
           </div>
         </div>
 
-        <section className="hidden min-h-0 flex-1 bg-[color:var(--surface-0)] md:flex">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {selectedConversation ? <InboxThread conversation={selectedConversation} /> : <EmptyState title="Sélectionnez une conversation" description="Le thread détaillé et la fiche contact apparaîtront ici." />}
-          </div>
-          {selectedConversation ? <ContactPanel contact={selectedConversation.contact} /> : null}
-        </section>
+        {/* Center pane — thread */}
+        <div className="hidden min-h-0 min-w-0 flex-1 flex-col bg-[color:var(--color-surface)] md:flex">
+          {selectedConversation ? <InboxThread conversation={selectedConversation} /> : <EmptyState title="Sélectionnez une conversation" description="Le thread détaillé et la fiche contact apparaîtront ici." />}
+        </div>
+
+        {/* Right pane — contact info */}
+        {selectedConversation ? <ContactPanel contact={selectedConversation.contact} /> : null}
       </section>
     </div>
   )
