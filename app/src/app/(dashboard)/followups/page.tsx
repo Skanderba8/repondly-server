@@ -13,7 +13,7 @@ type FollowUpFilter = 'ALL' | 'OVERDUE' | 'TODAY' | 'UPCOMING'
 type FollowUpStatus = 'OVERDUE' | 'TODAY' | 'UPCOMING'
 
 const filters: Array<{ id: FollowUpFilter; label: string }> = [
-  { id: 'ALL', label: 'Toutes' },
+  { id: 'ALL', label: 'toutes' },
   { id: 'OVERDUE', label: 'En retard' },
   { id: 'TODAY', label: "Aujourd'hui" },
   { id: 'UPCOMING', label: 'À venir' },
@@ -34,7 +34,7 @@ function formatPlannedLabel(dateValue: string, now: Date) {
 }
 function getStatusBadge(status: FollowUpStatus) {
   if (status === 'OVERDUE') return <Badge variant="En retard" tone="danger" />
-  if (status === 'TODAY') return <Badge variant="Aujourdhuiii" tone="warning" />
+  if (status === 'TODAY') return <Badge variant="Aujourd'hui" tone="warning" />
   return <Badge variant="Planifiée" tone="success" />
 }
 
