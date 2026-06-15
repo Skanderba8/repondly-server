@@ -1,7 +1,9 @@
 export type ConversationStatus = 'NEW' | 'IN_PROGRESS' | 'CONFIRMED' | 'FOLLOW_UP' | 'RESOLVED'
-export type Intent = 'RDV' | 'PRIX' | 'COMMANDE' | 'RÉCLAMATION' | 'AUTRE'
+export type Intent = 'RDV' | 'PRIX' | 'COMMANDE' | 'RÃ‰CLAMATION' | 'AUTRE'
 export type Direction = 'INBOUND' | 'OUTBOUND'
 export type Plan = 'TRIAL' | 'STARTER' | 'PRO' | 'AGENCY'
+export type OrderStatus = 'NOUVEAU' | 'CONFIRME' | 'EN_PREPARATION' | 'EXPEDIE' | 'LIVRE' | 'ANNULE'
+export type PaymentStatus = 'PAS_ENCORE' | 'ACOMPTE' | 'RECU'
 
 export interface Contact {
   id: string
@@ -12,6 +14,13 @@ export interface Contact {
   tags: string[]
   notes?: string
   lastSeen?: string
+}
+
+export interface ContactSearchResult {
+  id: string
+  name?: string
+  phone?: string
+  initials: string
 }
 
 export interface Message {
@@ -41,4 +50,28 @@ export interface FollowUp {
   intent: Intent
   followUpAt: string
   overdue: boolean
+}
+
+export interface OrderItem {
+  id: string
+  productName: string
+  quantity: number
+  unitPrice: string
+  totalPrice: string
+}
+
+export interface Order {
+  id: string
+  contactId: string
+  orderNumber: number
+  status: OrderStatus
+  paymentStatus: PaymentStatus
+  deliveryMethod?: string
+  deliveryAddress?: string
+  notes?: string
+  totalAmount: string
+  createdAt: string
+  updatedAt: string
+  contact: Contact
+  items: OrderItem[]
 }

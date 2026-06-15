@@ -34,6 +34,7 @@ model Business {
   conversations      Conversation[]
   messages           Message[]
   notifications      Notification[]
+  orders             Order[]
   webhookEvents      WebhookEvent[]
 }
 
@@ -81,6 +82,7 @@ model Contact {
   business      Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   connection    BusinessChannelConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   conversations Conversation[]
+  orders        Order[]
 
   @@unique([businessId, channel, externalId])
   @@index([businessId, connectionId])
@@ -190,6 +192,40 @@ model WebhookEvent {
   @@unique([channel, deliveryId])
 }
 
+model Order {
+  id              String        @id @default(cuid())
+  businessId      String
+  contactId       String
+  conversationId  String?
+  orderNumber     Int
+  status          OrderStatus   @default(NOUVEAU)
+  paymentStatus   PaymentStatus @default(PAS_ENCORE)
+  deliveryMethod  String?
+  deliveryAddress String?
+  notes           String?
+  totalAmount     Decimal       @default(0) @db.Decimal(10,2)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  business Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact  Contact    @relation(fields: [contactId], references: [id])
+  items    OrderItem[]
+
+  @@unique([businessId, orderNumber])
+  @@index([businessId, status])
+  @@index([businessId, createdAt])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  productName String
+  quantity    Int     @default(1)
+  unitPrice   Decimal @db.Decimal(10,2)
+  totalPrice  Decimal @db.Decimal(10,2)
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
 enum Plan {
   TRIAL
   STARTER
@@ -264,4 +300,19 @@ enum NotificationType {
   FOLLOW_UP_DUE
   DAILY_SUMMARY
   SYSTEM
+}
+
+enum OrderStatus {
+  NOUVEAU
+  CONFIRME
+  EN_PREPARATION
+  EXPEDIE
+  LIVRE
+  ANNULE
+}
+
+enum PaymentStatus {
+  PAS_ENCORE
+  ACOMPTE
+  RECU
 }
