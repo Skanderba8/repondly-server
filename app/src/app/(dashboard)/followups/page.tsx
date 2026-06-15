@@ -13,7 +13,7 @@ type FollowUpFilter = 'ALL' | 'OVERDUE' | 'TODAY' | 'UPCOMING'
 type FollowUpStatus = 'OVERDUE' | 'TODAY' | 'UPCOMING'
 
 const filters: Array<{ id: FollowUpFilter; label: string }> = [
-  { id: 'ALL', label: 'toutes' },
+  { id: 'ALL', label: 'Ttoutes' },
   { id: 'OVERDUE', label: 'En retard' },
   { id: 'TODAY', label: "Aujourd'hui" },
   { id: 'UPCOMING', label: 'À venir' },
