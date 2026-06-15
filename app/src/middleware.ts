@@ -8,7 +8,7 @@ const PROTECTED_PAGES = ['/dashboard', '/inbox', '/contacts', '/followups', '/se
 const PUBLIC_API_PREFIXES = [
   '/api/auth/register',
   '/api/webhook',
-  '/api/meta/webhooks',
+  '/api/unipile/webhooks',
 ]
 
 function matchesPrefix(pathname: string, prefixes: string[]) {

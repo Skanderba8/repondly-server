@@ -26,11 +26,6 @@ model Business {
   language     Language  @default(FRENCH)
   timezone     String    @default("Africa/Tunis")
 
-  waPhoneNumberId String?
-  wabaId          String?
-  waAccessToken   String?
-  waVerifyToken   String?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -48,19 +43,10 @@ model BusinessChannelConnection {
   channel                ChannelType
   status                 ConnectionStatus @default(PENDING)
   label                  String?
-  metaAppId              String?
-  metaUserId             String?
-  metaBusinessAccountId  String?
-  metaBusinessName       String?
-  metaPhoneNumberId      String?          @unique
-  metaPhoneNumber        String?
-  metaPageId             String?          @unique
-  metaPageName           String?
-  metaInstagramAccountId String?          @unique
-  metaInstagramUsername  String?
+  unipileAccountId       String?          @unique
+  unipileAccountType     String?
+  displayName            String?
   accessToken            String?
-  tokenExpiresAt         DateTime?
-  webhookVerifyToken     String?
   metadata               Json?
   lastSyncedAt           DateTime?
   createdAt              DateTime         @default(now())

@@ -1,9 +1,7 @@
-import type { Prisma } from '@prisma/client'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SignOutButton } from '@/components/SignOutButton'
 import { SettingsPageClient } from '@/components/SettingsPageClient'
 import { requireBusinessSession } from '@/lib/auth'
-import { parseChannelMetadata, type MetaAssetOption } from '@/lib/meta/oauth'
 import { prisma } from '@/lib/prisma'
 
 function normalizeValue(value?: string | null) {
@@ -11,26 +9,12 @@ function normalizeValue(value?: string | null) {
 }
 
 type ChannelConnection = {
-  channel: 'WHATSAPP' | 'MESSENGER' | 'INSTAGRAM'
+  channel: 'WHATSAPP' | 'INSTAGRAM'
   status: 'PENDING' | 'ACTIVE' | 'DISCONNECTED' | 'ERROR'
   label: string | null
-  metaAppId: string | null
-  metaUserId: string | null
-  metaBusinessAccountId: string | null
-  metaBusinessName: string | null
-  metaPhoneNumberId: string | null
-  metaPhoneNumber: string | null
-  metaPageId: string | null
-  metaPageName: string | null
-  metaInstagramAccountId: string | null
-  metaInstagramUsername: string | null
-  accessToken: string | null
-  webhookVerifyToken: string | null
-  metadata: Prisma.JsonValue | null
-}
-
-type ChannelClientState = ChannelConnection & {
-  oauthOptions: MetaAssetOption[]
+  displayName: string | null
+  unipileAccountId: string | null
+  createdAt: Date
 }
 
 export default async function SettingsPage() {
@@ -49,41 +33,35 @@ export default async function SettingsPage() {
   })
 
   const channelConnections: ChannelConnection[] = await prisma.businessChannelConnection.findMany({
-    where: { businessId: session.user.id },
+    where: {
+      businessId: session.user.id,
+      channel: {
+        in: ['WHATSAPP', 'INSTAGRAM'],
+      },
+    },
     select: {
       channel: true,
       status: true,
       label: true,
-      metaAppId: true,
-      metaUserId: true,
-      metaBusinessAccountId: true,
-      metaBusinessName: true,
-      metaPhoneNumberId: true,
-      metaPhoneNumber: true,
-      metaPageId: true,
-      metaPageName: true,
-      metaInstagramAccountId: true,
-      metaInstagramUsername: true,
-      accessToken: true,
-      webhookVerifyToken: true,
-      metadata: true,
+      displayName: true,
+      unipileAccountId: true,
+      createdAt: true,
     },
   })
 
-  const hydratedConnections: ChannelClientState[] = channelConnections.map((connection) => ({
-    ...connection,
-    oauthOptions: parseChannelMetadata(connection.metadata).oauthAssets ?? [],
-  }))
-
-  const connectionMap: Record<'WHATSAPP' | 'MESSENGER' | 'INSTAGRAM', ChannelClientState | undefined> = {
-    WHATSAPP: hydratedConnections.find((item) => item.channel === 'WHATSAPP'),
-    MESSENGER: hydratedConnections.find((item) => item.channel === 'MESSENGER'),
-    INSTAGRAM: hydratedConnections.find((item) => item.channel === 'INSTAGRAM'),
+  const connectionMap: Record<'WHATSAPP' | 'INSTAGRAM', ChannelConnection | undefined> = {
+    WHATSAPP: channelConnections.find((item) => item.channel === 'WHATSAPP'),
+    INSTAGRAM: channelConnections.find((item) => item.channel === 'INSTAGRAM'),
   }
 
   return (
     <>
-      <PageHeader eyebrow="Configuration" title="Paramètres" description="Branchez les actifs Meta réels de chaque client pour que l’inbox reçoive les messages." actions={<SignOutButton className="inline-flex h-9 w-fit items-center rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-card)] px-3 text-[13px] font-medium text-[color:var(--danger)] transition-colors duration-150 hover:bg-[color:var(--danger-soft)]" />} />
+      <PageHeader
+        eyebrow="Configuration"
+        title="Paramètres"
+        description="Connectez WhatsApp et Instagram via Unipile pour recevoir les messages dans l'inbox Répondly."
+        actions={<SignOutButton className="inline-flex h-9 w-fit items-center rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-card)] px-3 text-[13px] font-medium text-[color:var(--danger)] transition-colors duration-150 hover:bg-[color:var(--danger-soft)]" />}
+      />
       <SettingsPageClient
         initialBusiness={{
           name: business?.name ?? '',
@@ -98,55 +76,17 @@ export default async function SettingsPage() {
             channel: 'WHATSAPP',
             status: connectionMap.WHATSAPP?.status ?? 'NOT_CONNECTED',
             label: normalizeValue(connectionMap.WHATSAPP?.label),
-            metaAppId: normalizeValue(connectionMap.WHATSAPP?.metaAppId),
-            metaUserId: normalizeValue(connectionMap.WHATSAPP?.metaUserId),
-            metaBusinessAccountId: normalizeValue(connectionMap.WHATSAPP?.metaBusinessAccountId),
-            metaBusinessName: normalizeValue(connectionMap.WHATSAPP?.metaBusinessName),
-            metaPhoneNumberId: normalizeValue(connectionMap.WHATSAPP?.metaPhoneNumberId),
-            metaPhoneNumber: normalizeValue(connectionMap.WHATSAPP?.metaPhoneNumber),
-            metaPageId: normalizeValue(connectionMap.WHATSAPP?.metaPageId),
-            metaPageName: normalizeValue(connectionMap.WHATSAPP?.metaPageName),
-            metaInstagramAccountId: normalizeValue(connectionMap.WHATSAPP?.metaInstagramAccountId),
-            metaInstagramUsername: normalizeValue(connectionMap.WHATSAPP?.metaInstagramUsername),
-            accessToken: normalizeValue(connectionMap.WHATSAPP?.accessToken),
-            webhookVerifyToken: normalizeValue(connectionMap.WHATSAPP?.webhookVerifyToken),
-            oauthOptions: connectionMap.WHATSAPP?.oauthOptions ?? [],
-          },
-          MESSENGER: {
-            channel: 'MESSENGER',
-            status: connectionMap.MESSENGER?.status ?? 'NOT_CONNECTED',
-            label: normalizeValue(connectionMap.MESSENGER?.label),
-            metaAppId: normalizeValue(connectionMap.MESSENGER?.metaAppId),
-            metaUserId: normalizeValue(connectionMap.MESSENGER?.metaUserId),
-            metaBusinessAccountId: normalizeValue(connectionMap.MESSENGER?.metaBusinessAccountId),
-            metaBusinessName: normalizeValue(connectionMap.MESSENGER?.metaBusinessName),
-            metaPhoneNumberId: normalizeValue(connectionMap.MESSENGER?.metaPhoneNumberId),
-            metaPhoneNumber: normalizeValue(connectionMap.MESSENGER?.metaPhoneNumber),
-            metaPageId: normalizeValue(connectionMap.MESSENGER?.metaPageId),
-            metaPageName: normalizeValue(connectionMap.MESSENGER?.metaPageName),
-            metaInstagramAccountId: normalizeValue(connectionMap.MESSENGER?.metaInstagramAccountId),
-            metaInstagramUsername: normalizeValue(connectionMap.MESSENGER?.metaInstagramUsername),
-            accessToken: normalizeValue(connectionMap.MESSENGER?.accessToken),
-            webhookVerifyToken: normalizeValue(connectionMap.MESSENGER?.webhookVerifyToken),
-            oauthOptions: connectionMap.MESSENGER?.oauthOptions ?? [],
+            displayName: normalizeValue(connectionMap.WHATSAPP?.displayName),
+            unipileAccountId: normalizeValue(connectionMap.WHATSAPP?.unipileAccountId),
+            connectedAt: connectionMap.WHATSAPP?.createdAt.toISOString() ?? null,
           },
           INSTAGRAM: {
             channel: 'INSTAGRAM',
             status: connectionMap.INSTAGRAM?.status ?? 'NOT_CONNECTED',
             label: normalizeValue(connectionMap.INSTAGRAM?.label),
-            metaAppId: normalizeValue(connectionMap.INSTAGRAM?.metaAppId),
-            metaUserId: normalizeValue(connectionMap.INSTAGRAM?.metaUserId),
-            metaBusinessAccountId: normalizeValue(connectionMap.INSTAGRAM?.metaBusinessAccountId),
-            metaBusinessName: normalizeValue(connectionMap.INSTAGRAM?.metaBusinessName),
-            metaPhoneNumberId: normalizeValue(connectionMap.INSTAGRAM?.metaPhoneNumberId),
-            metaPhoneNumber: normalizeValue(connectionMap.INSTAGRAM?.metaPhoneNumber),
-            metaPageId: normalizeValue(connectionMap.INSTAGRAM?.metaPageId),
-            metaPageName: normalizeValue(connectionMap.INSTAGRAM?.metaPageName),
-            metaInstagramAccountId: normalizeValue(connectionMap.INSTAGRAM?.metaInstagramAccountId),
-            metaInstagramUsername: normalizeValue(connectionMap.INSTAGRAM?.metaInstagramUsername),
-            accessToken: normalizeValue(connectionMap.INSTAGRAM?.accessToken),
-            webhookVerifyToken: normalizeValue(connectionMap.INSTAGRAM?.webhookVerifyToken),
-            oauthOptions: connectionMap.INSTAGRAM?.oauthOptions ?? [],
+            displayName: normalizeValue(connectionMap.INSTAGRAM?.displayName),
+            unipileAccountId: normalizeValue(connectionMap.INSTAGRAM?.unipileAccountId),
+            connectedAt: connectionMap.INSTAGRAM?.createdAt.toISOString() ?? null,
           },
         }}
       />
