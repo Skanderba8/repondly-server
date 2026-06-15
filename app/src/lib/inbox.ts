@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { buildInitials } from '@/lib/utils/initials'
 import type { Contact, Conversation, Message } from '@/types'
 
 type ContactRecord = {
@@ -32,15 +33,7 @@ type ConversationRecord = {
   messages: MessageRecord[]
 }
 
-const VALID_INTENTS = new Set(['RDV', 'PRIX', 'COMMANDE', 'RÉCLAMATION', 'AUTRE'])
-
-function buildInitials(name?: string, phone?: string) {
-  const source = name?.trim() || phone?.trim() || 'Contact'
-  const parts = source.split(/\s+/).filter(Boolean)
-  const initials = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('')
-
-  return initials || 'CT'
-}
+const VALID_INTENTS = new Set(['RDV', 'PRIX', 'COMMANDE', 'RÃ‰CLAMATION', 'AUTRE'])
 
 function formatListTime(date?: Date | null) {
   if (!date) return ''
@@ -83,7 +76,7 @@ function mapMessages(messages: MessageRecord[]): Message[] {
   }))
 }
 
-function mapConversation(conversation: ConversationRecord): Conversation {
+export function mapConversation(conversation: ConversationRecord): Conversation {
   const lastMessage = conversation.messages[conversation.messages.length - 1]
 
   return {

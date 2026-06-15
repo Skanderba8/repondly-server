@@ -1,5 +1,6 @@
 'use client'
 
+import type { KeyboardEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ChevronDown, Ellipsis, Send } from 'lucide-react'
@@ -11,10 +12,12 @@ import { MessageBubble } from '@/components/MessageBubble'
 import { SuggestionChips } from '@/components/SuggestionChips'
 
 const DEFAULT_SUGGESTIONS = [
-  'Oui bien sûr, quel créneau vous convient ?',
-  'Désolé, nous sommes complets.',
+  'Oui bien sur, quel creneau vous convient ?',
+  'Desole, nous sommes complets.',
   'Je vous rappelle dans un instant.',
 ]
+
+const STATUS_OPTIONS: Conversation['status'][] = ['NEW', 'IN_PROGRESS', 'CONFIRMED', 'FOLLOW_UP', 'RESOLVED']
 
 interface InboxThreadProps {
   conversation: Conversation
@@ -42,11 +45,20 @@ function formatTime(value: string) {
 
 export function InboxThread({ conversation, showBackButton = false, suggestions = DEFAULT_SUGGESTIONS }: InboxThreadProps) {
   const [draft, setDraft] = useState('')
+  const [messages, setMessages] = useState<Message[]>(conversation.messages ?? [])
+  const [status, setStatus] = useState<Conversation['status']>(conversation.status)
+  const [isSending, setIsSending] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const statusMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setDraft('')
-  }, [conversation.id])
+    setMessages(conversation.messages ?? [])
+    setStatus(conversation.status)
+    setIsStatusMenuOpen(false)
+  }, [conversation.id, conversation.messages, conversation.status])
 
   function autoResize() {
     const node = textareaRef.current
@@ -59,14 +71,133 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
     autoResize()
   }, [draft])
 
-  const messages: Message[] = conversation.messages ?? []
+  useEffect(() => {
+    function handleDocumentClick(event: MouseEvent) {
+      if (!statusMenuRef.current?.contains(event.target as Node)) {
+        setIsStatusMenuOpen(false)
+      }
+    }
+
+    if (!isStatusMenuOpen) {
+      return
+    }
+
+    document.addEventListener('mousedown', handleDocumentClick)
+
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick)
+    }
+  }, [isStatusMenuOpen])
+
+  async function handleSend() {
+    const content = draft.trim()
+
+    if (!content || isSending) {
+      return
+    }
+
+    const optimisticMessage: Message = {
+      id: `optimistic-${Date.now()}`,
+      content,
+      direction: 'OUTBOUND',
+      timestamp: new Date().toISOString(),
+    }
+
+    setIsSending(true)
+    setMessages((current) => [...current, optimisticMessage])
+    setDraft('')
+
+    try {
+      const response = await fetch(`/api/conversations/${conversation.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      })
+
+      if (!response.ok) {
+        setMessages((current) => current.filter((message) => message.id !== optimisticMessage.id))
+        setDraft(content)
+        return
+      }
+
+      const payload = (await response.json()) as {
+        data?: {
+          message?: {
+            id: string
+            content: string
+            direction: Message['direction']
+            createdAt: string
+          }
+        }
+      }
+
+      const savedMessage = payload.data?.message
+
+      if (!savedMessage) {
+        return
+      }
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === optimisticMessage.id
+            ? {
+                id: savedMessage.id,
+                content: savedMessage.content,
+                direction: savedMessage.direction,
+                timestamp: savedMessage.createdAt,
+              }
+            : message,
+        ),
+      )
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  async function handleStatusChange(nextStatus: Conversation['status']) {
+    if (nextStatus === status || isUpdatingStatus) {
+      setIsStatusMenuOpen(false)
+      return
+    }
+
+    const previousStatus = status
+    setStatus(nextStatus)
+    setIsUpdatingStatus(true)
+    setIsStatusMenuOpen(false)
+
+    try {
+      const response = await fetch(`/api/conversations/${conversation.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: nextStatus }),
+      })
+
+      if (!response.ok) {
+        setStatus(previousStatus)
+      }
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      void handleSend()
+    }
+  }
+
   let lastDayKey = ''
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[color:var(--bg-card)]">
       <div className="flex min-h-[56px] flex-wrap items-center gap-3 border-b border-[color:var(--border)] bg-[color:var(--bg-card)] px-4 py-2.5">
         {showBackButton ? (
-          <Link href="/inbox" className="nx-btn nx-btn-secondary nx-btn-icon-md md:hidden" aria-label="Retour à l'inbox">
+          <Link href="/inbox" className="nx-btn nx-btn-secondary nx-btn-icon-md md:hidden" aria-label="Retour a l'inbox">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
         ) : null}
@@ -80,12 +211,33 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
           <p className="truncate text-[12.5px] text-[color:var(--text-muted)]">{conversation.contact.phone ?? 'Conversation active'}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div ref={statusMenuRef} className="relative flex flex-wrap items-center gap-2">
           <Badge intent={conversation.intent} />
-          <button type="button" className="nx-btn nx-btn-secondary nx-btn-sm" aria-label="Changer le statut">
-            <Badge status={conversation.status} />
+          <button
+            type="button"
+            className="nx-btn nx-btn-secondary nx-btn-sm"
+            aria-label="Changer le statut"
+            onClick={() => setIsStatusMenuOpen((current) => !current)}
+            disabled={isUpdatingStatus}
+          >
+            <Badge status={status} />
             <ChevronDown className="h-3.5 w-3.5 text-[color:var(--text-muted)]" aria-hidden="true" />
           </button>
+          {isStatusMenuOpen ? (
+            <div className="absolute right-0 top-full z-20 mt-2 flex min-w-[190px] flex-col gap-1 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-2 shadow-[var(--shadow-dropdown)]">
+              {STATUS_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className="nx-btn nx-btn-ghost justify-between"
+                  onClick={() => void handleStatusChange(option)}
+                >
+                  <Badge status={option} />
+                  {option === status ? <span className="text-[12px] text-[color:var(--text-muted)]">Actuel</span> : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <Button variant="secondary" size="icon" aria-label="Plus d'actions">
             <Ellipsis className="h-4 w-4" aria-hidden="true" />
           </Button>
@@ -94,7 +246,7 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
 
       {conversation.summary ? (
         <div className="flex min-h-[40px] items-center gap-2 border-b border-[color:var(--border)] bg-[color:var(--bg-page)] px-4 py-2 text-[12.5px] italic leading-[1.4] text-[color:var(--text-secondary)]">
-          <span className="not-italic text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-muted)]">Résumé</span>
+          <span className="not-italic text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-muted)]">Resume</span>
           <span className="min-w-0 truncate">{conversation.summary}</span>
         </div>
       ) : null}
@@ -131,12 +283,13 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
               ref={textareaRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={handleKeyDown}
               rows={1}
-              placeholder="Écrire une réponse claire et rapide..."
+              placeholder="Ecrire une reponse claire et rapide..."
               className="nx-input nx-textarea min-h-9 flex-1"
-              aria-label="Écrire une réponse"
+              aria-label="Ecrire une reponse"
             />
-            <Button size="lg" aria-label="Envoyer la réponse">
+            <Button size="lg" aria-label="Envoyer la reponse" onClick={() => void handleSend()} disabled={!draft.trim()} loading={isSending}>
               <Send className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Envoyer</span>
             </Button>

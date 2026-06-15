@@ -1,14 +1,20 @@
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import { ConversationCard } from '@/components/ConversationCard'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
-import { ConversationCard } from '@/components/ConversationCard'
-import { mockContacts, mockConversations } from '@/lib/mock'
+import { requireBusinessSession } from '@/lib/auth'
+import { getContactById } from '@/lib/contacts'
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await requireBusinessSession()
   const { id } = await params
-  const contact = mockContacts.find((item) => item.id === id) ?? mockContacts[0]
-  const relatedConversations = mockConversations.filter((conversation) => conversation.contact.id === contact.id)
+  const contact = await getContactById(session.user.id, id)
+
+  if (!contact) {
+    notFound()
+  }
 
   return (
     <div className="nx-page">
@@ -22,8 +28,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <div className="flex items-center gap-3">
             <Avatar initials={contact.initials} size="xl" />
             <div className="min-w-0">
-              <h1 className="truncate text-[20px] font-semibold leading-[1.1] text-[color:var(--text-primary)]">{contact.name}</h1>
-              <p className="mt-1 text-[13px] text-[color:var(--text-secondary)]">{contact.phone}</p>
+              <h1 className="truncate text-[20px] font-semibold leading-[1.1] text-[color:var(--text-primary)]">{contact.name ?? contact.phone ?? contact.initials}</h1>
+              <p className="mt-1 text-[13px] text-[color:var(--text-secondary)]">{contact.phone ?? 'Non renseigne'}</p>
             </div>
           </div>
 
@@ -33,14 +39,18 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               <p className="mt-2 text-[20px] font-semibold leading-none text-[color:var(--text-primary)]">{contact.totalConversations}</p>
             </div>
             <div className="rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3">
-              <p className="nx-section-label">Dernière act.</p>
-              <p className="mt-2 text-[13px] font-medium text-[color:var(--text-primary)]">{contact.lastSeen}</p>
+              <p className="nx-section-label">Derniere act.</p>
+              <p className="mt-2 text-[13px] font-medium text-[color:var(--text-primary)]">{contact.lastSeen || 'Aucune activite'}</p>
             </div>
           </div>
 
           <div className="nx-contact-section">
             <p className="nx-section-label">Tags</p>
-            <div className="mt-3 flex flex-wrap gap-1.5">{contact.tags.map((tag) => <Badge key={tag} variant={tag} />)}</div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {contact.tags.map((tag) => (
+                <Badge key={tag} variant={tag} />
+              ))}
+            </div>
           </div>
 
           <div className="nx-contact-section">
@@ -53,10 +63,14 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <div className="nx-card-header">
             <div>
               <p className="nx-section-label">Historique</p>
-              <h2 className="mt-1 text-[14px] font-semibold text-[color:var(--text-primary)]">Conversations associées</h2>
+              <h2 className="mt-1 text-[14px] font-semibold text-[color:var(--text-primary)]">Conversations associees</h2>
             </div>
           </div>
-          <div>{(relatedConversations.length ? relatedConversations : mockConversations.slice(0, 3)).map((conversation) => <ConversationCard key={conversation.id} conversation={conversation} isSelected={false} onClick={() => undefined} />)}</div>
+          <div>
+            {contact.recentConversations.map((conversation) => (
+              <ConversationCard key={conversation.id} conversation={conversation} isSelected={false} onClick={() => undefined} />
+            ))}
+          </div>
         </section>
       </div>
     </div>
