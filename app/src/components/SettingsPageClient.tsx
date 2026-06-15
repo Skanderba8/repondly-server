@@ -1,6 +1,7 @@
 'use client'
 
 import { startTransition, useState } from 'react'
+import type { MetaAssetOption } from '@/lib/meta/oauth'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -34,6 +35,7 @@ type ChannelSettings = {
   metaInstagramUsername: string
   accessToken: string
   webhookVerifyToken: string
+  oauthOptions: MetaAssetOption[]
 }
 
 type SettingsPageClientProps = {
@@ -53,9 +55,9 @@ const channelTitles: Record<ChannelKey, string> = {
 }
 
 const channelDescriptions: Record<ChannelKey, string> = {
-  WHATSAPP: 'Renseignez le numéro WhatsApp Business connecté à Meta pour commencer à recevoir les messages dans l’inbox.',
-  MESSENGER: 'Reliez la page Facebook qui reçoit les messages clients. Cette page sera utilisée comme inbox Messenger.',
-  INSTAGRAM: 'Reliez le compte Instagram professionnel connecté à votre page Facebook pour recevoir les DM.',
+  WHATSAPP: 'Connectez le numéro WhatsApp Business depuis Meta pour commencer à recevoir les messages dans l’inbox.',
+  MESSENGER: 'Connectez la page Facebook qui reçoit les messages clients. Cette page sera utilisée comme inbox Messenger.',
+  INSTAGRAM: 'Connectez le compte Instagram professionnel lié à votre page Facebook pour recevoir les DM.',
 }
 
 function getStatusTone(status: ChannelSettings['status']) {
@@ -93,6 +95,16 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
     MESSENGER: false,
     INSTAGRAM: false,
   })
+  const [connectingChannels, setConnectingChannels] = useState<Record<ChannelKey, boolean>>({
+    WHATSAPP: false,
+    MESSENGER: false,
+    INSTAGRAM: false,
+  })
+  const [selectedAssets, setSelectedAssets] = useState<Record<ChannelKey, string>>({
+    WHATSAPP: initialChannels.WHATSAPP.metaPhoneNumberId,
+    MESSENGER: initialChannels.MESSENGER.metaPageId,
+    INSTAGRAM: initialChannels.INSTAGRAM.metaInstagramAccountId,
+  })
 
   function updateBusinessField(field: keyof BusinessSettings, value: string) {
     setBusiness((current) => ({ ...current, [field]: value }))
@@ -106,6 +118,10 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
         [field]: value,
       },
     }))
+  }
+
+  function updateSelectedAsset(channel: ChannelKey, value: string) {
+    setSelectedAssets((current) => ({ ...current, [channel]: value }))
   }
 
   async function saveBusiness() {
@@ -156,14 +172,150 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
           status: result.data?.status ?? current[channel].status,
         },
       }))
-      setChannelStates((current) => ({ ...current, [channel]: { type: 'success', message: 'Connexion enregistrée.' } }))
+      setChannelStates((current) => ({ ...current, [channel]: { type: 'success', message: 'Nom enregistré.' } }))
       return
     }
 
     setChannelStates((current) => ({
       ...current,
-      [channel]: { type: 'error', message: result.error ?? 'Impossible d’enregistrer cette connexion.' },
+      [channel]: { type: 'error', message: result.error ?? 'Impossible d’enregistrer ce canal.' },
     }))
+  }
+
+  async function startMetaOAuth(channel: ChannelKey) {
+    setConnectingChannels((current) => ({ ...current, [channel]: true }))
+    setChannelStates((current) => ({ ...current, [channel]: buildDefaultState() }))
+
+    const response = await fetch('/api/settings/channels/meta/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel }),
+    })
+
+    const result = await response.json() as {
+      success: boolean
+      error?: string
+      data?: { url: string }
+    }
+
+    if (!result.success || !result.data?.url) {
+      setConnectingChannels((current) => ({ ...current, [channel]: false }))
+      setChannelStates((current) => ({
+        ...current,
+        [channel]: { type: 'error', message: result.error ?? 'Impossible de démarrer la connexion Meta.' },
+      }))
+      return
+    }
+
+    window.location.href = result.data.url
+  }
+
+  async function selectMetaAsset(channel: ChannelKey) {
+    const assetId = selectedAssets[channel]
+
+    if (!assetId) {
+      setChannelStates((current) => ({
+        ...current,
+        [channel]: { type: 'error', message: 'Sélectionnez un actif Meta avant de continuer.' },
+      }))
+      return
+    }
+
+    setSavingChannels((current) => ({ ...current, [channel]: true }))
+    setChannelStates((current) => ({ ...current, [channel]: buildDefaultState() }))
+
+    const response = await fetch('/api/settings/channels/meta/select', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel, assetId }),
+    })
+
+    const result = await response.json() as {
+      success: boolean
+      error?: string
+      data?: {
+        status: ChannelSettings['status']
+        metaBusinessAccountId?: string | null
+        metaBusinessName?: string | null
+        metaPhoneNumberId?: string | null
+        metaPhoneNumber?: string | null
+        metaPageId?: string | null
+        metaPageName?: string | null
+        metaInstagramAccountId?: string | null
+        metaInstagramUsername?: string | null
+        accessToken?: string | null
+        webhookVerifyToken?: string | null
+      }
+    }
+
+    setSavingChannels((current) => ({ ...current, [channel]: false }))
+
+    if (!result.success || !result.data) {
+      setChannelStates((current) => ({
+        ...current,
+        [channel]: { type: 'error', message: result.error ?? 'Impossible d’activer cet actif.' },
+      }))
+      return
+    }
+
+    setChannels((current) => ({
+      ...current,
+      [channel]: {
+        ...current[channel],
+        status: result.data.status,
+        metaBusinessAccountId: result.data.metaBusinessAccountId ?? '',
+        metaBusinessName: result.data.metaBusinessName ?? '',
+        metaPhoneNumberId: result.data.metaPhoneNumberId ?? '',
+        metaPhoneNumber: result.data.metaPhoneNumber ?? '',
+        metaPageId: result.data.metaPageId ?? '',
+        metaPageName: result.data.metaPageName ?? '',
+        metaInstagramAccountId: result.data.metaInstagramAccountId ?? '',
+        metaInstagramUsername: result.data.metaInstagramUsername ?? '',
+        accessToken: result.data.accessToken ?? '',
+        webhookVerifyToken: result.data.webhookVerifyToken ?? '',
+      },
+    }))
+
+    setChannelStates((current) => ({
+      ...current,
+      [channel]: { type: 'success', message: 'Connexion Meta mise à jour.' },
+    }))
+  }
+
+  function renderConnectionSummary(item: ChannelSettings) {
+    if (item.channel === 'WHATSAPP' && item.metaPhoneNumberId) {
+      return (
+        <div className="space-y-1 text-sm text-[color:var(--text-secondary)]">
+          <p>Numéro connecté: {item.metaPhoneNumber || item.metaPhoneNumberId}</p>
+          <p>WABA: {item.metaBusinessName || item.metaBusinessAccountId || 'Non remonté par Meta'}</p>
+          <p>Verify token webhook: généré automatiquement</p>
+        </div>
+      )
+    }
+
+    if (item.channel === 'MESSENGER' && item.metaPageId) {
+      return (
+        <div className="space-y-1 text-sm text-[color:var(--text-secondary)]">
+          <p>Page connectée: {item.metaPageName || item.metaPageId}</p>
+          <p>Page ID: {item.metaPageId}</p>
+        </div>
+      )
+    }
+
+    if (item.channel === 'INSTAGRAM' && item.metaInstagramAccountId) {
+      return (
+        <div className="space-y-1 text-sm text-[color:var(--text-secondary)]">
+          <p>Compte connecté: {item.metaInstagramUsername ? `@${item.metaInstagramUsername.replace(/^@/, '')}` : item.metaInstagramAccountId}</p>
+          <p>Page liée: {item.metaPageName || item.metaPageId || 'Non remontée'}</p>
+        </div>
+      )
+    }
+
+    return (
+      <p className="text-sm text-[color:var(--text-secondary)]">
+        La connexion OAuth Meta va remplir automatiquement les identifiants et tokens nécessaires.
+      </p>
+    )
   }
 
   return (
@@ -191,6 +343,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
           const item = channels[channel]
           const state = channelStates[channel]
           const saving = savingChannels[channel]
+          const connecting = connectingChannels[channel]
 
           return (
             <article key={channel} className="rp-panel p-4 md:p-5">
@@ -204,21 +357,26 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
 
               <div className="mt-4 space-y-3">
                 <label className="rp-field-label">Nom interne<Input value={item.label} onChange={(event) => updateChannelField(channel, 'label', event.target.value)} placeholder="Nom affiché dans Répondly" /></label>
-                <label className="rp-field-label">Meta App ID<Input value={item.metaAppId} onChange={(event) => updateChannelField(channel, 'metaAppId', event.target.value)} placeholder="App ID Meta" /></label>
-                <label className="rp-field-label">Meta User ID<Input value={item.metaUserId} onChange={(event) => updateChannelField(channel, 'metaUserId', event.target.value)} placeholder="Utilisateur Meta" /></label>
-                <label className="rp-field-label">Business Account ID<Input value={item.metaBusinessAccountId} onChange={(event) => updateChannelField(channel, 'metaBusinessAccountId', event.target.value)} placeholder="Business Account ID" /></label>
-                {channel === 'WHATSAPP' ? <label className="rp-field-label">Phone Number ID<Input value={item.metaPhoneNumberId} onChange={(event) => updateChannelField(channel, 'metaPhoneNumberId', event.target.value)} placeholder="Phone Number ID" /></label> : null}
-                {channel === 'WHATSAPP' ? <label className="rp-field-label">Numéro WhatsApp<Input value={item.metaPhoneNumber} onChange={(event) => updateChannelField(channel, 'metaPhoneNumber', event.target.value)} placeholder="+216..." /></label> : null}
-                {channel === 'MESSENGER' ? <label className="rp-field-label">Page ID<Input value={item.metaPageId} onChange={(event) => updateChannelField(channel, 'metaPageId', event.target.value)} placeholder="Facebook Page ID" /></label> : null}
-                {channel === 'MESSENGER' ? <label className="rp-field-label">Nom de la page<Input value={item.metaPageName} onChange={(event) => updateChannelField(channel, 'metaPageName', event.target.value)} placeholder="Nom de la page" /></label> : null}
-                {channel === 'INSTAGRAM' ? <label className="rp-field-label">Instagram Account ID<Input value={item.metaInstagramAccountId} onChange={(event) => updateChannelField(channel, 'metaInstagramAccountId', event.target.value)} placeholder="Instagram Account ID" /></label> : null}
-                {channel === 'INSTAGRAM' ? <label className="rp-field-label">Nom d'utilisateur Instagram<Input value={item.metaInstagramUsername} onChange={(event) => updateChannelField(channel, 'metaInstagramUsername', event.target.value)} placeholder="@compte" /></label> : null}
-                <label className="rp-field-label">Access Token<Input type="password" value={item.accessToken} onChange={(event) => updateChannelField(channel, 'accessToken', event.target.value)} placeholder="Access Token Meta" /></label>
-                {channel === 'WHATSAPP' ? <label className="rp-field-label">Webhook Verify Token<Input type="password" value={item.webhookVerifyToken} onChange={(event) => updateChannelField(channel, 'webhookVerifyToken', event.target.value)} placeholder="Verify Token" /></label> : null}
+                {renderConnectionSummary(item)}
+                {item.oauthOptions.length > 1 ? (
+                  <label className="rp-field-label">
+                    Actif Meta
+                    <select value={selectedAssets[channel]} onChange={(event) => updateSelectedAsset(channel, event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13.5px]">
+                      <option value="">Sélectionner un actif</option>
+                      {item.oauthOptions.map((option) => (
+                        <option key={option.id} value={option.id}>{option.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Button variant="secondary" onClick={() => startTransition(() => saveChannel(channel))} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer la connexion'}</Button>
+                <Button variant="secondary" onClick={() => startTransition(() => startMetaOAuth(channel))} disabled={connecting}>
+                  {connecting ? 'Redirection...' : item.status === 'ACTIVE' ? 'Reconnecter avec Meta' : 'Connecter avec Meta'}
+                </Button>
+                {item.oauthOptions.length > 1 ? <Button variant="secondary" onClick={() => startTransition(() => selectMetaAsset(channel))} disabled={saving}>{saving ? 'Activation...' : 'Activer la sélection'}</Button> : null}
+                <Button variant="secondary" onClick={() => startTransition(() => saveChannel(channel))} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer le nom'}</Button>
                 {state.type !== 'idle' ? <p className={state.type === 'success' ? 'text-sm text-[color:var(--tone-success)]' : 'text-sm text-[color:var(--tone-danger)]'}>{state.message}</p> : null}
               </div>
             </article>
@@ -238,12 +396,12 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
         <article className="rp-panel p-4 md:p-5">
           <div>
             <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Connexion Meta</h2>
-            <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Chaque client doit enregistrer ici ses identifiants Meta actifs avant de pouvoir recevoir des messages dans Répondly.</p>
+            <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Chaque client peut connecter son compte Meta, puis choisir la page, le compte Instagram ou le numéro WhatsApp à utiliser dans Répondly.</p>
           </div>
           <div className="mt-4 text-sm leading-[1.6] text-[color:var(--text-secondary)]">
-            <p>WhatsApp: renseignez au minimum le Phone Number ID et le token.</p>
-            <p className="mt-2">Messenger: renseignez au minimum le Page ID et le token de page.</p>
-            <p className="mt-2">Instagram: renseignez au minimum l’Instagram Account ID et le token associé.</p>
+            <p>1. Cliquez sur Connecter avec Meta sur le canal voulu.</p>
+            <p className="mt-2">2. Autorisez les permissions Meta demandées.</p>
+            <p className="mt-2">3. Si plusieurs actifs sont trouvés, choisissez celui à activer dans Répondly.</p>
           </div>
         </article>
       </section>

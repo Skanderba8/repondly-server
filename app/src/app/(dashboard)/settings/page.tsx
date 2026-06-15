@@ -1,7 +1,9 @@
+import type { Prisma } from '@prisma/client'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SignOutButton } from '@/components/SignOutButton'
 import { SettingsPageClient } from '@/components/SettingsPageClient'
 import { requireBusinessSession } from '@/lib/auth'
+import { parseChannelMetadata, type MetaAssetOption } from '@/lib/meta/oauth'
 import { prisma } from '@/lib/prisma'
 
 function normalizeValue(value?: string | null) {
@@ -24,6 +26,11 @@ type ChannelConnection = {
   metaInstagramUsername: string | null
   accessToken: string | null
   webhookVerifyToken: string | null
+  metadata: Prisma.JsonValue | null
+}
+
+type ChannelClientState = ChannelConnection & {
+  oauthOptions: MetaAssetOption[]
 }
 
 export default async function SettingsPage() {
@@ -59,13 +66,19 @@ export default async function SettingsPage() {
       metaInstagramUsername: true,
       accessToken: true,
       webhookVerifyToken: true,
+      metadata: true,
     },
   })
 
-  const connectionMap: Record<'WHATSAPP' | 'MESSENGER' | 'INSTAGRAM', ChannelConnection | undefined> = {
-    WHATSAPP: channelConnections.find((item) => item.channel === 'WHATSAPP'),
-    MESSENGER: channelConnections.find((item) => item.channel === 'MESSENGER'),
-    INSTAGRAM: channelConnections.find((item) => item.channel === 'INSTAGRAM'),
+  const hydratedConnections: ChannelClientState[] = channelConnections.map((connection) => ({
+    ...connection,
+    oauthOptions: parseChannelMetadata(connection.metadata).oauthAssets ?? [],
+  }))
+
+  const connectionMap: Record<'WHATSAPP' | 'MESSENGER' | 'INSTAGRAM', ChannelClientState | undefined> = {
+    WHATSAPP: hydratedConnections.find((item) => item.channel === 'WHATSAPP'),
+    MESSENGER: hydratedConnections.find((item) => item.channel === 'MESSENGER'),
+    INSTAGRAM: hydratedConnections.find((item) => item.channel === 'INSTAGRAM'),
   }
 
   return (
@@ -97,6 +110,7 @@ export default async function SettingsPage() {
             metaInstagramUsername: normalizeValue(connectionMap.WHATSAPP?.metaInstagramUsername),
             accessToken: normalizeValue(connectionMap.WHATSAPP?.accessToken),
             webhookVerifyToken: normalizeValue(connectionMap.WHATSAPP?.webhookVerifyToken),
+            oauthOptions: connectionMap.WHATSAPP?.oauthOptions ?? [],
           },
           MESSENGER: {
             channel: 'MESSENGER',
@@ -114,6 +128,7 @@ export default async function SettingsPage() {
             metaInstagramUsername: normalizeValue(connectionMap.MESSENGER?.metaInstagramUsername),
             accessToken: normalizeValue(connectionMap.MESSENGER?.accessToken),
             webhookVerifyToken: normalizeValue(connectionMap.MESSENGER?.webhookVerifyToken),
+            oauthOptions: connectionMap.MESSENGER?.oauthOptions ?? [],
           },
           INSTAGRAM: {
             channel: 'INSTAGRAM',
@@ -131,6 +146,7 @@ export default async function SettingsPage() {
             metaInstagramUsername: normalizeValue(connectionMap.INSTAGRAM?.metaInstagramUsername),
             accessToken: normalizeValue(connectionMap.INSTAGRAM?.accessToken),
             webhookVerifyToken: normalizeValue(connectionMap.INSTAGRAM?.webhookVerifyToken),
+            oauthOptions: connectionMap.INSTAGRAM?.oauthOptions ?? [],
           },
         }}
       />
