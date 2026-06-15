@@ -28,12 +28,12 @@ export function DashboardShell({ children, business }: DashboardShellProps) {
   const inboxRoute = pathname.startsWith('/inbox')
 
   return (
-    <div className="rp-dashboard-shell">
+    <div className="nx-shell">
       <Sidebar business={business} />
-      <div className="rp-dashboard-stage">
+      <div className="nx-stage">
         <TopBar title={getTitle(pathname)} businessName={business.name} />
-        <main className={inboxRoute ? 'rp-dashboard-main rp-dashboard-main-inbox' : 'rp-dashboard-main'}>
-          <div className="rp-dashboard-content">{children}</div>
+        <main className="nx-main">
+          <div className={inboxRoute ? 'nx-content-inbox' : 'nx-content'}>{children}</div>
         </main>
       </div>
       <BottomNav />

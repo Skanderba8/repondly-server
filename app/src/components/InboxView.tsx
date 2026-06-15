@@ -54,36 +54,36 @@ export function InboxView({ conversations }: InboxViewProps) {
   const selectedConversation: Conversation | null = filteredConversations.find((conversation) => conversation.id === selectedId) ?? null
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col md:overflow-hidden md:rounded-[var(--radius-md)] md:border md:border-[color:var(--color-border)] md:bg-[color:var(--color-surface)] md:shadow-[var(--shadow-xs)]">
+    <div className="nx-card flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <section className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left pane — conversation list */}
-        <div className="flex min-h-0 w-full flex-col bg-[color:var(--color-surface)] md:w-[300px] md:shrink-0 md:border-r md:border-[color:var(--color-border)]">
-          <div className="border-b border-[color:var(--color-border)] px-4 py-3">
+        <div className="flex min-h-0 w-full flex-col bg-[color:var(--bg-card)] md:w-[300px] md:shrink-0 md:border-r md:border-[color:var(--border)]">
+          <div className="border-b border-[color:var(--border)] px-4 py-3">
             <div>
-              <h1 className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Messages</h1>
-              <p className="mt-0.5 text-[12.5px] leading-[1.4] text-[color:var(--color-text-muted)]">{conversations.length} conversations</p>
+              <h1 className="text-[14px] font-semibold text-[color:var(--text-primary)]">Messages</h1>
+              <p className="mt-0.5 text-[12.5px] leading-[1.4] text-[color:var(--text-muted)]">{conversations.length} conversations</p>
             </div>
             <div className="relative mt-3">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-muted)]" aria-hidden="true" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--text-muted)]" aria-hidden="true" />
               <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher" className="pl-9" aria-label="Rechercher une conversation" />
             </div>
           </div>
 
-          <div className="border-b border-[color:var(--color-border)] px-3 py-2.5">
-            <div className="rp-no-scrollbar flex gap-2 overflow-x-auto">
+          <div className="border-b border-[color:var(--border)] px-3 py-2.5">
+            <div className="nx-no-scrollbar flex gap-2 overflow-x-auto">
               {tabs.map((tab) => {
                 const active = tab.status === activeTab
                 return (
-                  <button key={tab.status} type="button" onClick={() => setActiveTab(tab.status)} className={active ? 'rp-filter-chip is-active shrink-0' : 'rp-filter-chip shrink-0'}>
+                  <button key={tab.status} type="button" onClick={() => setActiveTab(tab.status)} className={active ? 'nx-filter-chip is-active shrink-0' : 'nx-filter-chip shrink-0'}>
                     <span>{tab.label}</span>
-                    <span className="rp-filter-chip-count">{counts[tab.status]}</span>
+                    <span className="text-[11px] opacity-70">{counts[tab.status]}</span>
                   </button>
                 )
               })}
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-surface)]">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[color:var(--bg-card)]">
             {filteredConversations.map((conversation) => (
               <div key={conversation.id}>
                 <div className="block md:hidden"><ConversationCard conversation={conversation} isSelected={false} onClick={() => router.push(`/inbox/${conversation.id}`)} /></div>
@@ -95,7 +95,7 @@ export function InboxView({ conversations }: InboxViewProps) {
         </div>
 
         {/* Center pane — thread */}
-        <div className="hidden min-h-0 min-w-0 flex-1 flex-col bg-[color:var(--color-surface)] md:flex">
+        <div className="hidden min-h-0 min-w-0 flex-1 flex-col bg-[color:var(--bg-card)] md:flex">
           {selectedConversation ? <InboxThread conversation={selectedConversation} /> : <EmptyState title="Sélectionnez une conversation" description="Le thread détaillé et la fiche contact apparaîtront ici." />}
         </div>
 

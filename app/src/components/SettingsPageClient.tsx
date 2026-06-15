@@ -291,7 +291,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
   function renderConnectionSummary(item: ChannelSettings) {
     if (item.channel === 'WHATSAPP' && item.metaPhoneNumberId) {
       return (
-        <div className="space-y-1 text-[12.5px] text-[color:var(--color-text-secondary)]">
+        <div className="space-y-1 text-[12.5px] text-[color:var(--text-secondary)]">
           <p>Numéro connecté: {item.metaPhoneNumber || item.metaPhoneNumberId}</p>
           <p>WABA: {item.metaBusinessName || item.metaBusinessAccountId || 'Non remonté par Meta'}</p>
           <p>Verify token webhook: généré automatiquement</p>
@@ -301,7 +301,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
 
     if (item.channel === 'MESSENGER' && item.metaPageId) {
       return (
-        <div className="space-y-1 text-[12.5px] text-[color:var(--color-text-secondary)]">
+        <div className="space-y-1 text-[12.5px] text-[color:var(--text-secondary)]">
           <p>Page connectée: {item.metaPageName || item.metaPageId}</p>
           <p>Page ID: {item.metaPageId}</p>
         </div>
@@ -310,7 +310,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
 
     if (item.channel === 'INSTAGRAM' && item.metaInstagramAccountId) {
       return (
-        <div className="space-y-1 text-[12.5px] text-[color:var(--color-text-secondary)]">
+        <div className="space-y-1 text-[12.5px] text-[color:var(--text-secondary)]">
           <p>Compte connecté: {item.metaInstagramUsername ? `@${item.metaInstagramUsername.replace(/^@/, '')}` : item.metaInstagramAccountId}</p>
           <p>Page liée: {item.metaPageName || item.metaPageId || 'Non remontée'}</p>
         </div>
@@ -318,7 +318,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
     }
 
     return (
-      <p className="text-[12.5px] leading-[1.6] text-[color:var(--color-text-muted)]">
+      <p className="text-[12.5px] leading-[1.6] text-[color:var(--text-muted)]">
         La connexion OAuth Meta remplit automatiquement les identifiants et tokens nécessaires. Cliquez sur « Connecter avec Meta », autorisez les permissions, puis choisissez l’actif à activer si plusieurs sont trouvés.
       </p>
     )
@@ -330,34 +330,34 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
   const connecting = connectingChannels[activeChannel]
 
   return (
-    <div className="rp-page max-w-4xl">
+    <div className="nx-page max-w-4xl">
       {/* Business info */}
-      <section className="rp-panel p-4 md:p-5">
+      <section className="nx-card p-4 md:p-5">
         <div className="mb-4">
-          <h2 className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Mon entreprise</h2>
-          <p className="mt-1 text-[12.5px] text-[color:var(--color-text-secondary)]">Informations visibles dans votre espace Répondly.</p>
+          <h2 className="text-[14px] font-semibold text-[color:var(--text-primary)]">Mon entreprise</h2>
+          <p className="mt-1 text-[12.5px] text-[color:var(--text-secondary)]">Informations visibles dans votre espace Répondly.</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="rp-field-label">Nom de l'entreprise<Input value={business.name} onChange={(event) => updateBusinessField('name', event.target.value)} placeholder="Nom de l'entreprise" /></label>
-          <label className="rp-field-label">Téléphone<Input value={business.phone} onChange={(event) => updateBusinessField('phone', event.target.value)} placeholder="Téléphone" /></label>
-          <label className="rp-field-label md:col-span-2">Email<Input value={business.email} onChange={(event) => updateBusinessField('email', event.target.value)} placeholder="Email" type="email" /></label>
-          <label className="rp-field-label">Type d'activité<select value={business.businessType} onChange={(event) => updateBusinessField('businessType', event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13px]"><option value="other">Autre</option><option value="clinic">Clinique</option><option value="salon">Salon</option><option value="ecom">E-commerce</option><option value="garage">Garage</option></select></label>
-          <label className="rp-field-label">Ton<select value={business.tone} onChange={(event) => updateBusinessField('tone', event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13px]"><option value="friendly">Amical</option><option value="formal">Formel</option></select></label>
+          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Nom de l'entreprise<Input value={business.name} onChange={(event) => updateBusinessField('name', event.target.value)} placeholder="Nom de l'entreprise" /></label>
+          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Téléphone<Input value={business.phone} onChange={(event) => updateBusinessField('phone', event.target.value)} placeholder="Téléphone" /></label>
+          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)] md:col-span-2">Email<Input value={business.email} onChange={(event) => updateBusinessField('email', event.target.value)} placeholder="Email" type="email" /></label>
+          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Type d'activité<select value={business.businessType} onChange={(event) => updateBusinessField('businessType', event.target.value)} className="nx-input h-9 w-full px-3 text-[13px]"><option value="other">Autre</option><option value="clinic">Clinique</option><option value="salon">Salon</option><option value="ecom">E-commerce</option><option value="garage">Garage</option></select></label>
+          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Ton<select value={business.tone} onChange={(event) => updateBusinessField('tone', event.target.value)} className="nx-input h-9 w-full px-3 text-[13px]"><option value="friendly">Amical</option><option value="formal">Formel</option></select></label>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Button onClick={() => startTransition(saveBusiness)} disabled={savingBusiness}>{savingBusiness ? 'Sauvegarde...' : 'Sauvegarder'}</Button>
-          {businessState.type !== 'idle' ? <p className={businessState.type === 'success' ? 'text-[12.5px] text-[color:var(--color-success)]' : 'text-[12.5px] text-[color:var(--color-danger)]'}>{businessState.message}</p> : null}
+          {businessState.type !== 'idle' ? <p className={businessState.type === 'success' ? 'text-[12.5px] text-[color:var(--success)]' : 'text-[12.5px] text-[color:var(--danger)]'}>{businessState.message}</p> : null}
         </div>
       </section>
 
       {/* Channel connections — tabbed */}
-      <section className="rp-panel p-4 md:p-5">
+      <section className="nx-card p-4 md:p-5">
         <div className="mb-4">
-          <h2 className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Canaux connectés</h2>
-          <p className="mt-1 text-[12.5px] text-[color:var(--color-text-secondary)]">Connectez chaque canal Meta puis choisissez l’actif à utiliser dans Répondly.</p>
+          <h2 className="text-[14px] font-semibold text-[color:var(--text-primary)]">Canaux connectés</h2>
+          <p className="mt-1 text-[12.5px] text-[color:var(--text-secondary)]">Connectez chaque canal Meta puis choisissez l’actif à utiliser dans Répondly.</p>
         </div>
 
-        <div role="tablist" aria-label="Canaux" className="rp-no-scrollbar flex gap-2 overflow-x-auto border-b border-[color:var(--color-border)] pb-3">
+        <div role="tablist" aria-label="Canaux" className="nx-no-scrollbar flex gap-2 overflow-x-auto border-b border-[color:var(--border)] pb-3">
           {CHANNEL_ORDER.map((channel) => {
             const channelItem = channels[channel]
             const active = channel === activeChannel
@@ -368,7 +368,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
                 role="tab"
                 aria-selected={active}
                 onClick={() => setActiveChannel(channel)}
-                className={cn('rp-filter-chip shrink-0', active && 'is-active')}
+                className={cn('nx-filter-chip shrink-0', active && 'is-active')}
               >
                 <span>{channelTitles[channel]}</span>
                 <Badge dot tone={getStatusTone(channelItem.status)} className="ml-0.5" />
@@ -379,20 +379,20 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
 
         <div className="mt-4 space-y-4">
           <div className="flex items-start justify-between gap-3">
-            <p className="max-w-[460px] text-[12.5px] leading-[1.55] text-[color:var(--color-text-secondary)]">{channelDescriptions[activeChannel]}</p>
+            <p className="max-w-[460px] text-[12.5px] leading-[1.55] text-[color:var(--text-secondary)]">{channelDescriptions[activeChannel]}</p>
             <Badge tone={getStatusTone(item.status)} variant={getStatusLabel(item.status)} />
           </div>
 
-          <label className="rp-field-label max-w-md">Nom interne<Input value={item.label} onChange={(event) => updateChannelField(activeChannel, 'label', event.target.value)} placeholder="Nom affiché dans Répondly" /></label>
+          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)] max-w-md">Nom interne<Input value={item.label} onChange={(event) => updateChannelField(activeChannel, 'label', event.target.value)} placeholder="Nom affiché dans Répondly" /></label>
 
-          <div className="rounded-[var(--radius-sm)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-subtle)] p-3">
+          <div className="rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3">
             {renderConnectionSummary(item)}
           </div>
 
           {item.oauthOptions.length > 1 ? (
-            <label className="rp-field-label max-w-md">
+            <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)] max-w-md">
               Actif Meta
-              <select value={selectedAssets[activeChannel]} onChange={(event) => updateSelectedAsset(activeChannel, event.target.value)} className="rp-field-control h-9 w-full px-3 text-[13px]">
+              <select value={selectedAssets[activeChannel]} onChange={(event) => updateSelectedAsset(activeChannel, event.target.value)} className="nx-input h-9 w-full px-3 text-[13px]">
                 <option value="">Sélectionner un actif</option>
                 {item.oauthOptions.map((option) => (
                   <option key={option.id} value={option.id}>{option.label}</option>
@@ -407,19 +407,19 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
             </Button>
             {item.oauthOptions.length > 1 ? <Button variant="secondary" onClick={() => startTransition(() => selectMetaAsset(activeChannel))} disabled={saving}>{saving ? 'Activation...' : 'Activer la sélection'}</Button> : null}
             <Button variant="ghost" onClick={() => startTransition(() => saveChannel(activeChannel))} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer le nom'}</Button>
-            {state.type !== 'idle' ? <p className={state.type === 'success' ? 'text-[12.5px] text-[color:var(--color-success)]' : 'text-[12.5px] text-[color:var(--color-danger)]'}>{state.message}</p> : null}
+            {state.type !== 'idle' ? <p className={state.type === 'success' ? 'text-[12.5px] text-[color:var(--success)]' : 'text-[12.5px] text-[color:var(--danger)]'}>{state.message}</p> : null}
           </div>
         </div>
       </section>
 
       {/* Subscription */}
-      <section className="rp-panel p-4 md:p-5">
+      <section className="nx-card p-4 md:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">Abonnement</h2>
-            <div className="mt-2 flex items-center gap-2"><Badge variant={business.plan} /><span className="text-[12.5px] text-[color:var(--color-text-secondary)]">Plan actuel</span></div>
+            <h2 className="text-[14px] font-semibold text-[color:var(--text-primary)]">Abonnement</h2>
+            <div className="mt-2 flex items-center gap-2"><Badge variant={business.plan} /><span className="text-[12.5px] text-[color:var(--text-secondary)]">Plan actuel</span></div>
           </div>
-          <a href="#" className="text-[12.5px] font-semibold text-[color:var(--color-text-primary)] underline-offset-2 hover:underline">Mettre à niveau</a>
+          <a href="#" className="text-[12.5px] font-semibold text-[color:var(--text-primary)] underline-offset-2 hover:underline">Mettre à niveau</a>
         </div>
       </section>
     </div>

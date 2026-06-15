@@ -83,7 +83,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Configuration" title="Paramètres" description="Branchez les actifs Meta réels de chaque client pour que l’inbox reçoive les messages." actions={<SignOutButton className="inline-flex h-9 w-fit items-center rounded-[var(--radius-sm)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 text-[13px] font-medium text-[color:var(--color-danger)] transition-colors duration-[var(--ease-fast)] hover:bg-[color:var(--color-danger-soft)]" />} />
+      <PageHeader eyebrow="Configuration" title="Paramètres" description="Branchez les actifs Meta réels de chaque client pour que l’inbox reçoive les messages." actions={<SignOutButton className="inline-flex h-9 w-fit items-center rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-card)] px-3 text-[13px] font-medium text-[color:var(--danger)] transition-colors duration-150 hover:bg-[color:var(--danger-soft)]" />} />
       <SettingsPageClient
         initialBusiness={{
           name: business?.name ?? '',
@@ -150,7 +150,7 @@ export default async function SettingsPage() {
           },
         }}
       />
-      <section className="rp-panel mt-4 p-4 md:p-5">
+      <section className="nx-card mt-4 p-4 md:p-5">
         <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Compte</h2>
         <p className="mt-2 text-sm text-[color:var(--text-secondary)]">Session active jusqu'au {new Date(session.sessionExpiresAt).toLocaleString('fr-FR')}</p>
       </section>

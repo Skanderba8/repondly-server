@@ -30,15 +30,15 @@ const INITIAL_STATE: FormState = {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="rp-auth-field">
-      <span>{label}</span>
+    <label className="nx-field">
+      <span className="nx-label">{label}</span>
       {children}
     </label>
   )
 }
 
 function AuthInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={["rp-auth-input", props.className].filter(Boolean).join(' ')} />
+  return <input {...props} className={['nx-input', props.className].filter(Boolean).join(' ')} />
 }
 
 export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
@@ -109,7 +109,7 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rp-auth-form">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
       {isSignup ? (
         <>
           <Field label="Nom de l'entreprise">
@@ -129,15 +129,15 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
         <AuthInput type="password" value={form.password} onChange={(event) => updateField('password', event.target.value)} placeholder={isSignup ? '8 caractères minimum' : 'Votre mot de passe'} autoComplete={isSignup ? 'new-password' : 'current-password'} required minLength={8} />
       </Field>
 
-      {error ? <p className="rp-auth-error">{error}</p> : null}
+      {error ? <p className="text-[12.5px] leading-[1.5] text-[color:var(--danger)]">{error}</p> : null}
 
-      <button type="submit" disabled={pending} className="rp-auth-submit">
+      <button type="submit" disabled={pending} className="nx-btn nx-btn-primary mt-0.5 h-10 w-full">
         {pending ? 'Chargement...' : isSignup ? 'Créer mon compte' : 'Se connecter'}
       </button>
 
-      <p className="rp-auth-switch">
+      <p className="text-center text-[13px] leading-[1.6] text-[color:var(--text-secondary)]">
         {isSignup ? 'Déjà un compte ? ' : 'Pas encore de compte ? '}
-        <Link href={isSignup ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
+        <Link href={isSignup ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="font-semibold text-[color:var(--text-primary)] underline-offset-2 hover:underline">
           {isSignup ? 'Se connecter' : 'Créer un compte'}
         </Link>
       </p>

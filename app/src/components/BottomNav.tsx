@@ -16,25 +16,23 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="rp-bottom-nav" aria-label="Navigation mobile">
-      <div className="rp-bottom-nav-inner">
-        {items.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-label={item.label}
-              className={cn('rp-bottom-nav-link', active && 'is-active')}
-              aria-current={active ? 'page' : undefined}
-            >
-              <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          )
-        })}
-      </div>
+    <nav className="nx-bottomnav" aria-label="Navigation mobile">
+      {items.map((item) => {
+        const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+        const Icon = item.icon
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-label={item.label}
+            className={cn('nx-bottomnav-item', active && 'is-active')}
+            aria-current={active ? 'page' : undefined}
+          >
+            <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+            <span className="truncate">{item.label}</span>
+          </Link>
+        )
+      })}
     </nav>
   )
 }

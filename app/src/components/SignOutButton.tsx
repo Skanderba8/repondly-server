@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
+import { cn } from '@/lib/utils'
 
 type SignOutButtonProps = {
   className?: string
@@ -20,7 +21,7 @@ export function SignOutButton({ className }: SignOutButtonProps) {
   return (
     <button
       type="button"
-      className={className}
+      className={cn('nx-btn nx-btn-ghost nx-btn-sm', className)}
       onClick={() => {
         void handleSignOut()
       }}

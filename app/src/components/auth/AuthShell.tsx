@@ -9,35 +9,20 @@ type AuthShellProps = {
 
 export function AuthShell({ title, subtitle, children }: AuthShellProps) {
   return (
-    <main className="rp-auth-root">
-      <section className="rp-auth-panel" aria-hidden="true">
-        <div className="rp-auth-panel-content">
-          <div className="rp-auth-brand">
-            <Image src="/logo.png" alt="" width={26} height={26} priority className="rp-auth-logo-image" />
-            <span>Répondly<em>.</em></span>
+    <main className="grid min-h-dvh place-items-center bg-[color:var(--bg-page)] px-4 py-10 text-[color:var(--text-primary)]">
+      <section className="nx-card w-full max-w-[420px] p-8">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <div className="flex items-center gap-2.5">
+            <Image src="/logo.png" alt="" width={28} height={28} priority className="block object-contain" />
+            <span className="text-[14px] font-bold text-[color:var(--text-primary)]">Répondly</span>
           </div>
-
-          <div className="rp-auth-panel-copy">
-            <p>Chaque client mérite une réponse rapide.</p>
-            <p>Répondly centralise vos conversations et donne à votre équipe une file de travail claire, fiable et quotidienne.</p>
+          <div>
+            <p className="nx-section-label">Espace entreprise</p>
+            <h1 className="mt-2 text-[20px] font-semibold leading-[1.15] text-[color:var(--text-primary)]">{title}</h1>
+            <p className="mt-2 text-[13px] leading-[1.55] text-[color:var(--text-secondary)]">{subtitle}</p>
           </div>
         </div>
-      </section>
-
-      <section className="rp-auth-stage" aria-label="Authentification Répondly">
-        <div className="rp-auth-mobile-brand" aria-hidden="true">
-          <Image src="/logo.png" alt="" width={24} height={24} priority className="rp-auth-logo-image" />
-          <span>Répondly<em>.</em></span>
-        </div>
-
-        <div className="rp-auth-card">
-          <div className="rp-auth-card-header">
-            <p className="rp-auth-eyebrow">Espace entreprise</p>
-            <h1>{title}</h1>
-            <p>{subtitle}</p>
-          </div>
-          <div className="rp-auth-card-body">{children}</div>
-        </div>
+        {children}
       </section>
     </main>
   )

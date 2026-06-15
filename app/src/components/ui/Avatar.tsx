@@ -8,24 +8,16 @@ interface AvatarProps {
   className?: string
 }
 
-const sizeStyles: Record<AvatarSize, string> = {
-  sm: 'h-7 w-7 text-[11px]',
-  md: 'h-8 w-8 text-[12px]',
-  lg: 'h-[38px] w-[38px] text-[13px]',
-  xl: 'h-11 w-11 text-[15px]',
+const sizeClasses: Record<AvatarSize, string> = {
+  sm: 'nx-avatar-sm',
+  md: 'nx-avatar-md',
+  lg: 'nx-avatar-lg',
+  xl: 'nx-avatar-xl',
 }
 
 export function Avatar({ initials, size = 'md', className }: AvatarProps) {
   return (
-    <div
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[color:var(--color-border)]',
-        'bg-[color:var(--color-surface-subtle)] font-semibold text-[color:var(--color-text-secondary)]',
-        sizeStyles[size],
-        className,
-      )}
-      aria-hidden="true"
-    >
+    <div className={cn('nx-avatar', sizeClasses[size], className)} aria-hidden="true">
       {initials}
     </div>
   )

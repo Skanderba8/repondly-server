@@ -47,7 +47,7 @@ export default function ContactsPage() {
   }), [])
 
   return (
-    <div className="rp-page">
+    <div className="nx-page">
       <PageHeader
         eyebrow="Base client"
         title="Contacts"
@@ -55,24 +55,24 @@ export default function ContactsPage() {
         actions={<Button variant="secondary" className="w-full sm:w-auto"><Plus className="h-4 w-4" aria-hidden="true" />Nouveau contact</Button>}
       />
 
-      <section className="rp-table-shell overflow-hidden">
-        <div className="border-b border-[color:var(--color-border)] px-4 py-3 md:px-5 md:py-4">
+      <section className="nx-card overflow-hidden">
+        <div className="border-b border-[color:var(--border)] px-4 py-3 md:px-5 md:py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="rp-no-scrollbar flex gap-2 overflow-x-auto">
+            <div className="nx-no-scrollbar flex gap-2 overflow-x-auto">
               {filters.map((filter) => (
-                <button key={filter.id} type="button" onClick={() => setActiveFilter(filter.id)} className={activeFilter === filter.id ? 'rp-filter-chip is-active shrink-0' : 'rp-filter-chip shrink-0'}>
+                <button key={filter.id} type="button" onClick={() => setActiveFilter(filter.id)} className={activeFilter === filter.id ? 'nx-filter-chip is-active shrink-0' : 'nx-filter-chip shrink-0'}>
                   <span>{filter.label}</span>
-                  <span className="rp-filter-chip-count">{counts[filter.id]}</span>
+                  <span className="text-[11px] opacity-70">{counts[filter.id]}</span>
                 </button>
               ))}
             </div>
 
             <div className="flex flex-col gap-2 lg:w-[430px] lg:flex-row">
               <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-muted)]" aria-hidden="true" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--text-muted)]" aria-hidden="true" />
                 <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un contact" className="pl-9" aria-label="Rechercher un contact" />
               </div>
-              <label className="rp-field-control flex h-9 items-center gap-2 px-3 text-[13px] text-[color:var(--color-text-secondary)]">
+              <label className="nx-input flex h-9 items-center gap-2 px-3 text-[13px] text-[color:var(--text-secondary)]">
                 <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
                 <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} className="h-full border-none bg-transparent outline-none" aria-label="Trier les contacts">
                   <option value="recent">Activité</option>
@@ -85,27 +85,27 @@ export default function ContactsPage() {
 
         {/* Desktop table */}
         <div className="hidden md:block">
-          <div className={`rp-table-head ${COLUMNS}`}><span>Nom</span><span>Téléphone</span><span>Tags</span><span>Messages</span><span>Dernière act.</span></div>
+          <div className={`nx-table-head ${COLUMNS}`}><span>Nom</span><span>Téléphone</span><span>Tags</span><span>Messages</span><span>Dernière act.</span></div>
           <div>
             {contacts.map((contact) => (
-              <button key={contact.id} type="button" onClick={() => router.push(`/contacts/${contact.id}`)} className={`rp-table-row ${COLUMNS} w-full text-left`}>
-                <div className="flex min-w-0 items-center gap-3"><Avatar initials={contact.initials} size="sm" /><span className="truncate text-[13px] font-semibold text-[color:var(--color-text-primary)]">{contact.name}</span></div>
-                <span className="truncate text-[13px] text-[color:var(--color-text-secondary)]">{contact.phone}</span>
+              <button key={contact.id} type="button" onClick={() => router.push(`/contacts/${contact.id}`)} className={`nx-table-row ${COLUMNS} w-full text-left`}>
+                <div className="flex min-w-0 items-center gap-3"><Avatar initials={contact.initials} size="sm" /><span className="truncate text-[13px] font-semibold text-[color:var(--text-primary)]">{contact.name}</span></div>
+                <span className="truncate text-[13px] text-[color:var(--text-secondary)]">{contact.phone}</span>
                 <div className="flex min-w-0 flex-wrap gap-1.5">{contact.tags.slice(0, 2).map((tag) => <Badge key={tag} variant={tag} />)}</div>
-                <span className="text-[13px] text-[color:var(--color-text-secondary)]">{contact.totalConversations}</span>
-                <span className="truncate text-[13px] text-[color:var(--color-text-secondary)]">{contact.lastSeen}</span>
+                <span className="text-[13px] text-[color:var(--text-secondary)]">{contact.totalConversations}</span>
+                <span className="truncate text-[13px] text-[color:var(--text-secondary)]">{contact.lastSeen}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Mobile rows */}
-        <div className="divide-y divide-[color:var(--color-border-subtle)] md:hidden">
+        <div className="divide-y divide-[color:var(--border)] md:hidden">
           {contacts.map((contact) => (
-            <button key={contact.id} type="button" onClick={() => router.push(`/contacts/${contact.id}`)} className="w-full px-4 py-3.5 text-left transition-colors duration-[var(--ease-fast)] hover:bg-[color:var(--color-surface-hover)]">
+            <button key={contact.id} type="button" onClick={() => router.push(`/contacts/${contact.id}`)} className="w-full px-4 py-3.5 text-left transition-colors duration-150 hover:bg-[color:var(--bg-page)]">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0"><p className="truncate text-[13px] font-semibold text-[color:var(--color-text-primary)]">{contact.name}</p><p className="mt-0.5 truncate text-[12.5px] text-[color:var(--color-text-muted)]">{contact.phone}</p></div>
-                <span className="text-[12px] text-[color:var(--color-text-secondary)]">{contact.totalConversations}</span>
+                <div className="min-w-0"><p className="truncate text-[13px] font-semibold text-[color:var(--text-primary)]">{contact.name}</p><p className="mt-0.5 truncate text-[12.5px] text-[color:var(--text-muted)]">{contact.phone}</p></div>
+                <span className="text-[12px] text-[color:var(--text-secondary)]">{contact.totalConversations}</span>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">{contact.tags.map((tag) => <Badge key={tag} variant={tag} />)}</div>
             </button>
