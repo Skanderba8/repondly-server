@@ -1,4 +1,3 @@
-import type { Prisma } from '@prisma/client'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SignOutButton } from '@/components/SignOutButton'
 import { SettingsPageClient } from '@/components/SettingsPageClient'
@@ -9,63 +8,61 @@ function normalizeValue(value?: string | null) {
   return value ?? ''
 }
 
-type ChannelConnection = Prisma.BusinessChannelConnectionGetPayload<{
-  select: {
-    channel: true
-    status: true
-    label: true
-    metaAppId: true
-    metaUserId: true
-    metaBusinessAccountId: true
-    metaBusinessName: true
-    metaPhoneNumberId: true
-    metaPhoneNumber: true
-    metaPageId: true
-    metaPageName: true
-    metaInstagramAccountId: true
-    metaInstagramUsername: true
-    accessToken: true
-    webhookVerifyToken: true
-  }
-}>
+type ChannelConnection = {
+  channel: 'WHATSAPP' | 'MESSENGER' | 'INSTAGRAM'
+  status: 'PENDING' | 'ACTIVE' | 'DISCONNECTED' | 'ERROR'
+  label: string | null
+  metaAppId: string | null
+  metaUserId: string | null
+  metaBusinessAccountId: string | null
+  metaBusinessName: string | null
+  metaPhoneNumberId: string | null
+  metaPhoneNumber: string | null
+  metaPageId: string | null
+  metaPageName: string | null
+  metaInstagramAccountId: string | null
+  metaInstagramUsername: string | null
+  accessToken: string | null
+  webhookVerifyToken: string | null
+}
 
 export default async function SettingsPage() {
   const session = await requireBusinessSession()
-  const [business, channelConnections] = await Promise.all([
-    prisma.business.findUnique({
-      where: { id: session.user.id },
-      select: {
-        name: true,
-        email: true,
-        phone: true,
-        plan: true,
-        businessType: true,
-        tone: true,
-      },
-    }),
-    prisma.businessChannelConnection.findMany({
-      where: { businessId: session.user.id },
-      select: {
-        channel: true,
-        status: true,
-        label: true,
-        metaAppId: true,
-        metaUserId: true,
-        metaBusinessAccountId: true,
-        metaBusinessName: true,
-        metaPhoneNumberId: true,
-        metaPhoneNumber: true,
-        metaPageId: true,
-        metaPageName: true,
-        metaInstagramAccountId: true,
-        metaInstagramUsername: true,
-        accessToken: true,
-        webhookVerifyToken: true,
-      },
-    }) as Promise<ChannelConnection[]>,
-  ])
 
-  const connectionMap = {
+  const business = await prisma.business.findUnique({
+    where: { id: session.user.id },
+    select: {
+      name: true,
+      email: true,
+      phone: true,
+      plan: true,
+      businessType: true,
+      tone: true,
+    },
+  })
+
+  const channelConnections: ChannelConnection[] = await prisma.businessChannelConnection.findMany({
+    where: { businessId: session.user.id },
+    select: {
+      channel: true,
+      status: true,
+      label: true,
+      metaAppId: true,
+      metaUserId: true,
+      metaBusinessAccountId: true,
+      metaBusinessName: true,
+      metaPhoneNumberId: true,
+      metaPhoneNumber: true,
+      metaPageId: true,
+      metaPageName: true,
+      metaInstagramAccountId: true,
+      metaInstagramUsername: true,
+      accessToken: true,
+      webhookVerifyToken: true,
+    },
+  })
+
+  const connectionMap: Record<'WHATSAPP' | 'MESSENGER' | 'INSTAGRAM', ChannelConnection | undefined> = {
     WHATSAPP: channelConnections.find((item) => item.channel === 'WHATSAPP'),
     MESSENGER: channelConnections.find((item) => item.channel === 'MESSENGER'),
     INSTAGRAM: channelConnections.find((item) => item.channel === 'INSTAGRAM'),

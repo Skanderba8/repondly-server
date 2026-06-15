@@ -1,4 +1,4 @@
-import type { Plan } from '@prisma/client'
+import type { Plan } from '@/types'
 import { NextResponse } from 'next/server'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'

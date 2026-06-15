@@ -1,5 +1,5 @@
 import type { CookieOptions } from '@supabase/ssr'
-import { Prisma } from '@prisma/client'
+import { PrismaClientKnownRequestError } from '@prisma/client-runtime-utils'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import {
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
       )
     }
 
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
       return NextResponse.json(
         { success: false, error: 'Impossible de créer le compte avec ces informations.', debug: error.message },
         { status: 409 },

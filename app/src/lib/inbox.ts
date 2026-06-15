@@ -1,6 +1,36 @@
-import type { Contact as PrismaContact, Conversation as PrismaConversation, Message as PrismaMessage } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import type { Contact, Conversation, Message } from '@/types'
+
+type ContactRecord = {
+  id: string
+  name: string | null
+  username: string | null
+  phone: string | null
+  totalConversations: number
+  tags: string[]
+  notes: string | null
+  lastSeen: Date | null
+}
+
+type MessageRecord = {
+  id: string
+  content: string
+  direction: Message['direction']
+  createdAt: Date
+}
+
+type ConversationRecord = {
+  id: string
+  status: Conversation['status']
+  intent: string | null
+  lastMessageAt: Date | null
+  unreadCount: number
+  needsFollowUp: boolean
+  followUpAt: Date | null
+  summary: string | null
+  contact: ContactRecord
+  messages: MessageRecord[]
+}
 
 const VALID_INTENTS = new Set(['RDV', 'PRIX', 'COMMANDE', 'RÉCLAMATION', 'AUTRE'])
 
@@ -31,7 +61,7 @@ function normalizeIntent(intent?: string | null): Conversation['intent'] {
   return 'AUTRE'
 }
 
-function mapContact(contact: PrismaContact): Contact {
+function mapContact(contact: ContactRecord): Contact {
   return {
     id: contact.id,
     name: contact.name ?? contact.username ?? undefined,
@@ -44,18 +74,13 @@ function mapContact(contact: PrismaContact): Contact {
   }
 }
 
-function mapMessages(messages: PrismaMessage[]): Message[] {
+function mapMessages(messages: MessageRecord[]): Message[] {
   return messages.map((message) => ({
     id: message.id,
     content: message.content,
     direction: message.direction,
     timestamp: message.createdAt.toISOString(),
   }))
-}
-
-type ConversationRecord = PrismaConversation & {
-  contact: PrismaContact
-  messages: PrismaMessage[]
 }
 
 function mapConversation(conversation: ConversationRecord): Conversation {

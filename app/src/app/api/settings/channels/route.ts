@@ -1,7 +1,20 @@
-import { ChannelType, ConnectionStatus } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { requireBusinessApiSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+
+type ChannelType = 'WHATSAPP' | 'MESSENGER' | 'INSTAGRAM'
+type ConnectionStatus = 'PENDING' | 'ACTIVE'
+
+const ChannelType = {
+  WHATSAPP: 'WHATSAPP',
+  MESSENGER: 'MESSENGER',
+  INSTAGRAM: 'INSTAGRAM',
+} as const satisfies Record<ChannelType, ChannelType>
+
+const ConnectionStatus = {
+  PENDING: 'PENDING',
+  ACTIVE: 'ACTIVE',
+} as const satisfies Record<ConnectionStatus, ConnectionStatus>
 
 type ChannelConnectionBody = {
   channel?: ChannelType

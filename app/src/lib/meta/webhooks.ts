@@ -1,13 +1,59 @@
-import {
-  ChannelType,
-  ConversationStatus,
-  Direction,
-  MessageStatus,
-  MessageType,
-  Prisma,
-  SenderType,
-} from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+
+type JsonValue = Prisma.InputJsonValue
+type ChannelType = 'WHATSAPP' | 'MESSENGER' | 'INSTAGRAM'
+type ConversationStatus = 'NEW'
+type Direction = 'INBOUND'
+type MessageStatus = 'SENT' | 'DELIVERED' | 'READ' | 'FAILED'
+type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'STICKER' | 'REACTION' | 'SYSTEM' | 'UNSUPPORTED'
+type SenderType = 'CUSTOMER'
+
+type MessageUpdateData = {
+  status: MessageStatus
+  externalStatus: string
+  rawPayload: JsonValue
+  deliveredAt?: Date
+  readAt?: Date
+  failedAt?: Date
+}
+
+const ChannelType = {
+  WHATSAPP: 'WHATSAPP',
+  MESSENGER: 'MESSENGER',
+  INSTAGRAM: 'INSTAGRAM',
+} as const satisfies Record<ChannelType, ChannelType>
+
+const ConversationStatus = {
+  NEW: 'NEW',
+} as const satisfies Record<ConversationStatus, ConversationStatus>
+
+const Direction = {
+  INBOUND: 'INBOUND',
+} as const satisfies Record<Direction, Direction>
+
+const MessageStatus = {
+  SENT: 'SENT',
+  DELIVERED: 'DELIVERED',
+  READ: 'READ',
+  FAILED: 'FAILED',
+} as const satisfies Record<MessageStatus, MessageStatus>
+
+const MessageType = {
+  TEXT: 'TEXT',
+  IMAGE: 'IMAGE',
+  VIDEO: 'VIDEO',
+  AUDIO: 'AUDIO',
+  DOCUMENT: 'DOCUMENT',
+  STICKER: 'STICKER',
+  REACTION: 'REACTION',
+  SYSTEM: 'SYSTEM',
+  UNSUPPORTED: 'UNSUPPORTED',
+} as const satisfies Record<MessageType, MessageType>
+
+const SenderType = {
+  CUSTOMER: 'CUSTOMER',
+} as const satisfies Record<SenderType, SenderType>
 
 type MetaObject = 'whatsapp_business_account' | 'page' | 'instagram'
 
@@ -40,7 +86,7 @@ type NormalizedInboundMessage = {
   contactName?: string
   phone?: string
   sentAt: Date
-  rawPayload: Prisma.InputJsonValue
+  rawPayload: JsonValue
 }
 
 type NormalizedStatusEvent = {
@@ -50,7 +96,7 @@ type NormalizedStatusEvent = {
   externalMessageId?: string
   status: MessageStatus
   statusAt: Date
-  rawPayload: Prisma.InputJsonValue
+  rawPayload: JsonValue
 }
 
 type NormalizedEvent = NormalizedInboundMessage | NormalizedStatusEvent
@@ -224,7 +270,7 @@ function normalizeWhatsAppEvents(payload: MetaWebhookPayload): NormalizedEvent[]
           contactName,
           phone: waContactPhone,
           sentAt: toDateFromUnixSeconds(message.timestamp),
-          rawPayload: message as Prisma.InputJsonValue,
+          rawPayload: message as JsonValue,
         })
       }
 
@@ -238,7 +284,7 @@ function normalizeWhatsAppEvents(payload: MetaWebhookPayload): NormalizedEvent[]
           externalMessageId: asString(status.id),
           status: mapWhatsAppStatus(status.status),
           statusAt: toDateFromUnixSeconds(status.timestamp),
-          rawPayload: status as Prisma.InputJsonValue,
+          rawPayload: status as JsonValue,
         })
       }
     }
@@ -285,7 +331,7 @@ function normalizePageLikeEvents(payload: MetaWebhookPayload): NormalizedEvent[]
         content,
         messageType,
         sentAt: toDateFromUnixMilliseconds(messagingEvent.timestamp),
-        rawPayload: messagingEvent as Prisma.InputJsonValue,
+        rawPayload: messagingEvent as JsonValue,
       })
     }
   }
@@ -495,7 +541,7 @@ async function applyStatusEvent(connection: ChannelConnection, event: Normalized
     return
   }
 
-  const data: Prisma.MessageUpdateManyMutationInput = {
+  const data: MessageUpdateData = {
     status: event.status,
     externalStatus: event.status,
     rawPayload: event.rawPayload,
@@ -535,8 +581,8 @@ export async function createWebhookEventRecord(payload: MetaWebhookPayload, head
     data: {
       source: getEventSource(payload.object),
       channel: mapMetaObjectToChannel(payload.object),
-      headers: serializedHeaders as Prisma.InputJsonValue,
-      payload: payload as Prisma.InputJsonValue,
+      headers: serializedHeaders as JsonValue,
+      payload: payload as JsonValue,
     },
     select: { id: true },
   })

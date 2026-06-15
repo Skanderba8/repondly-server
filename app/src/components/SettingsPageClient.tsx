@@ -1,10 +1,11 @@
 'use client'
 
 import { startTransition, useState } from 'react'
-import type { ConnectionStatus } from '@prisma/client'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+
+type ConnectionStatus = 'PENDING' | 'ACTIVE' | 'DISCONNECTED' | 'ERROR'
 
 type BusinessSettings = {
   name: string
