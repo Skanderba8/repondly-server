@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { DashboardShell } from '@/components/DashboardShell'
-import { requireBusinessSession } from '@/lib/auth'
+import { requireBusinessSession, type BusinessSession } from '@/lib/auth'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const session = await requireBusinessSession()
+  const session: BusinessSession = await requireBusinessSession()
 
   return (
     <DashboardShell

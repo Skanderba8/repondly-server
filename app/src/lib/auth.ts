@@ -66,7 +66,7 @@ export async function getBusinessSession(): Promise<BusinessSession | null> {
   }
 }
 
-export async function requireBusinessSession() {
+export async function requireBusinessSession(): Promise<BusinessSession> {
   const session = await getBusinessSession()
 
   if (!session?.user?.id) {

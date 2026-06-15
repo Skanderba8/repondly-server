@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SignOutButton } from '@/components/SignOutButton'
 import { SettingsPageClient } from '@/components/SettingsPageClient'
@@ -7,6 +8,26 @@ import { prisma } from '@/lib/prisma'
 function normalizeValue(value?: string | null) {
   return value ?? ''
 }
+
+type ChannelConnection = Prisma.BusinessChannelConnectionGetPayload<{
+  select: {
+    channel: true
+    status: true
+    label: true
+    metaAppId: true
+    metaUserId: true
+    metaBusinessAccountId: true
+    metaBusinessName: true
+    metaPhoneNumberId: true
+    metaPhoneNumber: true
+    metaPageId: true
+    metaPageName: true
+    metaInstagramAccountId: true
+    metaInstagramUsername: true
+    accessToken: true
+    webhookVerifyToken: true
+  }
+}>
 
 export default async function SettingsPage() {
   const session = await requireBusinessSession()
@@ -41,7 +62,7 @@ export default async function SettingsPage() {
         accessToken: true,
         webhookVerifyToken: true,
       },
-    }),
+    }) as Promise<ChannelConnection[]>,
   ])
 
   const connectionMap = {

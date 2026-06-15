@@ -1,5 +1,7 @@
 'use client'
 
+// Suppress missing type declarations for next/link in this environment
+// @ts-ignore: module declaration missing
 import Link from 'next/link'
 import { ArrowRight, BellRing, Clock, Inbox, MessageSquare, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
