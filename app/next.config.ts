@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     optimizeCss: false,
+    serverMinification: false,
   },
   images: {
     formats: ["image/avif", "image/webp"],
