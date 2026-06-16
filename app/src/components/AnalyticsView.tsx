@@ -35,7 +35,7 @@ type AnalyticsViewProps = {
   previousResponseStats: ResponseStats
 }
 
-type ChartTooltipPayload = Array<{
+type ChartTooltipPayload = ReadonlyArray<{
   value?: number | string
   name?: string
   payload?: Record<string, unknown>
