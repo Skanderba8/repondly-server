@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { syncAccountChats } from '@/lib/unipile/sync'
 import { unipile, type UnipileAttendee, type UnipileChat, type UnipileMessage } from '@/lib/unipile/client'
@@ -39,6 +40,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asString(value: unknown) {
   return typeof value === 'string' ? value : undefined
+}
+
+function toPrismaJson(value: unknown): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null || value === undefined) {
+    return Prisma.JsonNull
+  }
+
+  return value as Prisma.InputJsonValue
 }
 
 function deriveChannel(value?: string | null): ChannelKey | null {
@@ -250,7 +259,7 @@ async function handleAccountEvent(payload: WebhookPayload) {
     where: { id: connection.id },
     data: {
       status: deriveConnectionStatus(payload.type),
-      metadata: payload.data ?? null,
+      metadata: toPrismaJson(payload.data),
     },
   })
 
@@ -476,7 +485,7 @@ async function handleMessageUpdated(payload: WebhookPayload) {
     data: {
       status,
       externalStatus: statusValue ?? null,
-      rawPayload: payload.data ?? null,
+      rawPayload: toPrismaJson(payload.data),
       deliveredAt: status === 'DELIVERED' ? eventTime : undefined,
       readAt: status === 'READ' ? eventTime : undefined,
       failedAt: status === 'FAILED' ? eventTime : undefined,
