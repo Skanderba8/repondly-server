@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { buildInitials } from '@/lib/utils/initials'
 import type { FollowUp } from '@/types'
 
-const VALID_INTENTS = new Set(['RDV', 'PRIX', 'COMMANDE', 'RÃ‰CLAMATION', 'AUTRE'])
+const VALID_INTENTS = new Set(['RDV', 'PRIX', 'COMMANDE', 'RÉCLAMATION', 'AUTRE'])
 
 function normalizeIntent(intent?: string | null): FollowUp['intent'] {
   if (intent && VALID_INTENTS.has(intent)) {

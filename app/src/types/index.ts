@@ -1,5 +1,5 @@
 export type ConversationStatus = 'NEW' | 'IN_PROGRESS' | 'CONFIRMED' | 'FOLLOW_UP' | 'RESOLVED'
-export type Intent = 'RDV' | 'PRIX' | 'COMMANDE' | 'RÃ‰CLAMATION' | 'AUTRE'
+export type Intent = 'RDV' | 'PRIX' | 'COMMANDE' | 'RÉCLAMATION' | 'AUTRE'
 export type Direction = 'INBOUND' | 'OUTBOUND'
 export type Plan = 'TRIAL' | 'STARTER' | 'PRO' | 'AGENCY'
 export type OrderStatus = 'NOUVEAU' | 'CONFIRME' | 'EN_PREPARATION' | 'EXPEDIE' | 'LIVRE' | 'ANNULE'

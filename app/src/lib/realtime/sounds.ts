@@ -2,7 +2,10 @@
 
 export function playNotificationSound() {
   try {
-    const audioWindow = window as Window & { webkitAudioContext?: typeof AudioContext }
+    const audioWindow = window as Window & {
+      AudioContext?: typeof AudioContext
+      webkitAudioContext?: typeof AudioContext
+    }
     const AudioContextConstructor = audioWindow.AudioContext || audioWindow.webkitAudioContext
 
     if (!AudioContextConstructor) {

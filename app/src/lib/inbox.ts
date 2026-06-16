@@ -33,7 +33,7 @@ type ConversationRecord = {
   messages: MessageRecord[]
 }
 
-const VALID_INTENTS = new Set(['RDV', 'PRIX', 'COMMANDE', 'RÃ‰CLAMATION', 'AUTRE'])
+const VALID_INTENTS = new Set(['RDV', 'PRIX', 'COMMANDE', 'RÉCLAMATION', 'AUTRE'])
 
 function formatListTime(date?: Date | null) {
   if (!date) return ''
