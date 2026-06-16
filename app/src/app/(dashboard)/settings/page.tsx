@@ -17,6 +17,19 @@ type ChannelConnection = {
   createdAt: Date
 }
 
+function isSupportedChannelConnection(
+  connection: {
+    channel: string
+    status: 'PENDING' | 'ACTIVE' | 'DISCONNECTED' | 'ERROR'
+    label: string | null
+    displayName: string | null
+    unipileAccountId: string | null
+    createdAt: Date
+  },
+): connection is ChannelConnection {
+  return connection.channel === 'WHATSAPP' || connection.channel === 'INSTAGRAM'
+}
+
 export default async function SettingsPage() {
   const session = await requireBusinessSession()
 
@@ -32,7 +45,7 @@ export default async function SettingsPage() {
     },
   })
 
-  const channelConnections: ChannelConnection[] = await prisma.businessChannelConnection.findMany({
+  const channelConnectionsResult = await prisma.businessChannelConnection.findMany({
     where: {
       businessId: session.user.id,
       channel: {
@@ -48,6 +61,8 @@ export default async function SettingsPage() {
       createdAt: true,
     },
   })
+
+  const channelConnections: ChannelConnection[] = channelConnectionsResult.filter(isSupportedChannelConnection)
 
   const connectionMap: Record<'WHATSAPP' | 'INSTAGRAM', ChannelConnection | undefined> = {
     WHATSAPP: channelConnections.find((item) => item.channel === 'WHATSAPP'),
