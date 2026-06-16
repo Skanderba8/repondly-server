@@ -135,9 +135,9 @@ export function AuthForm({ mode, callbackUrl = '/inbox' }: AuthFormProps) {
         {pending ? 'Chargement...' : isSignup ? 'Créer mon compte' : 'Se connecter'}
       </button>
 
-      <p className="text-center text-[13px] leading-[1.6] text-[color:var(--text-secondary)]">
+      <p className="text-center text-[12px] leading-[1.6] text-[color:var(--text-secondary)]">
         {isSignup ? 'Déjà un compte ? ' : 'Pas encore de compte ? '}
-        <Link href={isSignup ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="font-semibold text-[color:var(--text-primary)] underline-offset-2 hover:underline">
+        <Link href={isSignup ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="font-semibold text-[color:var(--brand)] underline-offset-2 hover:underline">
           {isSignup ? 'Se connecter' : 'Créer un compte'}
         </Link>
       </p>

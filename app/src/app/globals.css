@@ -221,7 +221,6 @@ input, textarea, select, button { outline: none; }
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  padding-top: var(--topbar-height);
 }
 
 .nx-content {
@@ -1746,5 +1745,179 @@ input, textarea, select, button { outline: none; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================================
+   ANALYTICS
+   ============================================================================ */
+.nx-analytics {
+  display: flex;
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.nx-analytics-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.nx-analytics-periods {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.nx-kpi-topline {
+  display: flex;
+  min-height: 22px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nx-kpi-label {
+  color: var(--_ink-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nx-kpi-note {
+  color: var(--_ink-3);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.nx-analytics-card {
+  min-width: 0;
+}
+
+.nx-analytics-card .nx-card-header {
+  min-height: 34px;
+  border-bottom: 0;
+  padding: 0 0 12px;
+}
+
+.nx-period-badge {
+  display: inline-flex;
+  height: 22px;
+  align-items: center;
+  border: 1px solid var(--_brand-line);
+  border-radius: var(--_r-xs);
+  background: var(--_brand-surface);
+  padding: 0 8px;
+  color: var(--_brand);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.nx-chart-frame {
+  min-width: 0;
+}
+
+.nx-chart-tooltip {
+  min-width: 88px;
+  border: 1px solid var(--_line);
+  border-radius: 12px;
+  background: var(--_card);
+  padding: 8px 10px;
+  box-shadow: var(--shadow-dropdown);
+}
+
+.nx-chart-tooltip span {
+  display: block;
+  color: var(--_ink-3);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.nx-chart-tooltip strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--_ink-1);
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.nx-donut-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.nx-donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.nx-donut-center strong {
+  color: var(--_ink-1);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.nx-donut-center span {
+  margin-top: 4px;
+  color: var(--_ink-3);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.nx-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 14px;
+  margin-top: 2px;
+  color: var(--_ink-2);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.nx-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nx-chart-legend i {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: var(--_r-pill);
+}
+
+@media (max-width: 767px) {
+  .nx-analytics-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nx-analytics-periods {
+    justify-content: flex-start;
+  }
+}
+
+button, a, input, select, textarea { touch-action: manipulation; }
+.nx-sidebar, .nx-topbar, .nx-bottomnav { user-select: none; -webkit-user-select: none; }
+.nx-stage { padding-top: var(--topbar-height); }
+@media (max-width: 767px) {
+  .nx-stage {
+    margin-left: 0;
+    padding-top: var(--topbar-height);
+    padding-bottom: var(--bottomnav-height);
   }
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import type { KeyboardEvent } from 'react'
+import { useCallback } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ChevronDown, Ellipsis, Send } from 'lucide-react'
@@ -10,6 +11,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { MessageBubble } from '@/components/MessageBubble'
 import { SuggestionChips } from '@/components/SuggestionChips'
+import { useMessageRealtime } from '@/lib/realtime/useMessageRealtime'
 
 const DEFAULT_SUGGESTIONS = [
   'Oui bien sur, quel creneau vous convient ?',
@@ -51,6 +53,7 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const statusMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -59,6 +62,34 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
     setStatus(conversation.status)
     setIsStatusMenuOpen(false)
   }, [conversation.id, conversation.messages, conversation.status])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView()
+  }, [conversation.id])
+
+  const handleRealtimeMessage = useCallback((msg: { id: string; content: string; direction: Message['direction']; createdAt: string }) => {
+    setMessages((current) => {
+      if (current.some((message) => message.id === msg.id)) {
+        return current
+      }
+
+      return [
+        ...current,
+        {
+          id: msg.id,
+          content: msg.content,
+          direction: msg.direction,
+          timestamp: msg.createdAt,
+        },
+      ]
+    })
+
+    window.setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, 0)
+  }, [])
+
+  useMessageRealtime(conversation.id, handleRealtimeMessage)
 
   function autoResize() {
     const node = textareaRef.current
@@ -274,6 +305,7 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
               </div>
             )
           })}
+          <div ref={messagesEndRef} />
         </div>
 
         <div className="border-t border-[color:var(--border)] bg-[color:var(--bg-card)] px-4 py-3">

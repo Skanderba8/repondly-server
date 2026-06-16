@@ -75,3 +75,28 @@ export interface Order {
   contact: Contact
   items: OrderItem[]
 }
+
+export interface Product {
+  id: string
+  name: string
+  description?: string
+  price: string
+  deliveryFee: string
+  stock?: number | null
+  fournisseur?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BotConfig {
+  botEnabled: boolean
+  botName: string
+  botLanguage: string
+  botMode: string
+  botWorkingHoursStart: string
+  botWorkingHoursEnd: string
+  botKnowledge: string
+  botHandoffKeywords: string
+  businessName: string
+}

@@ -9,12 +9,14 @@ type AuthShellProps = {
 
 export function AuthShell({ title, subtitle, children }: AuthShellProps) {
   return (
-    <main className="grid min-h-dvh place-items-center bg-[color:var(--bg-page)] px-4 py-10 text-[color:var(--text-primary)]">
+    <main className="grid min-h-dvh place-items-center bg-[var(--bg-page)] px-4 py-10 text-[color:var(--text-primary)]">
       <section className="nx-card w-full max-w-[420px] p-8">
         <div className="mb-6 flex flex-col items-start gap-4">
           <div className="flex items-center gap-2.5">
-            <Image src="/logo.png" alt="" width={28} height={28} priority className="block object-contain" />
-            <span className="text-[14px] font-bold text-[color:var(--text-primary)]">Répondly</span>
+            <span className="nx-sidebar-mark">
+              <Image src="/logo.png" alt="" width={32} height={32} priority />
+            </span>
+            <span className="text-[16px] font-bold leading-none text-[color:var(--text-primary)]">Répondly</span>
           </div>
           <div>
             <p className="nx-section-label">Espace entreprise</p>

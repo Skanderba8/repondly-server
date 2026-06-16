@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { BottomNav } from '@/components/BottomNav'
+import { InstallBanner } from '@/components/pwa/InstallBanner'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
 
@@ -32,6 +33,7 @@ export function DashboardShell({ children, business }: DashboardShellProps) {
       <Sidebar business={business} />
       <div className="nx-stage">
         <TopBar title={getTitle(pathname)} businessName={business.name} plan={business.plan} />
+        <InstallBanner />
         <main className="nx-main">
           <div className={inboxRoute ? 'nx-content-inbox' : 'nx-content'}>{children}</div>
         </main>

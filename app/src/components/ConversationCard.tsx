@@ -26,17 +26,17 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex min-h-[72px] w-full items-start gap-3 border-b border-l-2 border-[color:var(--border)] px-3.5 py-3 text-left',
+        'group flex min-h-[72px] w-full items-start gap-3 border-b border-[color:var(--border)] px-3.5 py-3 text-left',
         'transition-[background-color,border-color] duration-150 focus-visible:relative focus-visible:z-10',
         isSelected
-          ? 'border-l-[color:var(--brand)] bg-[color:var(--brand-soft)]'
-          : 'border-l-transparent bg-[color:var(--bg-card)] hover:bg-[color:var(--bg-page)]',
+          ? 'bg-[color:var(--brand-soft)]'
+          : 'bg-[color:var(--bg-card)] hover:bg-[color:var(--bg-page)]',
       )}
     >
       <div className="relative shrink-0 pt-0.5">
         <Avatar initials={conversation.contact.initials} size="md" />
         <span
-          className="absolute -bottom-0.5 -right-0.5 h-1.5 w-1.5 rounded-full border border-[color:var(--bg-card)]"
+          className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border-[1.5px] border-white"
           style={{ backgroundColor: statusDots[conversation.status] }}
           aria-hidden="true"
         />
@@ -48,7 +48,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             <span className={cn('truncate text-[13px] leading-[1.25] text-[color:var(--text-primary)]', conversation.unread ? 'font-semibold' : 'font-medium')}>
               {contactName}
             </span>
-            {conversation.unread ? <span className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--brand)]" aria-hidden="true" /> : null}
+            {conversation.unread ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--brand)]" aria-hidden="true" /> : null}
           </div>
           <span className="shrink-0 text-[11px] font-medium text-[color:var(--text-muted)]">{conversation.time}</span>
         </div>

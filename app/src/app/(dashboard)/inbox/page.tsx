@@ -6,5 +6,5 @@ export default async function InboxPage() {
   const session = await requireBusinessSession()
   const conversations = await getInboxConversations(session.user.id)
 
-  return <InboxView conversations={conversations} />
+  return <InboxView businessId={session.user.id} conversations={conversations} />
 }
