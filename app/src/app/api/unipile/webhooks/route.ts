@@ -42,7 +42,7 @@ function asString(value: unknown) {
   return typeof value === 'string' ? value : undefined
 }
 
-function toPrismaJson(value: unknown): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+function toPrismaJson(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
   if (value === null || value === undefined) {
     return Prisma.JsonNull
   }
