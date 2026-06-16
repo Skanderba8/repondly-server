@@ -36,8 +36,8 @@ type AnalyticsViewProps = {
 }
 
 type ChartTooltipPayload = ReadonlyArray<{
-  value?: number | string
-  name?: string
+  value?: number | string | ReadonlyArray<number | string>
+  name?: number | string
   payload?: Record<string, unknown>
 }>
 
@@ -102,10 +102,6 @@ function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
       <strong>{item.value}</strong>
     </div>
   )
-}
-
-function renderTooltip(props: ChartTooltipProps) {
-  return <ChartTooltip active={props.active} payload={props.payload} label={props.label} />
 }
 
 export function AnalyticsView({
@@ -197,7 +193,7 @@ export function AnalyticsView({
                 <CartesianGrid vertical={false} stroke="var(--border)" />
                 <XAxis dataKey="date" tickFormatter={formatShortDate} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <YAxis hide />
-                <Tooltip content={renderTooltip} cursor={{ stroke: 'var(--border)' }} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--border)' }} />
                 <Area type="monotone" dataKey="count" stroke="var(--brand)" strokeWidth={2} fill="url(#brandGrad)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -216,7 +212,7 @@ export function AnalyticsView({
                     <Cell key={item.status} fill={item.color} />
                   ))}
                 </Pie>
-                <Tooltip content={renderTooltip} />
+                <Tooltip content={<ChartTooltip />} />
               </PieChart>
             </ResponsiveContainer>
             <div className="nx-donut-center">
@@ -244,7 +240,7 @@ export function AnalyticsView({
                 <CartesianGrid vertical={false} stroke="var(--border)" />
                 <XAxis dataKey="week" tickFormatter={formatWeek} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <YAxis hide />
-                <Tooltip content={renderTooltip} cursor={{ fill: 'var(--brand-soft)' }} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--brand-soft)' }} />
                 <Bar dataKey="count" fill="var(--brand)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -260,7 +256,7 @@ export function AnalyticsView({
               <BarChart layout="vertical" data={topContacts} margin={{ top: 10, right: 4, left: 0, bottom: 0 }}>
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" width={96} tickFormatter={truncateLabel} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                <Tooltip content={renderTooltip} cursor={{ fill: 'var(--teal-soft)' }} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--teal-soft)' }} />
                 <Bar dataKey="totalConversations" fill="var(--teal)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
