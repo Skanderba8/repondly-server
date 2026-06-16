@@ -11,7 +11,7 @@ type MessageStatus = 'SENT' | 'DELIVERED' | 'READ' | 'FAILED'
 type WebhookPayload = {
   type?: string
   account_id?: string
-  data?: unknown
+  data?: Prisma.InputJsonValue
   timestamp?: string
 }
 
