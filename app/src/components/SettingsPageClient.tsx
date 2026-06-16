@@ -175,15 +175,17 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
       return
     }
 
+    const channelData = result.data
+
     setChannels((current) => ({
       ...current,
       [channel]: {
         ...current[channel],
-        status: result.data?.status ?? current[channel].status,
-        label: result.data.label ?? '',
-        displayName: result.data.displayName ?? current[channel].displayName,
-        unipileAccountId: result.data.unipileAccountId ?? current[channel].unipileAccountId,
-        connectedAt: result.data.createdAt ?? current[channel].connectedAt,
+        status: channelData.status ?? current[channel].status,
+        label: channelData.label ?? '',
+        displayName: channelData.displayName ?? current[channel].displayName,
+        unipileAccountId: channelData.unipileAccountId ?? current[channel].unipileAccountId,
+        connectedAt: channelData.createdAt ?? current[channel].connectedAt,
       },
     }))
     setChannelStates((current) => ({ ...current, [channel]: { type: 'success', message: 'Nom enregistré.' } }))
