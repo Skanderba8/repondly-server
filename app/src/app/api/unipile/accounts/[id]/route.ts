@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { requireBusinessApiSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { unipile } from '@/lib/unipile/client'
@@ -49,7 +50,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       unipileAccountType: null,
       displayName: null,
       accessToken: null,
-      metadata: null,
+      metadata: Prisma.JsonNull,
     },
   })
 
