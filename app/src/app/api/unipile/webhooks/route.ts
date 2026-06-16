@@ -11,7 +11,7 @@ type MessageStatus = 'SENT' | 'DELIVERED' | 'READ' | 'FAILED'
 type WebhookPayload = {
   type?: string
   account_id?: string
-  data?: Prisma.InputJsonValue
+  data?: unknown
   timestamp?: string
 }
 
@@ -145,7 +145,7 @@ async function ensureConnection(accountId: string, businessHint?: { businessId: 
         channel,
         unipileAccountType: account.type,
         displayName: account.name,
-        metadata: account,
+        metadata: toPrismaJson(account),
       },
       select: {
         id: true,
@@ -184,7 +184,7 @@ async function ensureConnection(accountId: string, businessHint?: { businessId: 
           unipileAccountId: account.id,
           unipileAccountType: account.type,
           displayName: account.name,
-          metadata: account,
+          metadata: toPrismaJson(account),
         },
         select: {
           id: true,
@@ -200,7 +200,7 @@ async function ensureConnection(accountId: string, businessHint?: { businessId: 
           unipileAccountId: account.id,
           unipileAccountType: account.type,
           displayName: account.name,
-          metadata: account,
+          metadata: toPrismaJson(account),
         },
         select: {
           id: true,
@@ -377,7 +377,7 @@ async function upsertInboundMessage(
       content: deriveMessageContent(message),
       mediaUrl: message.attachments[0]?.url ?? null,
       mediaType: message.attachments[0]?.type ?? null,
-      rawPayload: message,
+      rawPayload: toPrismaJson(message),
     },
     create: {
       businessId: connection.businessId,
@@ -391,7 +391,7 @@ async function upsertInboundMessage(
       mediaUrl: message.attachments[0]?.url ?? null,
       mediaType: message.attachments[0]?.type ?? null,
       externalMessageId: message.id,
-      rawPayload: message,
+      rawPayload: toPrismaJson(message),
       status: 'SENT',
       createdAt: new Date(message.created_at),
     },
@@ -547,7 +547,7 @@ export async function POST(request: Request) {
         source: 'UNIPILE',
         eventType: payload.type ?? 'unknown',
         headers,
-        payload,
+        payload: toPrismaJson(payload),
       },
       select: { id: true },
     })
