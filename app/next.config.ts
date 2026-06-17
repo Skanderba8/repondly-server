@@ -3,6 +3,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ['app.repondly.com', 'localhost:3004'],
   compress: true,
   poweredByHeader: false,
+  serverExternalPackages: ['@prisma/adapter-pg', '@prisma/client', 'pg'],
   experimental: {
     optimizeCss: false,
     serverMinification: false,
