@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Plus, RotateCcw, Send, Trash2 } from 'lucide-react'
+import { Plus, RotateCcw, Send, ShoppingBag, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { BotConfig } from '@/types'
 
@@ -23,6 +23,10 @@ type BotTestResponse = {
   success: boolean
   data?: {
     response: string
+    order?: {
+      orderNumber: number
+      totalAmount: string
+    } | null
   }
 }
 
@@ -59,6 +63,15 @@ type ExtraFaqItem = {
   answer: string
 }
 
+type OrderFieldKey = 'productOrService' | 'name' | 'phone' | 'email' | 'deliveryAddress' | 'preferredDate' | 'notes'
+
+type OrderCaptureConfig = {
+  enabled: boolean
+  requiredFields: OrderFieldKey[]
+  optionalFields: OrderFieldKey[]
+  customFields: string[]
+}
+
 type KnowledgeConfig = {
   version: 2
   businessHours: BusinessDay[]
@@ -72,6 +85,7 @@ type KnowledgeConfig = {
   policies: OrderPolicies
   handoffEnabled: boolean
   botScheduleWeekend: boolean
+  orderCapture: OrderCaptureConfig
   extraFaq: ExtraFaqItem[]
 }
 
@@ -112,8 +126,24 @@ const DEFAULT_KNOWLEDGE: KnowledgeConfig = {
   },
   handoffEnabled: true,
   botScheduleWeekend: true,
+  orderCapture: {
+    enabled: true,
+    requiredFields: ['productOrService', 'name', 'phone'],
+    optionalFields: ['email', 'deliveryAddress', 'preferredDate', 'notes'],
+    customFields: [],
+  },
   extraFaq: [],
 }
+
+const ORDER_FIELD_OPTIONS: Array<{ key: OrderFieldKey; label: string }> = [
+  { key: 'productOrService', label: 'Produit ou service' },
+  { key: 'name', label: 'Nom complet' },
+  { key: 'phone', label: 'Telephone' },
+  { key: 'email', label: 'Email' },
+  { key: 'deliveryAddress', label: 'Adresse de livraison' },
+  { key: 'preferredDate', label: 'Date ou horaire' },
+  { key: 'notes', label: 'Conditions speciales' },
+]
 
 const PAYMENT_OPTIONS: Array<{ key: PaymentKey; label: string }> = [
   { key: 'cashDelivery', label: 'Cash a la livraison' },
@@ -129,7 +159,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function isString(value: unknown) {
+function isString(value: unknown): value is string {
   return typeof value === 'string'
 }
 
@@ -144,6 +174,14 @@ function parseLegacyFaq(value: unknown): ExtraFaqItem[] {
       question: String(item.question),
       answer: String(item.answer),
     }))
+}
+
+function parseOrderFields(value: unknown, fallback: OrderFieldKey[]) {
+  if (!Array.isArray(value)) {
+    return fallback
+  }
+
+  return value.filter((item): item is OrderFieldKey => typeof item === 'string' && ORDER_FIELD_OPTIONS.some((option) => option.key === item))
 }
 
 function parseKnowledgeConfig(value: string): KnowledgeConfig {
@@ -169,6 +207,16 @@ function parseKnowledgeConfig(value: string): KnowledgeConfig {
           : DEFAULT_KNOWLEDGE.delivery,
         paymentMethods: isRecord(parsed.paymentMethods) ? { ...DEFAULT_KNOWLEDGE.paymentMethods, ...parsed.paymentMethods } : DEFAULT_KNOWLEDGE.paymentMethods,
         policies: isRecord(parsed.policies) ? { ...DEFAULT_KNOWLEDGE.policies, ...parsed.policies } : DEFAULT_KNOWLEDGE.policies,
+        orderCapture: isRecord(parsed.orderCapture)
+          ? {
+              enabled: typeof parsed.orderCapture.enabled === 'boolean' ? parsed.orderCapture.enabled : DEFAULT_KNOWLEDGE.orderCapture.enabled,
+              requiredFields: parseOrderFields(parsed.orderCapture.requiredFields, DEFAULT_KNOWLEDGE.orderCapture.requiredFields),
+              optionalFields: parseOrderFields(parsed.orderCapture.optionalFields, DEFAULT_KNOWLEDGE.orderCapture.optionalFields),
+              customFields: Array.isArray(parsed.orderCapture.customFields)
+                ? parsed.orderCapture.customFields.filter(isString).map((item) => item.trim()).filter(Boolean)
+                : [],
+            }
+          : DEFAULT_KNOWLEDGE.orderCapture,
         extraFaq: parseLegacyFaq(parsed.extraFaq),
       }
     }
@@ -212,6 +260,8 @@ export function BotConfigView({ config }: BotConfigViewProps) {
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<ChatMessage[]>([])
   const [testing, setTesting] = useState(false)
+  const [newCustomOrderField, setNewCustomOrderField] = useState('')
+  const [orderNotice, setOrderNotice] = useState<{ orderNumber: number; totalAmount: string } | null>(null)
 
   const knowledgeCount = serializeKnowledgeConfig(knowledge).length
   const historyForApi = useMemo(() => history.map((item) => ({ role: item.role, content: item.content })), [history])
@@ -274,6 +324,60 @@ export function BotConfigView({ config }: BotConfigViewProps) {
     }))
   }
 
+  function updateOrderCapture(next: Partial<OrderCaptureConfig>) {
+    setKnowledge((current) => ({
+      ...current,
+      orderCapture: {
+        ...current.orderCapture,
+        ...next,
+      },
+    }))
+  }
+
+  function toggleOrderField(kind: 'requiredFields' | 'optionalFields', key: OrderFieldKey) {
+    setKnowledge((current) => {
+      const selected = current.orderCapture[kind].includes(key)
+      const nextFields = selected
+        ? current.orderCapture[kind].filter((field) => field !== key)
+        : [...current.orderCapture[kind], key]
+
+      return {
+        ...current,
+        orderCapture: {
+          ...current.orderCapture,
+          [kind]: nextFields,
+        },
+      }
+    })
+  }
+
+  function addCustomOrderField() {
+    const value = newCustomOrderField.trim()
+
+    if (!value) {
+      return
+    }
+
+    setKnowledge((current) => ({
+      ...current,
+      orderCapture: {
+        ...current.orderCapture,
+        customFields: [...current.orderCapture.customFields, value],
+      },
+    }))
+    setNewCustomOrderField('')
+  }
+
+  function removeCustomOrderField(index: number) {
+    setKnowledge((current) => ({
+      ...current,
+      orderCapture: {
+        ...current.orderCapture,
+        customFields: current.orderCapture.customFields.filter((_, itemIndex) => itemIndex !== index),
+      },
+    }))
+  }
+
   async function saveConfig() {
     setSaving(true)
 
@@ -317,6 +421,7 @@ export function BotConfigView({ config }: BotConfigViewProps) {
     setHistory(nextHistory)
     setMessage('')
     setTesting(true)
+    setOrderNotice(null)
 
     try {
       const response = await fetch('/api/bot/test', {
@@ -331,6 +436,7 @@ export function BotConfigView({ config }: BotConfigViewProps) {
 
       const result = (await response.json()) as BotTestResponse
       setHistory((current) => [...current, { role: 'assistant', content: result.data?.response ?? '' }])
+      setOrderNotice(result.data?.order ?? null)
     } finally {
       setTesting(false)
     }
@@ -533,6 +639,81 @@ export function BotConfigView({ config }: BotConfigViewProps) {
           <div className="nx-card p-4 md:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
+                <p className="nx-section-label">Capture commande</p>
+                <h2 className="mt-1 text-[14px] font-semibold text-[color:var(--text-primary)]">Champs demandes par le bot</h2>
+              </div>
+              <select
+                className="nx-input w-[120px]"
+                value={knowledge.orderCapture.enabled ? 'yes' : 'no'}
+                onChange={(event) => updateOrderCapture({ enabled: event.target.value === 'yes' })}
+              >
+                <option value="yes">Oui</option>
+                <option value="no">Non</option>
+              </select>
+            </div>
+
+            {knowledge.orderCapture.enabled ? (
+              <div className="mt-4 grid gap-4">
+                <div>
+                  <p className="nx-label mb-2">Obligatoires</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {ORDER_FIELD_OPTIONS.map((option) => (
+                      <label key={`required-${option.key}`} className="flex items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3 text-[13px] text-[color:var(--text-secondary)]">
+                        <input
+                          type="checkbox"
+                          checked={knowledge.orderCapture.requiredFields.includes(option.key)}
+                          onChange={() => toggleOrderField('requiredFields', option.key)}
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="nx-label mb-2">Optionnels</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {ORDER_FIELD_OPTIONS.map((option) => (
+                      <label key={`optional-${option.key}`} className="flex items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3 text-[13px] text-[color:var(--text-secondary)]">
+                        <input
+                          type="checkbox"
+                          checked={knowledge.orderCapture.optionalFields.includes(option.key)}
+                          onChange={() => toggleOrderField('optionalFields', option.key)}
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="nx-label mb-2">Champs supplementaires</p>
+                  <div className="flex gap-2">
+                    <input className="nx-input" value={newCustomOrderField} onChange={(event) => setNewCustomOrderField(event.target.value)} placeholder="Ex: taille, budget, modele..." />
+                    <button type="button" className="nx-btn nx-btn-secondary nx-btn-icon-md" onClick={addCustomOrderField} aria-label="Ajouter le champ">
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                  {knowledge.orderCapture.customFields.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {knowledge.orderCapture.customFields.map((field, index) => (
+                        <span key={`${field}-${index}`} className="inline-flex items-center gap-2 rounded-[var(--radius-badge)] border border-[color:var(--border)] bg-[color:var(--bg-page)] px-2.5 py-1 text-[12.5px] text-[color:var(--text-secondary)]">
+                          {field}
+                          <button type="button" onClick={() => removeCustomOrderField(index)} aria-label="Supprimer le champ">
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="nx-card p-4 md:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
                 <p className="nx-section-label">Handoff</p>
                 <h2 className="mt-1 text-[14px] font-semibold text-[color:var(--text-primary)]">Handoff automatique</h2>
               </div>
@@ -597,13 +778,22 @@ export function BotConfigView({ config }: BotConfigViewProps) {
               <p className="nx-section-label">Test chat</p>
               <h2 className="mt-1 text-[14px] font-semibold text-[color:var(--text-primary)]">Conversation de test</h2>
             </div>
-            <button type="button" className="nx-btn nx-btn-ghost nx-btn-sm" onClick={() => setHistory([])}>
+            <button type="button" className="nx-btn nx-btn-ghost nx-btn-sm" onClick={() => {
+              setHistory([])
+              setOrderNotice(null)
+            }}>
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Reinitialiser
             </button>
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3">
+            {orderNotice ? (
+              <div className="mx-auto mb-1 flex items-center gap-2 rounded-[var(--radius-btn)] border border-[color:var(--success)] bg-[color:var(--success-soft)] px-3 py-2 text-[12.5px] font-medium text-[color:var(--success)]">
+                <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+                Commande #{String(orderNotice.orderNumber).padStart(4, '0')} creee, total {Number(orderNotice.totalAmount).toFixed(2)} DT
+              </div>
+            ) : null}
             {history.map((item, index) => {
               const outbound = item.role === 'user'
               return (

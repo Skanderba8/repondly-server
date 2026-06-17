@@ -54,6 +54,22 @@ const channelIcons: Record<ChannelKey, string> = {
 
 const channelOrder: ChannelKey[] = ['WHATSAPP', 'INSTAGRAM']
 
+const ACTIVITY_OPTIONS = [
+  { value: 'clinic', label: 'Clinique' },
+  { value: 'salon', label: 'Salon de beaute' },
+  { value: 'ecom', label: 'E-commerce' },
+  { value: 'garage', label: 'Garage' },
+  { value: 'restaurant', label: 'Restaurant' },
+  { value: 'cafe', label: 'Cafe' },
+  { value: 'real_estate', label: 'Immobilier' },
+  { value: 'training', label: 'Formation' },
+  { value: 'travel', label: 'Agence de voyage' },
+  { value: 'fitness', label: 'Sport et fitness' },
+  { value: 'home_services', label: 'Services a domicile' },
+  { value: 'events', label: 'Evenementiel' },
+  { value: 'professional_services', label: 'Services professionnels' },
+]
+
 function buildDefaultState(): SaveState {
   return { type: 'idle', message: '' }
 }
@@ -105,6 +121,7 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
     WHATSAPP: false,
     INSTAGRAM: false,
   })
+  const selectedActivity = ACTIVITY_OPTIONS.some((option) => option.value === business.businessType) ? business.businessType : 'other'
 
   function updateBusinessField(field: keyof BusinessSettings, value: string) {
     setBusiness((current) => ({ ...current, [field]: value }))
@@ -281,7 +298,25 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
           <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Nom de l'entreprise<Input value={business.name} onChange={(event) => updateBusinessField('name', event.target.value)} placeholder="Nom de l'entreprise" /></label>
           <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Téléphone<Input value={business.phone} onChange={(event) => updateBusinessField('phone', event.target.value)} placeholder="Téléphone" /></label>
           <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)] md:col-span-2">Email<Input value={business.email} onChange={(event) => updateBusinessField('email', event.target.value)} placeholder="Email" type="email" /></label>
-          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Type d'activité<select value={business.businessType} onChange={(event) => updateBusinessField('businessType', event.target.value)} className="nx-input h-9 w-full px-3 text-[13px]"><option value="other">Autre</option><option value="clinic">Clinique</option><option value="salon">Salon</option><option value="ecom">E-commerce</option><option value="garage">Garage</option></select></label>
+          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">
+            Type d'activité
+            <select
+              value={selectedActivity}
+              onChange={(event) => updateBusinessField('businessType', event.target.value === 'other' ? '' : event.target.value)}
+              className="nx-input h-9 w-full px-3 text-[13px]"
+            >
+              {ACTIVITY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+              <option value="other">Autre activite</option>
+            </select>
+          </label>
+          {selectedActivity === 'other' ? (
+            <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">
+              Activite personnalisee
+              <Input value={business.businessType} onChange={(event) => updateBusinessField('businessType', event.target.value)} placeholder="Ex: boutique de meubles, cabinet avocat..." />
+            </label>
+          ) : null}
           <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Ton<select value={business.tone} onChange={(event) => updateBusinessField('tone', event.target.value)} className="nx-input h-9 w-full px-3 text-[13px]"><option value="friendly">Amical</option><option value="formal">Formel</option></select></label>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">

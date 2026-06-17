@@ -1,6 +1,7 @@
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { requireBusinessApiSession } from '@/lib/auth'
+import { mapOrder } from '@/lib/orders'
 import { prisma } from '@/lib/prisma'
 
 type ChatRole = 'user' | 'assistant' | 'system'
@@ -34,6 +35,8 @@ type ExtraFaqItem = {
   answer: string
 }
 
+type OrderFieldKey = 'productOrService' | 'name' | 'phone' | 'email' | 'deliveryAddress' | 'preferredDate' | 'notes'
+
 type KnowledgeConfig = {
   version: 2
   businessHours: BusinessDay[]
@@ -58,6 +61,12 @@ type KnowledgeConfig = {
   }
   handoffEnabled: boolean
   botScheduleWeekend: boolean
+  orderCapture: {
+    enabled: boolean
+    requiredFields: OrderFieldKey[]
+    optionalFields: OrderFieldKey[]
+    customFields: string[]
+  }
   extraFaq: ExtraFaqItem[]
 }
 
@@ -86,6 +95,28 @@ type ProductPromptRecord = {
   }>
 }
 
+type BotOrderItem = {
+  productName?: string
+  quantity?: number
+  unitPrice?: number
+}
+
+type BotOrderAction = {
+  type?: string
+  customerName?: string
+  phone?: string
+  email?: string
+  deliveryAddress?: string
+  preferredDate?: string
+  notes?: string
+  items?: BotOrderItem[]
+}
+
+type BotModelPayload = {
+  reply?: string
+  action?: BotOrderAction | null
+}
+
 const DEFAULT_KNOWLEDGE: KnowledgeConfig = {
   version: 2,
   businessHours: [],
@@ -110,7 +141,48 @@ const DEFAULT_KNOWLEDGE: KnowledgeConfig = {
   },
   handoffEnabled: true,
   botScheduleWeekend: true,
+  orderCapture: {
+    enabled: true,
+    requiredFields: ['productOrService', 'name', 'phone'],
+    optionalFields: ['email', 'deliveryAddress', 'preferredDate', 'notes'],
+    customFields: [],
+  },
   extraFaq: [],
+}
+
+const RATE_LIMIT_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX_REQUESTS = 8
+const MAX_USER_MESSAGE_CHARS = 900
+const MAX_HISTORY_MESSAGE_CHARS = 600
+const MAX_SYSTEM_PROMPT_CHARS = 12_000
+const TEST_CONTACT_EXTERNAL_ID_PREFIX = 'bot-test'
+
+const requestBuckets = new Map<string, number[]>()
+
+const orderFieldLabels: Record<OrderFieldKey, string> = {
+  productOrService: 'produit ou service souhaite',
+  name: 'nom complet',
+  phone: 'telephone',
+  email: 'email',
+  deliveryAddress: 'adresse de livraison',
+  preferredDate: 'date ou horaire prefere',
+  notes: 'remarques ou conditions speciales',
+}
+
+const businessTypeLabels: Record<string, string> = {
+  clinic: 'clinique',
+  salon: 'salon de beaute',
+  ecom: 'e-commerce',
+  garage: 'garage',
+  restaurant: 'restaurant',
+  cafe: 'cafe',
+  real_estate: 'immobilier',
+  training: 'formation',
+  travel: 'agence de voyage',
+  fitness: 'sport et fitness',
+  home_services: 'services a domicile',
+  events: 'evenementiel',
+  professional_services: 'services professionnels',
 }
 
 function isChatMessage(message: ChatMessage) {
@@ -119,6 +191,33 @@ function isChatMessage(message: ChatMessage) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function truncateText(value: string, limit: number) {
+  return value.length > limit ? `${value.slice(0, limit).trim()}...` : value
+}
+
+function formatBusinessType(value: string | null) {
+  const trimmed = value?.trim()
+
+  if (!trimmed) {
+    return 'activite non renseignee'
+  }
+
+  return businessTypeLabels[trimmed] ?? trimmed
+}
+
+function checkRateLimit(key: string) {
+  const now = Date.now()
+  const current = requestBuckets.get(key)?.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS) ?? []
+
+  if (current.length >= RATE_LIMIT_MAX_REQUESTS) {
+    requestBuckets.set(key, current)
+    return false
+  }
+
+  requestBuckets.set(key, [...current, now])
+  return true
 }
 
 function isExtraFaqItem(value: unknown): value is ExtraFaqItem {
@@ -137,6 +236,14 @@ function parseLegacyFaq(value: unknown): ExtraFaqItem[] {
       answer: item.answer.trim(),
     }))
     .filter((item) => item.question || item.answer)
+}
+
+function parseOrderFields(value: unknown, fallback: OrderFieldKey[]) {
+  if (!Array.isArray(value)) {
+    return fallback
+  }
+
+  return value.filter((item): item is OrderFieldKey => typeof item === 'string' && item in orderFieldLabels)
 }
 
 function parseKnowledgeConfig(value?: string | null): KnowledgeConfig {
@@ -162,6 +269,16 @@ function parseKnowledgeConfig(value?: string | null): KnowledgeConfig {
         paymentMethods: isRecord(parsed.paymentMethods) ? { ...DEFAULT_KNOWLEDGE.paymentMethods, ...parsed.paymentMethods } : DEFAULT_KNOWLEDGE.paymentMethods,
         policies: isRecord(parsed.policies) ? { ...DEFAULT_KNOWLEDGE.policies, ...parsed.policies } : DEFAULT_KNOWLEDGE.policies,
         businessHours: Array.isArray(parsed.businessHours) ? parsed.businessHours as BusinessDay[] : [],
+        orderCapture: isRecord(parsed.orderCapture)
+          ? {
+              enabled: typeof parsed.orderCapture.enabled === 'boolean' ? parsed.orderCapture.enabled : DEFAULT_KNOWLEDGE.orderCapture.enabled,
+              requiredFields: parseOrderFields(parsed.orderCapture.requiredFields, DEFAULT_KNOWLEDGE.orderCapture.requiredFields),
+              optionalFields: parseOrderFields(parsed.orderCapture.optionalFields, DEFAULT_KNOWLEDGE.orderCapture.optionalFields),
+              customFields: Array.isArray(parsed.orderCapture.customFields)
+                ? parsed.orderCapture.customFields.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
+                : [],
+            }
+          : DEFAULT_KNOWLEDGE.orderCapture,
         extraFaq: parseLegacyFaq(parsed.extraFaq),
       }
     }
@@ -242,7 +359,7 @@ function formatProduct(product: ProductPromptRecord) {
   const parts = [
     `Type: ${product.type === 'SERVICE' ? 'service' : 'produit'}`,
     `Nom: ${product.name}`,
-    product.description ? `Description: ${product.description}` : null,
+    product.description ? `Description: ${truncateText(product.description, 180)}` : null,
     `Prix: ${product.price.toFixed(2)} DT`,
     product.type === 'SERVICE' ? null : `Livraison produit: ${product.deliveryFee.toFixed(2)} DT`,
     product.type === 'SERVICE' ? null : product.stock === null ? 'Stock: non renseigne' : `Stock: ${product.stock}`,
@@ -261,14 +378,174 @@ function formatProducts(products: ProductPromptRecord[]) {
   return products.map((product, index) => `${index + 1}. ${formatProduct(product)}`).join('\n')
 }
 
+function formatOrderCapture(config: KnowledgeConfig) {
+  if (!config.orderCapture.enabled) {
+    return 'Capture commande: inactive. Ne cree jamais de commande.'
+  }
+
+  const required = config.orderCapture.requiredFields.map((field) => orderFieldLabels[field] ?? field)
+  const optional = config.orderCapture.optionalFields.map((field) => orderFieldLabels[field] ?? field)
+  const custom = config.orderCapture.customFields.map((field) => field.trim()).filter(Boolean)
+
+  return [
+    'Capture commande: active.',
+    `Champs obligatoires: ${required.length > 0 ? required.join(', ') : 'aucun champ obligatoire configure'}.`,
+    `Champs optionnels: ${optional.length > 0 ? optional.join(', ') : 'aucun champ optionnel configure'}.`,
+    `Champs supplementaires a demander: ${custom.length > 0 ? custom.join(', ') : 'aucun'}.`,
+  ].join('\n')
+}
+
+function parseBotModelPayload(value: string): BotModelPayload {
+  try {
+    const parsed = JSON.parse(value) as unknown
+
+    if (isRecord(parsed)) {
+      return {
+        reply: typeof parsed.reply === 'string' ? parsed.reply.trim() : undefined,
+        action: isRecord(parsed.action) ? parsed.action as BotOrderAction : null,
+      }
+    }
+  } catch {}
+
+  return { reply: value.trim(), action: null }
+}
+
+function normalizeOrderItems(action: BotOrderAction, products: ProductPromptRecord[]) {
+  return (action.items ?? [])
+    .map((item) => {
+      const productName = item.productName?.trim() ?? ''
+      const matchedProduct = products.find((product) => product.name.toLowerCase() === productName.toLowerCase())
+      const unitPrice = Number(item.unitPrice ?? matchedProduct?.price.toNumber() ?? 0)
+
+      return {
+        productName,
+        quantity: Math.max(1, Number(item.quantity ?? 1)),
+        unitPrice,
+      }
+    })
+    .filter((item) => item.productName && item.quantity > 0)
+}
+
+async function createTestOrder(params: {
+  businessId: string
+  action: BotOrderAction
+  products: ProductPromptRecord[]
+}) {
+  const items = normalizeOrderItems(params.action, params.products)
+
+  if (items.length === 0) {
+    return null
+  }
+
+  const phone = params.action.phone?.trim() || null
+  const email = params.action.email?.trim() || null
+  const customerName = params.action.customerName?.trim() || phone || email || 'Client test'
+  const externalKey = phone ?? email ?? customerName
+  const externalId = `${TEST_CONTACT_EXTERNAL_ID_PREFIX}:${externalKey.toLowerCase()}`
+
+  const order = await prisma.$transaction(async (tx) => {
+    const connection = await tx.businessChannelConnection.findFirst({
+      where: { businessId: params.businessId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, channel: true },
+    })
+
+    if (!connection) {
+      return null
+    }
+
+    const contact = await tx.contact.upsert({
+      where: {
+        businessId_channel_externalId: {
+          businessId: params.businessId,
+          channel: connection.channel,
+          externalId,
+        },
+      },
+      update: {
+        connectionId: connection.id,
+        name: customerName,
+        phone,
+        notes: email ? `Email: ${email}` : undefined,
+        lastSeen: new Date(),
+      },
+      create: {
+        businessId: params.businessId,
+        connectionId: connection.id,
+        channel: connection.channel,
+        externalId,
+        name: customerName,
+        phone,
+        notes: email ? `Email: ${email}` : null,
+        lastSeen: new Date(),
+      },
+      select: { id: true },
+    })
+
+    const lastOrder = await tx.order.findFirst({
+      where: { businessId: params.businessId },
+      orderBy: { orderNumber: 'desc' },
+      select: { orderNumber: true },
+    })
+
+    const preparedItems = items.map((item) => {
+      const unitPrice = new Prisma.Decimal(item.unitPrice).toDecimalPlaces(2)
+
+      return {
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice,
+        totalPrice: unitPrice.mul(item.quantity).toDecimalPlaces(2),
+      }
+    })
+
+    const totalAmount = preparedItems.reduce(
+      (sum, item) => sum.add(item.totalPrice),
+      new Prisma.Decimal(0),
+    )
+
+    const notes = [
+      params.action.notes?.trim() ? `Notes: ${params.action.notes.trim()}` : null,
+      params.action.preferredDate?.trim() ? `Date souhaitee: ${params.action.preferredDate.trim()}` : null,
+      email ? `Email: ${email}` : null,
+    ].filter(Boolean).join('\n')
+
+    return tx.order.create({
+      data: {
+        businessId: params.businessId,
+        contactId: contact.id,
+        orderNumber: (lastOrder?.orderNumber ?? 0) + 1,
+        status: 'NOUVEAU',
+        paymentStatus: 'PAS_ENCORE',
+        deliveryAddress: params.action.deliveryAddress?.trim() || null,
+        notes: notes || null,
+        totalAmount,
+        items: { create: preparedItems },
+      },
+      include: {
+        contact: true,
+        items: {
+          orderBy: { id: 'asc' },
+        },
+      },
+    })
+  })
+
+  return order ? mapOrder(order) : null
+}
+
 function buildSystemPrompt(params: {
   businessName: string
   botName: string | null
+  businessType: string | null
+  tone: string | null
   knowledge: KnowledgeConfig
   products: ProductPromptRecord[]
   handoffKeywords: string | null
 }) {
   const botName = params.botName?.trim() || params.businessName
+  const businessType = formatBusinessType(params.businessType)
+  const tone = params.tone?.trim() || 'professionnel, clair et commercial'
   const handoffKeywords = params.handoffKeywords?.trim() || 'aucun mot cle additionnel'
   const handoffRules = params.knowledge.handoffEnabled
     ? `Handoff automatique: actif.
@@ -277,14 +554,28 @@ function buildSystemPrompt(params: {
 - Si le client est fache, parle de reclamation, remboursement, probleme de commande ou demande un humain, reponds uniquement avec une phrase de handoff.
 - Si le message contient un de ces mots cles, reponds uniquement avec une phrase de handoff: ${handoffKeywords}.
 - Handoff en francais: Je transmets votre message a notre equipe.
-- Handoff en arabe ou darija: reponds dans la langue du client avec une phrase courte qui dit que le message est transmis a l'equipe.`
+- Handoff en tunisien: reponds dans la langue du client avec une phrase courte qui dit que le message est transmis a l'equipe.`
     : `Handoff automatique: inactif.
 - Si tu n'as pas l'information, dis simplement que l'information n'est pas disponible et propose de contacter l'equipe.`
 
-  return `Tu t'appelles ${botName}. Tu representes ${params.businessName}. Ne dis jamais que tu es un bot.
+  return truncateText(`Tu t'appelles ${botName}. Tu representes ${params.businessName}. Ne dis jamais que tu es un bot.
 
 Objectif:
-Repondre aux clients avec les informations configurees et l'inventaire actif. Ne jamais inventer.
+Repondre aux clients avec les informations configurees et l'inventaire actif. Ne jamais inventer. Rester dans le contexte de ${params.businessName}.
+
+Activite:
+${businessType}
+
+Ton commercial:
+${tone}
+
+Strategie de vente:
+- Comprends l'intention: information, prix, disponibilite, commande, reservation, reclamation ou hors sujet.
+- Si le client montre une intention d'achat ou de reservation, guide-le avec une question courte vers l'etape suivante.
+- Ne pousse pas agressivement. Aide le client a choisir avec les produits, services, prix et contraintes disponibles.
+- Si l'activite est un service, parle de rendez-vous, disponibilite et informations necessaires.
+- Si l'activite vend des produits, parle de choix produit, quantite, livraison et confirmation.
+- Si la demande sort du contexte, refuse doucement et ramene vers les produits, services ou l'equipe.
 
 Horaires boutique:
 ${formatBusinessHours(params.knowledge.businessHours)}
@@ -310,22 +601,50 @@ ${formatExtraFaq(params.knowledge.extraFaq)}
 Inventaire actif:
 ${formatProducts(params.products)}
 
+Commande ou reservation:
+${formatOrderCapture(params.knowledge)}
+
 ${handoffRules}
 
-Regles de langue:
+Regles de langue et darija tunisienne:
 - Detecte la langue du client depuis le dernier message et l'historique.
 - Si le client ecrit en francais, reponds en francais clair.
-- Si le client ecrit en arabe, reponds en arabe naturel.
-- Si le client ecrit en darija tunisienne, reponds en darija tunisienne fluide avec un peu de francais seulement quand c'est naturel.
-- Ne force jamais la darija si le client parle seulement francais.
-- En darija tunisienne, tu peux utiliser naturellement: عسلامة, باهي, توة, قداش, وين, شنية, برشة, يعطيك الصحة.
-- Reste professionnel, court et utile.
+- Si le client ecrit en tunisien latinise, reponds en tunisien latinise naturel.
+- Si le client ecrit en arabe tunisien, reponds en arabe tunisien naturel.
+- N'utilise jamais de texte casse, mojibake ou caracteres mal encodes.
+- Tunisien naturel latinise autorise: 3aslema, behi, taw, chnowa, fech, win, kadeh, barcha, nheb, t7eb, najmou, mawjoud, livraison, commande, rendez-vous.
+- Garde la meme langue que le client pendant toute la reponse.
+- Evite les mots aleatoires et les melanges inutiles. Le francais peut apparaitre en darija seulement quand c'est naturel pour le commerce tunisien.
+- Reste court, poli, professionnel et utile.
 
 Regles de reponse:
 - Pour les prix et le stock des produits, utilise uniquement l'inventaire actif.
 - Pour les frais de livraison, utilise uniquement les zones de livraison configurees.
 - Si plusieurs produits ou zones peuvent correspondre, pose une question courte de clarification.
-- Si une reponse utile peut etre donnee, donne-la directement sans mentionner ces regles.`
+- Si une reponse utile peut etre donnee, donne-la directement sans mentionner ces regles.
+- Maximum 90 mots sauf si le client demande des details.
+
+Sortie obligatoire:
+Retourne uniquement un JSON valide, sans markdown:
+{
+  "reply": "message client final",
+  "action": null
+}
+Si et seulement si le client veut commander ou reserver ET tous les champs obligatoires sont connus, utilise:
+{
+  "reply": "message client final",
+  "action": {
+    "type": "CREATE_ORDER",
+    "customerName": "nom",
+    "phone": "telephone",
+    "email": "email si donne",
+    "deliveryAddress": "adresse si donnee",
+    "preferredDate": "date ou horaire si donne",
+    "notes": "conditions et champs supplementaires",
+    "items": [{ "productName": "nom exact du produit ou service", "quantity": 1, "unitPrice": 0 }]
+  }
+}
+Avant de creer une action, demande les champs obligatoires manquants un par un ou en une courte question.`, MAX_SYSTEM_PROMPT_CHARS)
 }
 
 export async function POST(request: Request) {
@@ -335,13 +654,17 @@ export async function POST(request: Request) {
     return response
   }
 
+  if (!checkRateLimit(session.user.id)) {
+    return NextResponse.json({ success: false, error: 'Trop de tests envoyes. Reessayez dans une minute.' }, { status: 429 })
+  }
+
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
     return NextResponse.json({ success: false, error: 'Configuration Groq manquante.' }, { status: 500 })
   }
 
   const body = (await request.json()) as BotTestBody
-  const message = body.message?.trim()
+  const message = truncateText(body.message?.trim() ?? '', MAX_USER_MESSAGE_CHARS)
 
   if (!message) {
     return NextResponse.json({ success: false, error: 'Message vide.' }, { status: 400 })
@@ -352,6 +675,8 @@ export async function POST(request: Request) {
       where: { id: session.user.id },
       select: {
         name: true,
+        businessType: true,
+        tone: true,
         botName: true,
         botKnowledge: true,
         botHandoffKeywords: true,
@@ -363,7 +688,7 @@ export async function POST(request: Request) {
         isActive: true,
       },
       orderBy: { updatedAt: 'desc' },
-      take: 50,
+      take: 30,
       select: {
         name: true,
         type: true,
@@ -391,12 +716,21 @@ export async function POST(request: Request) {
   const systemPrompt = buildSystemPrompt({
     businessName: business.name,
     botName: business.botName,
+    businessType: business.businessType,
+    tone: business.tone,
     knowledge: parseKnowledgeConfig(business.botKnowledge),
     products,
     handoffKeywords: business.botHandoffKeywords,
   })
 
-  const history = (body.history ?? []).filter(isChatMessage).slice(-20)
+  const history = (body.history ?? [])
+    .filter(isChatMessage)
+    .slice(-10)
+    .map((item) => ({
+      role: item.role,
+      content: truncateText(item.content.trim(), MAX_HISTORY_MESSAGE_CHARS),
+    }))
+
   const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -405,6 +739,8 @@ export async function POST(request: Request) {
     },
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
+      temperature: 0.2,
+      max_tokens: 650,
       messages: [
         { role: 'system', content: systemPrompt },
         ...history,
@@ -418,11 +754,21 @@ export async function POST(request: Request) {
   }
 
   const payload = (await groqResponse.json()) as GroqResponse
-  const content = payload.choices?.[0]?.message?.content?.trim()
+  const rawContent = payload.choices?.[0]?.message?.content?.trim()
+  const modelPayload = rawContent ? parseBotModelPayload(rawContent) : null
+  const content = modelPayload?.reply?.trim()
 
   if (!content) {
     return NextResponse.json({ success: false, error: 'Reponse Groq vide.' }, { status: 502 })
   }
 
-  return NextResponse.json({ success: true, data: { response: content } })
+  const order = modelPayload.action?.type === 'CREATE_ORDER'
+    ? await createTestOrder({
+        businessId: session.user.id,
+        action: modelPayload.action,
+        products,
+      })
+    : null
+
+  return NextResponse.json({ success: true, data: { response: content, order } })
 }
