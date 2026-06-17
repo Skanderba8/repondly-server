@@ -110,14 +110,9 @@ export function InventoryView({ products }: InventoryViewProps) {
   return (
     <div className="nx-page">
       <header className="nx-page-header">
-        <div>
-          <p className="nx-section-label">Catalogue</p>
-          <h1 className="nx-page-title">Inventaire</h1>
-          <p className="nx-page-sub">Gerez les produits, prix, frais de livraison et stocks visibles par votre equipe.</p>
-        </div>
         <button
           type="button"
-          className="nx-btn nx-btn-primary"
+          className="nx-btn nx-btn-primary ml-auto"
           onClick={() => {
             setSelectedProduct(null)
             setModalOpen(true)

@@ -8,6 +8,7 @@
     "start": "next start -p 3004",
     "lint": "eslint",
     "test": "vitest --run",
+    "messaging:test": "node scripts/local-messaging-test.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "prebuild": "prisma generate"

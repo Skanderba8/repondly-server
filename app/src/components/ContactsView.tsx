@@ -63,12 +63,7 @@ export function ContactsView({ contacts }: ContactsViewProps) {
   return (
     <div className="nx-page">
       <header className="nx-page-header">
-        <div>
-          <p className="nx-section-label">Base client</p>
-          <h1 className="nx-page-title">Contacts</h1>
-          <p className="nx-page-sub">Tous vos contacts avec un historique lisible, des tags et des signaux utiles pour l&apos;equipe.</p>
-        </div>
-        <button type="button" className="nx-btn nx-btn-secondary">
+        <button type="button" className="nx-btn nx-btn-primary ml-auto">
           <Plus size={16} aria-hidden="true" />
           Nouveau contact
         </button>

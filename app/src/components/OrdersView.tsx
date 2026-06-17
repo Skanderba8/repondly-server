@@ -172,12 +172,7 @@ export function OrdersView({ orders }: OrdersViewProps) {
   return (
     <div className="nx-page">
       <header className="nx-page-header">
-        <div>
-          <p className="nx-section-label">Ventes</p>
-          <h1 className="nx-page-title">Commandes</h1>
-          <p className="nx-page-sub">Suivez chaque commande du premier message jusqu'a la livraison avec une vue kanban simple et nette.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <button
             type="button"
             className={viewMode === 'KANBAN' ? 'nx-filter-chip is-active' : 'nx-filter-chip'}
@@ -210,11 +205,11 @@ export function OrdersView({ orders }: OrdersViewProps) {
           onDragEnd={(event) => void handleDragEnd(event)}
         >
           <div className="overflow-x-auto">
-            <div className="flex min-w-max gap-4 pb-2">
+            <div className="grid min-w-[980px] grid-cols-6 gap-3 pb-2">
               {groupedOrders.map((column) => (
                 <div
                   key={column.status}
-                  className="flex min-w-[260px] flex-1 flex-col gap-3 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-3"
+                  className="flex min-h-[calc(100dvh-210px)] min-w-0 flex-col gap-3 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-3"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
