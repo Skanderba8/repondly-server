@@ -4,6 +4,7 @@ export type Direction = 'INBOUND' | 'OUTBOUND'
 export type Plan = 'TRIAL' | 'STARTER' | 'PRO' | 'AGENCY'
 export type OrderStatus = 'NOUVEAU' | 'CONFIRME' | 'EN_PREPARATION' | 'EXPEDIE' | 'LIVRE' | 'ANNULE'
 export type PaymentStatus = 'PAS_ENCORE' | 'ACOMPTE' | 'RECU'
+export type ProductType = 'PRODUCT' | 'SERVICE'
 
 export interface Contact {
   id: string
@@ -78,15 +79,25 @@ export interface Order {
 
 export interface Product {
   id: string
+  type: ProductType
   name: string
   description?: string
   price: string
   deliveryFee: string
   stock?: number | null
   fournisseur?: string
+  images: ProductImage[]
   isActive: boolean
   createdAt: string
   updatedAt: string
+}
+
+export interface ProductImage {
+  id?: string
+  dataUrl: string
+  mimeType: string
+  sizeBytes: number
+  position: number
 }
 
 export interface BotConfig {

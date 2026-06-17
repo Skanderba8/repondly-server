@@ -19,7 +19,7 @@ function getTitle(pathname: string) {
   if (pathname.startsWith('/contacts/')) return 'Contact'
   if (pathname.startsWith('/contacts')) return 'Contacts'
   if (pathname.startsWith('/orders')) return 'Commandes'
-  if (pathname.startsWith('/inventory')) return 'Inventaire'
+  if (pathname.startsWith('/inventory')) return 'Produits et services'
   if (pathname.startsWith('/bot')) return 'Bot IA'
   if (pathname.startsWith('/followups')) return 'Relances'
   if (pathname.startsWith('/settings')) return 'Paramètres'

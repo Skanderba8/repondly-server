@@ -18,12 +18,14 @@ type ProductResponse = {
 
 function buildPayload(payload: ProductFormPayload) {
   return {
+    type: payload.type,
     name: payload.name,
     description: payload.description,
     price: payload.price || '0',
-    deliveryFee: payload.deliveryFee || '0',
-    stock: payload.stock.trim() ? Number(payload.stock) : null,
+    deliveryFee: payload.type === 'SERVICE' ? '0' : payload.deliveryFee || '0',
+    stock: payload.type === 'SERVICE' ? null : payload.stock.trim() ? Number(payload.stock) : null,
     fournisseur: payload.fournisseur,
+    images: payload.images,
     isActive: payload.isActive,
   }
 }
@@ -119,7 +121,7 @@ export function InventoryView({ products }: InventoryViewProps) {
           }}
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
-          Ajouter un produit
+          Ajouter
         </button>
       </header>
 
@@ -130,8 +132,8 @@ export function InventoryView({ products }: InventoryViewProps) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[13px] outline-none"
-            placeholder="Rechercher un produit"
-            aria-label="Rechercher un produit"
+            placeholder="Rechercher un produit ou service"
+            aria-label="Rechercher un produit ou service"
           />
         </label>
         <button
@@ -159,8 +161,8 @@ export function InventoryView({ products }: InventoryViewProps) {
         </div>
       ) : (
         <section className="nx-card p-6 text-center">
-          <p className="text-[14px] font-semibold text-[color:var(--text-primary)]">Aucun produit</p>
-          <p className="mt-1 text-[13px] text-[color:var(--text-secondary)]">Ajoutez votre premier produit pour construire le catalogue.</p>
+          <p className="text-[14px] font-semibold text-[color:var(--text-primary)]">Aucun élément</p>
+          <p className="mt-1 text-[13px] text-[color:var(--text-secondary)]">Ajoutez votre premier produit ou service pour construire le catalogue.</p>
         </section>
       )}
 

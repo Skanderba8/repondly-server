@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import {
   ArrowRight,
+  Bot,
   CheckCircle2,
   ChevronRight,
   Clock3,
@@ -11,8 +12,6 @@ import {
   MessageSquare,
   Send,
   Share2,
-  Sparkles,
-  TriangleAlert,
   Users,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -29,59 +28,6 @@ type DashboardViewProps = {
 
 type PriorityFilter = 'all' | 'urgent' | 'late' | 'hot'
 
-const channels = [
-  { name: 'WhatsApp', color: 'green', icon: 'whatsapp' },
-  { name: 'Instagram', color: 'pink', icon: 'instagram' },
-  { name: 'Messenger', color: 'indigo', icon: 'messenger' },
-]
-
-function WhatsAppIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M7.2 19.4 3.8 20.5l1.1-3.3A8.2 8.2 0 1 1 7.2 19.4Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9.1 8.1c.2-.5.4-.5.8-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3.1.5-.1.7l-.5.6c-.1.2-.2.4 0 .6.5.9 1.3 1.7 2.3 2.2.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.7-.1l1.7.8c.3.1.4.3.4.6 0 .7-.5 1.4-1.1 1.6-.8.3-2.5.1-4.5-1.1-2.2-1.4-3.6-3.7-3.9-4.8-.2-.8.2-1.5.5-1.9Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
-
-function MessengerIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 4C7.2 4 3.5 7.4 3.5 11.8c0 2.5 1.2 4.7 3.2 6.1v2.7l2.9-1.6c.8.2 1.6.4 2.4.4 4.8 0 8.5-3.4 8.5-7.6S16.8 4 12 4Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path d="m7.9 13 2.7-2.8 2.3 2.1 3.2-3.2-2.8 4.7-2.3-2.1L7.9 13Z" fill="currentColor" />
-    </svg>
-  )
-}
-
-function InstagramIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="4.5" y="4.5" width="15" height="15" rx="4.5" stroke="currentColor" strokeWidth="2" />
-      <circle cx="12" cy="12" r="3.3" stroke="currentColor" strokeWidth="2" />
-      <circle cx="16.7" cy="7.4" r="1.1" fill="currentColor" />
-    </svg>
-  )
-}
-
-function ChannelIcon({ name, size = 14 }: { name: string; size?: number }) {
-  if (name === 'whatsapp') return <WhatsAppIcon size={size} />
-  if (name === 'instagram') return <InstagramIcon size={size} />
-  return <MessengerIcon size={size} />
-}
-
 function isOverdue(conversation: Conversation) {
   if (!conversation.followUpAt) return false
   return new Date(conversation.followUpAt).getTime() < Date.now()
@@ -95,7 +41,7 @@ function EmptyState() {
   return (
     <div className="nx-dashboard-empty">
       <div className="nx-dashboard-empty-icon">
-        <Sparkles size={18} aria-hidden="true" />
+        <MessageSquare size={18} aria-hidden="true" />
       </div>
       <h3>Aucune priorité pour le moment</h3>
       <p>Connectez vos canaux ou créez une relance pour commencer.</p>
@@ -114,7 +60,7 @@ function EmptyState() {
 function CompactEmptyState({ text }: { text: string }) {
   return (
     <div className="nx-compact-empty">
-      <Sparkles size={16} aria-hidden="true" />
+      <MessageSquare size={16} aria-hidden="true" />
       <p>{text}</p>
     </div>
   )
@@ -168,62 +114,33 @@ export function DashboardView({ stats, recentConversations, followUpConversation
     return priorities
   }, [filter, priorities])
 
-  const recommendation = overdueCount > 0
-    ? {
-        title: `${overdueCount} relance${overdueCount > 1 ? 's' : ''} à reprendre en priorité`,
-        text: "Ouvrez les relances pour réduire le temps d'attente et garder un suivi clair.",
-        href: '/followups',
-        action: 'Ouvrir les relances',
-      }
-    : stats.newCount + stats.activeCount + stats.followUpCount === 0
-      ? {
-          title: 'Votre espace de suivi est prêt.',
-          text: 'Connectez WhatsApp, Instagram ou Facebook pour centraliser vos premières conversations.',
-          href: '/settings',
-          action: 'Configurer la boîte',
-        }
-      : {
-          title: 'Votre boîte est sous contrôle.',
-          text: 'Consultez les conversations récentes pour garder un rythme de réponse régulier.',
-          href: '/inbox',
-          action: 'Voir la boîte',
-        }
-
   const summaryCards = [
     {
       label: 'À traiter maintenant',
       value: stats.newCount,
-      context: stats.newCount > 0 ? `${stats.newCount} conversation${stats.newCount > 1 ? 's' : ''} non lue${stats.newCount > 1 ? 's' : ''}` : 'Aucune urgence',
       href: '/inbox',
       action: 'Voir la boîte',
-      tone: 'blue',
       icon: MessageSquare,
     },
     {
       label: 'Relances à risque',
       value: stats.followUpCount,
-      context: overdueCount > 0 ? `Dont ${overdueCount} en retard` : 'Aucune relance en retard',
       href: '/followups',
       action: 'Ouvrir les relances',
-      tone: 'orange',
-      icon: TriangleAlert,
+      icon: Clock3,
     },
     {
       label: 'IA & automatisation',
       value: '-',
-      context: 'Données IA indisponibles',
       href: '/settings',
       action: "Voir l'aperçu",
-      tone: 'purple',
-      icon: Sparkles,
+      icon: Bot,
     },
     {
       label: 'Canaux connectés',
       value: '0/3',
-      context: 'Configuration à terminer',
       href: '/settings',
       action: 'Gérer les canaux',
-      tone: 'green',
       icon: Share2,
     },
   ]
@@ -235,13 +152,12 @@ export function DashboardView({ stats, recentConversations, followUpConversation
           const Icon = card.icon
           return (
             <article key={card.label} className="nx-summary-card">
-              <div className={`nx-summary-icon is-${card.tone}`}>
+              <div className="nx-summary-icon">
                 <Icon size={21} aria-hidden="true" />
               </div>
               <div>
                 <p className="nx-summary-label">{card.label}</p>
                 <strong>{card.value}</strong>
-                <span className={`nx-summary-context is-${card.tone}`}>{card.context}</span>
               </div>
               <Link href={card.href} className="nx-summary-action">
                 {card.action}
@@ -311,27 +227,6 @@ export function DashboardView({ stats, recentConversations, followUpConversation
         </section>
 
         <aside className="nx-side-stack">
-          <section className="nx-panel">
-            <div className="nx-panel-header">
-              <h2>Configuration des canaux</h2>
-              <Link href="/settings">Tout gérer</Link>
-            </div>
-            <div className="nx-channel-list">
-              {channels.map((channel) => (
-                <Link href="/settings" key={channel.name} className="nx-channel-row">
-                  <span className={`nx-channel-icon is-${channel.color}`}>
-                    <ChannelIcon name={channel.icon} size={14} />
-                  </span>
-                  <span>
-                    <strong>{channel.name}</strong>
-                  </span>
-                  <em>À configurer</em>
-                  <ChevronRight size={14} aria-hidden="true" />
-                </Link>
-              ))}
-            </div>
-          </section>
-
           <section className="nx-panel nx-score-panel">
             <div className="nx-panel-header">
               <h2>Score de réactivité</h2>
@@ -360,19 +255,6 @@ export function DashboardView({ stats, recentConversations, followUpConversation
               </div>
             </section>
 
-            <section className="nx-panel nx-mini-recommendation">
-              <div className="nx-panel-header">
-                <h2>Recommandation du jour</h2>
-              </div>
-              <div className="nx-mini-recommendation-body">
-                <h3>{recommendation.title}</h3>
-                <p>{recommendation.text}</p>
-                <Link href={recommendation.href}>
-                  {recommendation.action}
-                  <ArrowRight size={14} aria-hidden="true" />
-                </Link>
-              </div>
-            </section>
           </div>
         </aside>
       </div>

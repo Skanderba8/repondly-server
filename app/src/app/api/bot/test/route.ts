@@ -72,12 +72,18 @@ type GroqResponse = {
 }
 
 type ProductPromptRecord = {
+  type: string
   name: string
   description: string | null
   price: Prisma.Decimal
   deliveryFee: Prisma.Decimal
   stock: number | null
   fournisseur: string | null
+  images: Array<{
+    id: string
+    mimeType: string
+    position: number
+  }>
 }
 
 const DEFAULT_KNOWLEDGE: KnowledgeConfig = {
@@ -234,12 +240,14 @@ function formatExtraFaq(items: ExtraFaqItem[]) {
 
 function formatProduct(product: ProductPromptRecord) {
   const parts = [
+    `Type: ${product.type === 'SERVICE' ? 'service' : 'produit'}`,
     `Nom: ${product.name}`,
     product.description ? `Description: ${product.description}` : null,
     `Prix: ${product.price.toFixed(2)} DT`,
-    `Livraison produit: ${product.deliveryFee.toFixed(2)} DT`,
-    product.stock === null ? 'Stock: non renseigne' : `Stock: ${product.stock}`,
+    product.type === 'SERVICE' ? null : `Livraison produit: ${product.deliveryFee.toFixed(2)} DT`,
+    product.type === 'SERVICE' ? null : product.stock === null ? 'Stock: non renseigne' : `Stock: ${product.stock}`,
     product.fournisseur ? `Fournisseur: ${product.fournisseur}` : null,
+    product.images.length > 0 ? `Photos disponibles: ${product.images.length}` : null,
   ].filter(Boolean)
 
   return parts.join(' | ')
@@ -358,11 +366,20 @@ export async function POST(request: Request) {
       take: 50,
       select: {
         name: true,
+        type: true,
         description: true,
         price: true,
         deliveryFee: true,
         stock: true,
         fournisseur: true,
+        images: {
+          orderBy: { position: 'asc' },
+          select: {
+            id: true,
+            mimeType: true,
+            position: true,
+          },
+        },
       },
     }),
   ])
