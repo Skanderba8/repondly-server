@@ -1,7 +1,7 @@
 export type ConversationStatus = 'NEW' | 'IN_PROGRESS' | 'CONFIRMED' | 'FOLLOW_UP' | 'RESOLVED'
 export type Intent = 'RDV' | 'PRIX' | 'COMMANDE' | 'RÉCLAMATION' | 'AUTRE'
 export type Direction = 'INBOUND' | 'OUTBOUND'
-export type Plan = 'TRIAL' | 'STARTER' | 'PRO' | 'AGENCY'
+export type Plan = 'ESSENTIEL' | 'BUSINESS' | 'BUSINESS_PLUS' | 'GROWTH'
 export type OrderStatus = 'NOUVEAU' | 'CONFIRME' | 'EN_PREPARATION' | 'EXPEDIE' | 'LIVRE' | 'ANNULE'
 export type PaymentStatus = 'PAS_ENCORE' | 'ACOMPTE' | 'RECU'
 export type ProductType = 'PRODUCT' | 'SERVICE'
@@ -94,6 +94,15 @@ export interface Product {
 
 export interface ProductImage {
   id?: string
+  dataUrl: string
+  mimeType: string
+  sizeBytes: number
+  position: number
+}
+
+export interface BusinessImage {
+  id?: string
+  category: string
   dataUrl: string
   mimeType: string
   sizeBytes: number

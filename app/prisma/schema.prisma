@@ -16,10 +16,11 @@ model Business {
   phone      String     @unique
   email      String?    @unique
   slug       String     @unique
-  plan       Plan       @default(TRIAL)
+  plan       Plan       @default(ESSENTIEL)
   planStatus PlanStatus @default(ACTIVE)
   trialEndsAt DateTime?
   isPaid     Boolean    @default(false)
+  onboardingCompletedAt DateTime?
 
   businessType String?
   tone         String?
@@ -37,6 +38,7 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  images             BusinessImage[]
   channelConnections BusinessChannelConnection[]
   contacts           Contact[]
   conversations      Conversation[]
@@ -45,6 +47,20 @@ model Business {
   orders             Order[]
   products           Product[]
   webhookEvents      WebhookEvent[]
+}
+
+model BusinessImage {
+  id         String   @id @default(cuid())
+  businessId String
+  category   String
+  dataUrl    String   @db.Text
+  mimeType   String
+  sizeBytes  Int
+  position   Int
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, category, position])
 }
 
 model BusinessChannelConnection {
@@ -274,10 +290,10 @@ enum CatalogItemType {
 }
 
 enum Plan {
-  TRIAL
-  STARTER
-  PRO
-  AGENCY
+  ESSENTIEL
+  BUSINESS
+  BUSINESS_PLUS
+  GROWTH
 }
 
 enum PlanStatus {

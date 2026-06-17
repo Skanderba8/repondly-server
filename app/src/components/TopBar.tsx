@@ -12,6 +12,13 @@ interface TopBarProps {
   plan?: string
 }
 
+const planLabels: Record<string, string> = {
+  ESSENTIEL: 'Essentiel',
+  BUSINESS: 'Business',
+  BUSINESS_PLUS: 'Business Plus',
+  GROWTH: 'Growth',
+}
+
 function getDateLabel() {
   return new Intl.DateTimeFormat('fr-FR', {
     day: 'numeric',
@@ -77,7 +84,7 @@ export function TopBar({ title, businessName = 'Business', plan = 'Business' }: 
             </span>
             <div className="min-w-0">
               <p className="truncate text-[12px] font-semibold leading-tight text-[color:var(--text-primary)]">{businessName}</p>
-              <p className="truncate text-[11px] leading-tight text-[color:var(--text-muted)]">Plan {plan}</p>
+              <p className="truncate text-[11px] leading-tight text-[color:var(--text-muted)]">Plan {planLabels[plan] ?? plan}</p>
             </div>
             <ChevronDown className="h-3.5 w-3.5 text-[color:var(--text-muted)]" aria-hidden="true" />
           </summary>

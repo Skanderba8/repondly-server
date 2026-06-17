@@ -37,10 +37,17 @@ const intentTones: Partial<Record<Intent, Exclude<BadgeTone, 'info'>>> = {
 }
 
 const planTones: Record<Plan, Exclude<BadgeTone, 'info'>> = {
-  TRIAL: 'neutral',
-  STARTER: 'brand',
-  PRO: 'success',
-  AGENCY: 'warning',
+  ESSENTIEL: 'neutral',
+  BUSINESS: 'brand',
+  BUSINESS_PLUS: 'success',
+  GROWTH: 'warning',
+}
+
+const planLabels: Record<Plan, string> = {
+  ESSENTIEL: 'Essentiel',
+  BUSINESS: 'Business',
+  BUSINESS_PLUS: 'Business Plus',
+  GROWTH: 'Growth',
 }
 
 function normalizeTone(tone?: BadgeTone) {
@@ -49,6 +56,7 @@ function normalizeTone(tone?: BadgeTone) {
 }
 
 function getLabel(intent?: Intent, status?: ConversationStatus, variant?: string) {
+  if (variant && variant in planLabels) return planLabels[variant as Plan]
   if (variant) return variant
   if (status) return statusLabels[status]
   if (intent) return intent

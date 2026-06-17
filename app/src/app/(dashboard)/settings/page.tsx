@@ -84,7 +84,7 @@ export default async function SettingsPage() {
           phone: business?.phone ?? '',
           businessType: business?.businessType ?? 'other',
           tone: business?.tone ?? 'friendly',
-          plan: business?.plan ?? 'TRIAL',
+          plan: business?.plan ?? 'ESSENTIEL',
         }}
         initialChannels={{
           WHATSAPP: {
