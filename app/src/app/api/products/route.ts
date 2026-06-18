@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireBusinessApiSession } from '@/lib/auth'
 import { getProducts, mapProduct } from '@/lib/products'
 import { prisma } from '@/lib/prisma'
+import type { ProductVariant } from '@/types'
 
 type ProductBody = {
   type?: CatalogItemType
@@ -12,6 +13,7 @@ type ProductBody = {
   deliveryFee?: number | string
   stock?: number | string | null
   fournisseur?: string
+  variants?: unknown
   images?: ProductImageBody[]
   isActive?: boolean
 }
@@ -42,6 +44,31 @@ function parseStock(value: ProductBody['stock']) {
 
 function parseType(value: ProductBody['type']) {
   return value === CatalogItemType.SERVICE ? CatalogItemType.SERVICE : CatalogItemType.PRODUCT
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function parseVariants(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
+  if (!Array.isArray(value)) {
+    return Prisma.JsonNull
+  }
+
+  const variants: ProductVariant[] = value
+    .slice(0, 6)
+    .filter((item) => isRecord(item) && typeof item.name === 'string' && Array.isArray(item.values))
+    .map((item) => ({
+      name: item.name.trim().slice(0, 40),
+      values: item.values
+        .filter((option): option is string => typeof option === 'string')
+        .map((option) => option.trim().slice(0, 40))
+        .filter(Boolean)
+        .slice(0, 20),
+    }))
+    .filter((item) => item.name && item.values.length > 0)
+
+  return variants.length > 0 ? variants as unknown as Prisma.InputJsonValue : Prisma.JsonNull
 }
 
 function parseImages(images: ProductBody['images']) {
@@ -114,6 +141,7 @@ export async function POST(request: Request) {
       deliveryFee: type === CatalogItemType.SERVICE ? new Prisma.Decimal(0) : parseMoney(body.deliveryFee),
       stock: type === CatalogItemType.SERVICE ? null : parseStock(body.stock),
       fournisseur: body.fournisseur?.trim() || null,
+      variants: parseVariants(body.variants),
       images: {
         create: parseImages(body.images),
       },

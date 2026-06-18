@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Bot, Camera, Check, ChevronLeft, ChevronRight, ImagePlus, MessageCircle, Plus, Store, Trash2, Upload, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { BusinessImage, Plan, ProductImage, ProductType } from '@/types'
+import type { BusinessImage, Plan, ProductImage, ProductType, ProductVariant } from '@/types'
 
 type OnboardingWizardProps = {
   initialBusiness: {
@@ -23,6 +23,7 @@ type ProductDraft = {
   deliveryFee: string
   stock: string
   fournisseur: string
+  variants: ProductVariant[]
   images: ProductImage[]
   isActive: boolean
 }
@@ -38,7 +39,6 @@ type ChannelDraft = {
 type BotDraft = {
   botEnabled: boolean
   botName: string
-  botLanguage: string
   botMode: string
   botWorkingHoursStart: string
   botWorkingHoursEnd: string
@@ -148,6 +148,7 @@ function createProductDraft(): ProductDraft {
     deliveryFee: '',
     stock: '',
     fournisseur: '',
+    variants: [],
     images: [],
     isActive: true,
   }
@@ -157,7 +158,6 @@ function createBotDraft(businessName: string): BotDraft {
   return {
     botEnabled: true,
     botName: businessName ? `Assistant ${businessName}` : 'Assistant Repondly',
-    botLanguage: 'francais',
     botMode: 'professionnel',
     botWorkingHoursStart: '09:00',
     botWorkingHoursEnd: '18:00',
@@ -434,7 +434,6 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
         bot: {
           botEnabled: bot.botEnabled,
           botName: bot.botName,
-          botLanguage: bot.botLanguage,
           botMode: bot.botMode,
           botWorkingHoursStart: bot.availability === 'always' ? '' : bot.botWorkingHoursStart,
           botWorkingHoursEnd: bot.availability === 'always' ? '' : bot.botWorkingHoursEnd,
@@ -685,14 +684,6 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                   <label className="nx-field">
                     <span className="nx-label">Nom du bot</span>
                     <input className="nx-input" value={bot.botName} onChange={(event) => setBot((current) => ({ ...current, botName: event.target.value }))} />
-                  </label>
-                  <label className="nx-field">
-                    <span className="nx-label">Langue</span>
-                    <select className="nx-input" value={bot.botLanguage} onChange={(event) => setBot((current) => ({ ...current, botLanguage: event.target.value }))}>
-                      <option value="francais">Francais</option>
-                      <option value="darija">Darija</option>
-                      <option value="arabe">Arabe</option>
-                    </select>
                   </label>
                   <label className="nx-field">
                     <span className="nx-label">Style</span>

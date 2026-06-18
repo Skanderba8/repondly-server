@@ -17,6 +17,9 @@ type MessageRecord = {
   id: string
   content: string
   direction: Message['direction']
+  type: NonNullable<Message['type']>
+  mediaUrl: string | null
+  mediaType: string | null
   createdAt: Date
 }
 
@@ -73,6 +76,9 @@ function mapMessages(messages: MessageRecord[]): Message[] {
     content: message.content,
     direction: message.direction,
     timestamp: message.createdAt.toISOString(),
+    type: message.type,
+    mediaUrl: message.mediaUrl ?? undefined,
+    mediaType: message.mediaType ?? undefined,
   }))
 }
 

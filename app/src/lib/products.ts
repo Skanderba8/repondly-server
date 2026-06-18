@@ -1,15 +1,54 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import type { Product } from '@/types'
+import type { Product, ProductVariant } from '@/types'
 
 type ProductRecord = Prisma.ProductGetPayload<{
   include: {
     images: true
   }
-}>
+}> & {
+  variants?: unknown
+}
 
 function formatDecimal(value: Prisma.Decimal | number | string) {
   return new Prisma.Decimal(value).toFixed(2)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function parseVariants(value: unknown): ProductVariant[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  const variants = value
+    .filter((item) => isRecord(item) && typeof item.name === 'string' && Array.isArray(item.values))
+    .map((item) => ({
+      name: item.name.trim(),
+      values: item.values.filter((option): option is string => typeof option === 'string').map((option) => option.trim()).filter(Boolean),
+    }))
+    .filter((item) => item.name && item.values.length > 0)
+
+  const grouped = new Map<string, ProductVariant>()
+
+  for (const variant of variants) {
+    const key = variant.name.toLowerCase()
+    const existing = grouped.get(key)
+
+    if (existing) {
+      existing.values = [...new Set([...existing.values, ...variant.values])]
+      continue
+    }
+
+    grouped.set(key, {
+      name: variant.name,
+      values: [...new Set(variant.values)],
+    })
+  }
+
+  return Array.from(grouped.values())
 }
 
 export function mapProduct(product: ProductRecord): Product {
@@ -22,6 +61,7 @@ export function mapProduct(product: ProductRecord): Product {
     deliveryFee: formatDecimal(product.deliveryFee),
     stock: product.stock,
     fournisseur: product.fournisseur ?? undefined,
+    variants: parseVariants(product.variants),
     images: product.images.map((image) => ({
       id: image.id,
       dataUrl: image.dataUrl,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Plus, RotateCcw, Send, ShoppingBag, Trash2 } from 'lucide-react'
+import { AlertTriangle, Plus, RotateCcw, Send, ShoppingBag, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { BotConfig } from '@/types'
 
@@ -12,6 +12,12 @@ type BotConfigViewProps = {
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
+  images?: Array<{
+    dataUrl: string
+    mimeType: string
+    sizeBytes: number
+    position: number
+  }>
 }
 
 type BotConfigResponse = {
@@ -23,6 +29,19 @@ type BotTestResponse = {
   success: boolean
   data?: {
     response: string
+    action?: {
+      type?: string
+      reason?: string
+    } | null
+    extraction?: {
+      reason?: string
+      productImages?: Array<{
+        dataUrl: string
+        mimeType: string
+        sizeBytes: number
+        position: number
+      }>
+    }
     order?: {
       orderNumber: number
       totalAmount: string
@@ -63,7 +82,8 @@ type ExtraFaqItem = {
   answer: string
 }
 
-type OrderFieldKey = 'productOrService' | 'name' | 'phone' | 'email' | 'deliveryAddress' | 'preferredDate' | 'notes'
+type OrderFieldKey = 'productOrService' | 'variant' | 'name' | 'phone' | 'email' | 'deliveryAddress' | 'preferredDate' | 'notes'
+type OrderFieldMode = 'off' | 'optional' | 'required'
 
 type OrderCaptureConfig = {
   enabled: boolean
@@ -129,7 +149,7 @@ const DEFAULT_KNOWLEDGE: KnowledgeConfig = {
   orderCapture: {
     enabled: true,
     requiredFields: ['productOrService', 'name', 'phone'],
-    optionalFields: ['email', 'deliveryAddress', 'preferredDate', 'notes'],
+    optionalFields: ['variant', 'email', 'deliveryAddress', 'preferredDate', 'notes'],
     customFields: [],
   },
   extraFaq: [],
@@ -137,6 +157,7 @@ const DEFAULT_KNOWLEDGE: KnowledgeConfig = {
 
 const ORDER_FIELD_OPTIONS: Array<{ key: OrderFieldKey; label: string }> = [
   { key: 'productOrService', label: 'Produit ou service' },
+  { key: 'variant', label: 'Variante produit' },
   { key: 'name', label: 'Nom complet' },
   { key: 'phone', label: 'Telephone' },
   { key: 'email', label: 'Email' },
@@ -251,6 +272,13 @@ function TypingDots() {
   )
 }
 
+function formatHandoverReason(reason: string) {
+  if (reason === 'human_request') return 'Le client demande un agent.'
+  if (reason === 'complaint') return 'Le client a une reclamation.'
+  if (reason === 'negotiation') return 'Le client demande une negociation commerciale.'
+  return reason
+}
+
 export function BotConfigView({ config }: BotConfigViewProps) {
   const [draft, setDraft] = useState(() => createDraft(config))
   const [savedConfig, setSavedConfig] = useState(config)
@@ -262,6 +290,7 @@ export function BotConfigView({ config }: BotConfigViewProps) {
   const [testing, setTesting] = useState(false)
   const [newCustomOrderField, setNewCustomOrderField] = useState('')
   const [orderNotice, setOrderNotice] = useState<{ orderNumber: number; totalAmount: string } | null>(null)
+  const [handoverNotice, setHandoverNotice] = useState<{ reason: string } | null>(null)
 
   const knowledgeCount = serializeKnowledgeConfig(knowledge).length
   const historyForApi = useMemo(() => history.map((item) => ({ role: item.role, content: item.content })), [history])
@@ -334,21 +363,33 @@ export function BotConfigView({ config }: BotConfigViewProps) {
     }))
   }
 
-  function toggleOrderField(kind: 'requiredFields' | 'optionalFields', key: OrderFieldKey) {
+  function setOrderFieldMode(key: OrderFieldKey, mode: OrderFieldMode) {
     setKnowledge((current) => {
-      const selected = current.orderCapture[kind].includes(key)
-      const nextFields = selected
-        ? current.orderCapture[kind].filter((field) => field !== key)
-        : [...current.orderCapture[kind], key]
-
       return {
         ...current,
         orderCapture: {
           ...current.orderCapture,
-          [kind]: nextFields,
+          requiredFields: mode === 'required'
+            ? [...current.orderCapture.requiredFields.filter((field) => field !== key), key]
+            : current.orderCapture.requiredFields.filter((field) => field !== key),
+          optionalFields: mode === 'optional'
+            ? [...current.orderCapture.optionalFields.filter((field) => field !== key), key]
+            : current.orderCapture.optionalFields.filter((field) => field !== key),
         },
       }
     })
+  }
+
+  function getOrderFieldMode(key: OrderFieldKey): OrderFieldMode {
+    if (knowledge.orderCapture.requiredFields.includes(key)) {
+      return 'required'
+    }
+
+    if (knowledge.orderCapture.optionalFields.includes(key)) {
+      return 'optional'
+    }
+
+    return 'off'
   }
 
   function addCustomOrderField() {
@@ -422,6 +463,7 @@ export function BotConfigView({ config }: BotConfigViewProps) {
     setMessage('')
     setTesting(true)
     setOrderNotice(null)
+    setHandoverNotice(null)
 
     try {
       const response = await fetch('/api/bot/test', {
@@ -431,12 +473,25 @@ export function BotConfigView({ config }: BotConfigViewProps) {
       })
 
       if (!response.ok) {
-        throw new Error('BOT_TEST_FAILED')
+        const errorResult = await response.json().catch(() => null) as { error?: string } | null
+        throw new Error(errorResult?.error ?? 'Le test du bot a echoue.')
       }
 
       const result = (await response.json()) as BotTestResponse
-      setHistory((current) => [...current, { role: 'assistant', content: result.data?.response ?? '' }])
+      setHistory((current) => [...current, {
+        role: 'assistant',
+        content: result.data?.response ?? '',
+        images: result.data?.extraction?.productImages ?? [],
+      }])
       setOrderNotice(result.data?.order ?? null)
+      if (result.data?.action?.type === 'human_handover') {
+        setHandoverNotice({ reason: formatHandoverReason(result.data.extraction?.reason ?? result.data.action.reason ?? 'Verification manuelle requise') })
+      }
+    } catch (error) {
+      setHistory((current) => [...current, {
+        role: 'assistant',
+        content: error instanceof Error ? error.message : 'Le test du bot a echoue.',
+      }])
     } finally {
       setTesting(false)
     }
@@ -655,33 +710,17 @@ export function BotConfigView({ config }: BotConfigViewProps) {
             {knowledge.orderCapture.enabled ? (
               <div className="mt-4 grid gap-4">
                 <div>
-                  <p className="nx-label mb-2">Obligatoires</p>
+                  <p className="nx-label mb-2">Champs a demander</p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {ORDER_FIELD_OPTIONS.map((option) => (
-                      <label key={`required-${option.key}`} className="flex items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3 text-[13px] text-[color:var(--text-secondary)]">
-                        <input
-                          type="checkbox"
-                          checked={knowledge.orderCapture.requiredFields.includes(option.key)}
-                          onChange={() => toggleOrderField('requiredFields', option.key)}
-                        />
-                        {option.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="nx-label mb-2">Optionnels</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {ORDER_FIELD_OPTIONS.map((option) => (
-                      <label key={`optional-${option.key}`} className="flex items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3 text-[13px] text-[color:var(--text-secondary)]">
-                        <input
-                          type="checkbox"
-                          checked={knowledge.orderCapture.optionalFields.includes(option.key)}
-                          onChange={() => toggleOrderField('optionalFields', option.key)}
-                        />
-                        {option.label}
-                      </label>
+                      <div key={option.key} className="grid gap-2 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3 sm:grid-cols-[1fr_130px] sm:items-center">
+                        <span className="text-[13px] text-[color:var(--text-secondary)]">{option.label}</span>
+                        <select className="nx-input" value={getOrderFieldMode(option.key)} onChange={(event) => setOrderFieldMode(option.key, event.target.value as OrderFieldMode)}>
+                          <option value="required">Obligatoire</option>
+                          <option value="optional">Optionnel</option>
+                          <option value="off">Non demande</option>
+                        </select>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -781,6 +820,7 @@ export function BotConfigView({ config }: BotConfigViewProps) {
             <button type="button" className="nx-btn nx-btn-ghost nx-btn-sm" onClick={() => {
               setHistory([])
               setOrderNotice(null)
+              setHandoverNotice(null)
             }}>
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Reinitialiser
@@ -788,6 +828,15 @@ export function BotConfigView({ config }: BotConfigViewProps) {
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3">
+            {handoverNotice ? (
+              <div className="mb-1 flex items-start gap-2 rounded-[var(--radius-btn)] border border-[color:var(--warning)] bg-[color:var(--warning-soft)] px-3 py-2 text-[12.5px] text-[color:var(--warning)]">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold">Cette conversation a besoin d'un agent.</p>
+                  <p className="mt-0.5">Raison: {handoverNotice.reason}</p>
+                </div>
+              </div>
+            ) : null}
             {orderNotice ? (
               <div className="mx-auto mb-1 flex items-center gap-2 rounded-[var(--radius-btn)] border border-[color:var(--success)] bg-[color:var(--success-soft)] px-3 py-2 text-[12.5px] font-medium text-[color:var(--success)]">
                 <ShoppingBag className="h-4 w-4" aria-hidden="true" />
@@ -800,7 +849,7 @@ export function BotConfigView({ config }: BotConfigViewProps) {
                 <div key={`${item.role}-${index}`} className={cn('flex max-w-[82%] flex-col md:max-w-[72%]', outbound ? 'ml-auto items-end' : 'mr-auto items-start')}>
                   <div
                     className={cn(
-                      'rounded-[var(--radius-btn)] border px-3.5 py-2 text-[13.5px] leading-[1.5]',
+                      'whitespace-pre-line rounded-[var(--radius-btn)] border px-3.5 py-2 text-[13.5px] leading-[1.5]',
                       outbound
                         ? 'border-[color:var(--brand)] bg-[color:var(--brand)] text-[color:var(--text-on-brand)]'
                         : 'border-[color:var(--border)] bg-[color:var(--bg-card)] text-[color:var(--text-primary)]',
@@ -808,6 +857,18 @@ export function BotConfigView({ config }: BotConfigViewProps) {
                   >
                     {item.content}
                   </div>
+                  {item.images?.length ? (
+                    <div className="mt-2 grid w-full grid-cols-2 gap-2">
+                      {item.images.map((image) => (
+                        <img
+                          key={`${image.position}-${image.sizeBytes}`}
+                          src={image.dataUrl}
+                          alt="Photo produit"
+                          className="aspect-square w-full rounded-[var(--radius-btn)] border border-[color:var(--border)] object-cover"
+                        />
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               )
             })}

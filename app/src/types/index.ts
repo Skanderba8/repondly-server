@@ -29,6 +29,9 @@ export interface Message {
   content: string
   direction: Direction
   timestamp: string
+  type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'STICKER' | 'REACTION' | 'SYSTEM' | 'UNSUPPORTED'
+  mediaUrl?: string
+  mediaType?: string
 }
 
 export interface Conversation {
@@ -86,10 +89,16 @@ export interface Product {
   deliveryFee: string
   stock?: number | null
   fournisseur?: string
+  variants: ProductVariant[]
   images: ProductImage[]
   isActive: boolean
   createdAt: string
   updatedAt: string
+}
+
+export interface ProductVariant {
+  name: string
+  values: string[]
 }
 
 export interface ProductImage {
@@ -112,7 +121,6 @@ export interface BusinessImage {
 export interface BotConfig {
   botEnabled: boolean
   botName: string
-  botLanguage: string
   botMode: string
   botWorkingHoursStart: string
   botWorkingHoursEnd: string

@@ -30,11 +30,33 @@ function getStockBadge(stock: number | null | undefined) {
   return { className: 'nx-badge-success', label: `En stock (${stock})` }
 }
 
+function getDisplayVariants(product: Product) {
+  const grouped = new Map<string, { name: string; values: string[] }>()
+
+  for (const variant of product.variants) {
+    const key = variant.name.trim().toLowerCase()
+    const existing = grouped.get(key)
+
+    if (existing) {
+      existing.values = [...new Set([...existing.values, ...variant.values])]
+      continue
+    }
+
+    grouped.set(key, {
+      name: variant.name,
+      values: [...new Set(variant.values)],
+    })
+  }
+
+  return Array.from(grouped.values())
+}
+
 export function ProductCard({ product, onEdit, onToggle }: ProductCardProps) {
   const stockBadge = getStockBadge(product.stock)
   const deliveryFee = Number(product.deliveryFee)
   const coverImage = product.images[0]
   const typeLabel = product.type === 'SERVICE' ? 'Service' : 'Produit'
+  const displayVariants = getDisplayVariants(product)
 
   return (
     <article className={cn('nx-card group relative overflow-hidden transition-shadow hover:shadow-[var(--shadow-elevated)]', !product.isActive && 'opacity-70')}>
@@ -73,6 +95,16 @@ export function ProductCard({ product, onEdit, onToggle }: ProductCardProps) {
           {product.type === 'PRODUCT' ? <span className={cn('nx-badge', stockBadge.className)}>{stockBadge.label}</span> : null}
           {product.fournisseur ? <span className="min-w-0 truncate text-[11px] text-[color:var(--text-muted)]">{product.fournisseur}</span> : null}
         </div>
+
+        {displayVariants.length > 0 ? (
+          <div className="mt-3 space-y-1">
+            {displayVariants.slice(0, 2).map((variant) => (
+              <p key={variant.name.toLowerCase()} className="line-clamp-1 text-[11px] text-[color:var(--text-muted)]">
+                {variant.name}: {variant.values.slice(0, 4).join(', ')}
+              </p>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-4 flex justify-end">
           <button

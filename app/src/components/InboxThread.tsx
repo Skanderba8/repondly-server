@@ -4,7 +4,7 @@ import type { KeyboardEvent } from 'react'
 import { useCallback } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ChevronDown, Ellipsis, Send } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ChevronDown, Ellipsis, Send, UserRoundCheck } from 'lucide-react'
 import type { Conversation, Message } from '@/types'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
@@ -45,6 +45,31 @@ function formatTime(value: string) {
   return new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
+function getActionBanner(summary?: string) {
+  if (!summary) return null
+
+  const lines = summary.split('\n').map((line) => line.trim()).filter(Boolean)
+  const orderLine = [...lines].reverse().find((line) => line.startsWith('Commande creee #'))
+  if (orderLine) {
+    const orderNumber = orderLine.match(/#(\d+)/)?.[1]
+    return {
+      icon: CheckCircle2,
+      title: orderNumber ? `Commande #${orderNumber} confirmee` : 'Commande confirmee',
+      description: 'Le client a recu la confirmation automatiquement.',
+    }
+  }
+
+  if (lines.some((line) => line.startsWith('Handover humain demande'))) {
+    return {
+      icon: UserRoundCheck,
+      title: 'Intervention humaine demandee',
+      description: 'La conversation attend une reponse de votre equipe.',
+    }
+  }
+
+  return null
+}
+
 export function InboxThread({ conversation, showBackButton = false, suggestions = DEFAULT_SUGGESTIONS }: InboxThreadProps) {
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState<Message[]>(conversation.messages ?? [])
@@ -67,7 +92,15 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
     messagesEndRef.current?.scrollIntoView()
   }, [conversation.id])
 
-  const handleRealtimeMessage = useCallback((msg: { id: string; content: string; direction: Message['direction']; createdAt: string }) => {
+  const handleRealtimeMessage = useCallback((msg: {
+    id: string
+    content: string
+    direction: Message['direction']
+    createdAt: string
+    type?: Message['type']
+    mediaUrl?: string
+    mediaType?: string
+  }) => {
     setMessages((current) => {
       if (current.some((message) => message.id === msg.id)) {
         return current
@@ -80,6 +113,9 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
           content: msg.content,
           direction: msg.direction,
           timestamp: msg.createdAt,
+          type: msg.type,
+          mediaUrl: msg.mediaUrl,
+          mediaType: msg.mediaType,
         },
       ]
     })
@@ -223,6 +259,8 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
   }
 
   let lastDayKey = ''
+  const actionBanner = getActionBanner(conversation.summary)
+  const ActionBannerIcon = actionBanner?.icon
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[color:var(--bg-card)]">
@@ -275,7 +313,17 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
         </div>
       </div>
 
-      {conversation.summary ? (
+      {actionBanner && ActionBannerIcon ? (
+        <div className="sticky top-0 z-10 border-b border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-4 py-2.5">
+          <div className="flex items-center gap-2 text-[13px] text-[color:var(--success)]">
+            <ActionBannerIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{actionBanner.title}</p>
+              <p className="truncate text-[12px] font-medium text-[color:var(--text-secondary)]">{actionBanner.description}</p>
+            </div>
+          </div>
+        </div>
+      ) : conversation.summary ? (
         <div className="flex min-h-[40px] items-center gap-2 border-b border-[color:var(--border)] bg-[color:var(--bg-page)] px-4 py-2 text-[12.5px] italic leading-[1.4] text-[color:var(--text-secondary)]">
           <span className="not-italic text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-muted)]">Resume</span>
           <span className="min-w-0 truncate">{conversation.summary}</span>

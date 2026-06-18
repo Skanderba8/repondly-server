@@ -11,6 +11,7 @@ interface MessageBubbleProps {
 export function MessageBubble({ message, isLast, showTimestamp }: MessageBubbleProps) {
   const outbound = message.direction === 'OUTBOUND'
   const withTimestamp = showTimestamp ?? isLast
+  const imageUrl = message.type === 'IMAGE' ? message.mediaUrl : undefined
 
   return (
     <div className={cn('flex max-w-[82%] flex-col md:max-w-[72%]', outbound ? 'ml-auto items-end' : 'mr-auto items-start', !isLast && 'mb-0.5')}>
@@ -20,9 +21,14 @@ export function MessageBubble({ message, isLast, showTimestamp }: MessageBubbleP
           outbound
             ? 'border-[color:var(--brand)] bg-[color:var(--brand)] text-[color:var(--text-on-brand)]'
             : 'border-[color:var(--border)] bg-[color:var(--bg-card)] text-[color:var(--text-primary)]',
+          imageUrl && 'p-1',
         )}
       >
-        {message.content}
+        {imageUrl ? (
+          <img src={imageUrl} alt={message.content || 'Image produit'} className="max-h-[260px] max-w-full rounded-[var(--radius-btn)] object-cover" />
+        ) : (
+          message.content
+        )}
       </div>
       {withTimestamp ? (
         <div className="mt-1 flex items-center gap-1 px-1 text-[11px] text-[color:var(--text-muted)]">

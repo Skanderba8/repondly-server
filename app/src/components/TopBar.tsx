@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Bell, Calendar, ChevronDown, CircleHelp, LogOut, Search, Settings, UserPlus } from 'lucide-react'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
 
@@ -28,7 +27,6 @@ function getDateLabel() {
 }
 
 export function TopBar({ title, businessName = 'Business', plan = 'Business' }: TopBarProps) {
-  const router = useRouter()
   const supabase = createBrowserSupabaseClient()
   const menuRef = useRef<HTMLDetailsElement>(null)
 
@@ -54,8 +52,7 @@ export function TopBar({ title, businessName = 'Business', plan = 'Business' }: 
 
   async function handleSignOut() {
     await supabase.auth.signOut()
-    router.replace('/auth/signin')
-    router.refresh()
+    window.location.assign('/auth/signin')
   }
 
   return (

@@ -25,6 +25,7 @@ function buildPayload(payload: ProductFormPayload) {
     deliveryFee: payload.type === 'SERVICE' ? '0' : payload.deliveryFee || '0',
     stock: payload.type === 'SERVICE' ? null : payload.stock.trim() ? Number(payload.stock) : null,
     fournisseur: payload.fournisseur,
+    variants: payload.variants,
     images: payload.images,
     isActive: payload.isActive,
   }

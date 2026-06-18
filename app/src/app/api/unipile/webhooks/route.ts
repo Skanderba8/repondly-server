@@ -1,6 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
+import { executeAiAction } from '@/lib/ai/actions'
+import { AI_CONFIG, type AiChatMessage } from '@/lib/ai/config'
+import { generateAiReply } from '@/lib/ai/groq'
+import { normalizePromptProducts } from '@/lib/ai/promptBuilder'
 import { prisma } from '@/lib/prisma'
 import { syncAccountChats } from '@/lib/unipile/sync'
 import { unipile, type UnipileAttendee, type UnipileChat, type UnipileMessage } from '@/lib/unipile/client'
@@ -360,10 +364,15 @@ async function upsertInboundMessage(
       })
 
   if (!message.id) {
-    return
+    return {
+      conversationId: conversation.id,
+      contactId: contact.id,
+      messageId: '',
+      content: deriveMessageContent(message),
+    }
   }
 
-  await prisma.message.upsert({
+  const storedMessage = await prisma.message.upsert({
     where: {
       channel_externalMessageId: {
         channel: connection.channel,
@@ -395,6 +404,243 @@ async function upsertInboundMessage(
       status: 'SENT',
       createdAt: new Date(message.created_at),
     },
+  })
+
+  return {
+    conversationId: conversation.id,
+    contactId: contact.id,
+    messageId: storedMessage.id,
+    content: deriveMessageContent(message),
+  }
+}
+
+async function getConversationAiHistory(conversationId: string, inboundMessageId: string) {
+  const messages = await prisma.message.findMany({
+    where: {
+      conversationId,
+      type: 'TEXT',
+      content: { not: '' },
+      id: { not: inboundMessageId },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: AI_CONFIG.MAX_HISTORY_MESSAGES,
+    select: {
+      direction: true,
+      senderType: true,
+      content: true,
+    },
+  })
+
+  return messages
+    .reverse()
+    .filter((message) => message.content.trim())
+    .map((message): AiChatMessage => ({
+      role: message.direction === 'INBOUND' ? 'user' : 'assistant',
+      content: message.content,
+    }))
+}
+
+async function sendBotReply(params: {
+  businessId: string
+  connectionId: string
+  channel: ChannelKey
+  conversationId: string
+  externalThreadId: string
+  unipileAccountId: string
+  reply: string
+}) {
+  const sentMessage = await unipile.sendMessage(params.unipileAccountId, params.externalThreadId, params.reply)
+  const now = new Date(sentMessage.created_at || new Date())
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: params.conversationId },
+    select: { firstReplyAt: true },
+  })
+
+  await prisma.message.create({
+    data: {
+      businessId: params.businessId,
+      connectionId: params.connectionId,
+      channel: params.channel,
+      conversationId: params.conversationId,
+      direction: 'OUTBOUND',
+      senderType: 'AGENT',
+      status: 'SENT',
+      type: 'TEXT',
+      content: params.reply,
+      externalMessageId: sentMessage.id || null,
+      rawPayload: toPrismaJson(sentMessage),
+      createdAt: now,
+    },
+  })
+
+  await prisma.conversation.update({
+    where: { id: params.conversationId },
+    data: {
+      lastMessageAt: now,
+      lastOutboundMessageAt: now,
+      firstReplyAt: conversation?.firstReplyAt ?? now,
+    },
+  })
+}
+
+type ProductImageExtraction = {
+  dataUrl: string
+  mimeType: string
+  sizeBytes: number
+  position: number
+}
+
+function getProductImagesFromExtraction(extraction: Record<string, unknown>) {
+  const images = extraction.productImages
+  if (!Array.isArray(images)) return []
+
+  return images
+    .filter((image): image is ProductImageExtraction => (
+      isRecord(image)
+      && typeof image.dataUrl === 'string'
+      && typeof image.mimeType === 'string'
+      && typeof image.sizeBytes === 'number'
+      && typeof image.position === 'number'
+    ))
+    .slice(0, 3)
+}
+
+async function sendBotProductImages(params: {
+  businessId: string
+  connectionId: string
+  channel: ChannelKey
+  conversationId: string
+  externalThreadId: string
+  unipileAccountId: string
+  productName?: unknown
+  images: ProductImageExtraction[]
+}) {
+  for (const image of params.images) {
+    const sentMessage = await unipile.sendMedia(
+      params.unipileAccountId,
+      params.externalThreadId,
+      image.dataUrl,
+      typeof params.productName === 'string' ? params.productName : undefined,
+    )
+    const now = new Date(sentMessage.created_at || new Date())
+
+    await prisma.message.create({
+      data: {
+        businessId: params.businessId,
+        connectionId: params.connectionId,
+        channel: params.channel,
+        conversationId: params.conversationId,
+        direction: 'OUTBOUND',
+        senderType: 'AGENT',
+        status: 'SENT',
+        type: 'IMAGE',
+        content: typeof params.productName === 'string' ? params.productName : '[image]',
+        mediaUrl: image.dataUrl,
+        mediaType: image.mimeType,
+        externalMessageId: sentMessage.id || null,
+        rawPayload: toPrismaJson(sentMessage),
+        createdAt: now,
+      },
+    })
+  }
+}
+
+async function maybeSendAiReply(params: {
+  businessId: string
+  connectionId: string
+  channel: ChannelKey
+  conversationId: string
+  contactId: string
+  inboundMessageId: string
+  customerMessage: string
+  accountId: string
+  chatId: string
+}) {
+  if (!params.customerMessage.trim() || params.customerMessage === '[media]') {
+    return
+  }
+
+  const business = await prisma.business.findUnique({
+    where: { id: params.businessId },
+    select: { botEnabled: true },
+  })
+
+  if (!business?.botEnabled) {
+    return
+  }
+
+  const history = await getConversationAiHistory(params.conversationId, params.inboundMessageId)
+  const aiReply = await generateAiReply({
+    businessId: params.businessId,
+    conversationId: params.conversationId,
+    customerMessage: params.customerMessage,
+    history,
+    enforceLimits: true,
+  })
+
+  await sendBotReply({
+    businessId: params.businessId,
+    connectionId: params.connectionId,
+    channel: params.channel,
+    conversationId: params.conversationId,
+    externalThreadId: params.chatId,
+    unipileAccountId: params.accountId,
+    reply: aiReply.reply,
+  })
+
+  const productImages = getProductImagesFromExtraction(aiReply.extraction)
+  if (productImages.length > 0) {
+    await sendBotProductImages({
+      businessId: params.businessId,
+      connectionId: params.connectionId,
+      channel: params.channel,
+      conversationId: params.conversationId,
+      externalThreadId: params.chatId,
+      unipileAccountId: params.accountId,
+      productName: aiReply.extraction.productName,
+      images: productImages,
+    }).catch(() => undefined)
+  }
+
+  if (!aiReply.action) {
+    return
+  }
+
+  const products = await prisma.product.findMany({
+    where: {
+      businessId: params.businessId,
+      isActive: true,
+    },
+    orderBy: { updatedAt: 'desc' },
+    take: 10,
+    select: {
+      name: true,
+      type: true,
+      description: true,
+      price: true,
+      deliveryFee: true,
+      stock: true,
+      fournisseur: true,
+      images: {
+        orderBy: { position: 'asc' },
+        take: 3,
+        select: {
+          dataUrl: true,
+          mimeType: true,
+          sizeBytes: true,
+          position: true,
+        },
+      },
+    },
+  })
+
+  await executeAiAction({
+    businessId: params.businessId,
+    conversationId: params.conversationId,
+    contactId: params.contactId,
+    action: aiReply.action,
+    products: normalizePromptProducts(products),
+    testMode: false,
   })
 }
 
@@ -432,7 +678,7 @@ async function handleMessageCreated(payload: WebhookPayload) {
   }
 
   const attendee = await unipile.getAttendee(accountId, attendeeId)
-  await upsertInboundMessage(
+  const inbound = await upsertInboundMessage(
     {
       id: connection.id,
       businessId: connection.businessId,
@@ -442,6 +688,22 @@ async function handleMessageCreated(payload: WebhookPayload) {
     attendee,
     message,
   )
+
+  if (inbound && message.text?.trim()) {
+    await maybeSendAiReply({
+      businessId: connection.businessId,
+      connectionId: connection.id,
+      channel: connection.channel,
+      conversationId: inbound.conversationId,
+      contactId: inbound.contactId,
+      inboundMessageId: inbound.messageId,
+      customerMessage: inbound.content,
+      accountId,
+      chatId: chat.id,
+    }).catch((error: unknown) => {
+      console.error('AI reply failed:', error)
+    })
+  }
 
   return {
     processed: true,

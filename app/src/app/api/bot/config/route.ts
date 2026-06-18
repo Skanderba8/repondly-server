@@ -9,7 +9,6 @@ function mapBotConfig(business: {
   name: string
   botEnabled: boolean
   botName: string | null
-  botLanguage: string | null
   botMode: string | null
   botWorkingHoursStart: string | null
   botWorkingHoursEnd: string | null
@@ -20,7 +19,6 @@ function mapBotConfig(business: {
     businessName: business.name,
     botEnabled: business.botEnabled,
     botName: business.botName ?? '',
-    botLanguage: business.botLanguage ?? 'français',
     botMode: business.botMode ?? 'professionnel',
     botWorkingHoursStart: business.botWorkingHoursStart ?? '',
     botWorkingHoursEnd: business.botWorkingHoursEnd ?? '',
@@ -33,7 +31,6 @@ const botSelect = {
   name: true,
   botEnabled: true,
   botName: true,
-  botLanguage: true,
   botMode: true,
   botWorkingHoursStart: true,
   botWorkingHoursEnd: true,
@@ -78,7 +75,6 @@ export async function PATCH(request: Request) {
     data: {
       ...(body.botEnabled !== undefined ? { botEnabled: body.botEnabled } : {}),
       ...(body.botName !== undefined ? { botName: body.botName.trim() || null } : {}),
-      ...(body.botLanguage !== undefined ? { botLanguage: body.botLanguage.trim() || null } : {}),
       ...(body.botMode !== undefined ? { botMode: body.botMode.trim() || null } : {}),
       ...(body.botWorkingHoursStart !== undefined ? { botWorkingHoursStart: body.botWorkingHoursStart.trim() || null } : {}),
       ...(body.botWorkingHoursEnd !== undefined ? { botWorkingHoursEnd: body.botWorkingHoursEnd.trim() || null } : {}),

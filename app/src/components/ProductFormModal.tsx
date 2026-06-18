@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ImagePlus, Trash2, X } from 'lucide-react'
+import { ImagePlus, Plus, Trash2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Product, ProductImage, ProductType } from '@/types'
+import type { Product, ProductImage, ProductType, ProductVariant } from '@/types'
 
 export type ProductFormPayload = {
   type: ProductType
@@ -13,6 +13,7 @@ export type ProductFormPayload = {
   deliveryFee: string
   stock: string
   fournisseur: string
+  variants: ProductVariant[]
   images: ProductImage[]
   isActive: boolean
 }
@@ -34,6 +35,7 @@ function createDraft(product?: Product | null): ProductFormPayload {
     deliveryFee: product?.deliveryFee ?? '0',
     stock: product?.stock === null || product?.stock === undefined ? '' : String(product.stock),
     fournisseur: product?.fournisseur ?? '',
+    variants: product?.variants ?? [],
     images: product?.images ?? [],
     isActive: product?.isActive ?? true,
   }
@@ -170,6 +172,35 @@ export function ProductFormModal({ open, product, pending, onClose, onSave }: Pr
     }))
   }
 
+  function updateVariant(index: number, field: keyof ProductVariant, value: string) {
+    setDraft((current) => ({
+      ...current,
+      variants: current.variants.map((variant, variantIndex) => {
+        if (variantIndex !== index) {
+          return variant
+        }
+
+        return field === 'name'
+          ? { ...variant, name: value }
+          : { ...variant, values: value.split(',').map((item) => item.trim()).filter(Boolean) }
+      }),
+    }))
+  }
+
+  function addVariant() {
+    setDraft((current) => ({
+      ...current,
+      variants: [...current.variants, { name: '', values: [] }],
+    }))
+  }
+
+  function removeVariant(index: number) {
+    setDraft((current) => ({
+      ...current,
+      variants: current.variants.filter((_, variantIndex) => variantIndex !== index),
+    }))
+  }
+
   return (
     <div className="nx-modal-backdrop" role="dialog" aria-modal="true">
       <div className="nx-modal-panel w-full max-w-[560px]">
@@ -269,6 +300,52 @@ export function ProductFormModal({ open, product, pending, onClose, onSave }: Pr
                 onChange={(event) => setDraft({ ...draft, fournisseur: event.target.value })}
               />
             </div>
+          </div>
+
+          <div className="rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[13px] font-semibold text-[color:var(--text-primary)]">Variantes</p>
+                <p className="mt-0.5 text-[12px] text-[color:var(--text-muted)]">Tailles, couleurs, pointures ou autres options.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={draft.variants.length > 0}
+                className={cn('nx-toggle', draft.variants.length > 0 && 'is-on')}
+                onClick={() => setDraft({ ...draft, variants: draft.variants.length > 0 ? [] : [{ name: 'Taille', values: [] }] })}
+              >
+                <span className="nx-toggle-thumb" />
+              </button>
+            </div>
+
+            {draft.variants.length > 0 ? (
+              <div className="mt-3 space-y-2">
+                {draft.variants.map((variant, index) => (
+                  <div key={index} className="grid gap-2 sm:grid-cols-[140px_1fr_40px]">
+                    <input
+                      className="nx-input"
+                      value={variant.name}
+                      onChange={(event) => updateVariant(index, 'name', event.target.value)}
+                      placeholder="Nom, ex: Taille"
+                    />
+                    <input
+                      className="nx-input"
+                      value={variant.values.join(', ')}
+                      onChange={(event) => updateVariant(index, 'values', event.target.value)}
+                      placeholder="Options, ex: S, M, L"
+                    />
+                    <button type="button" className="nx-btn nx-btn-ghost nx-btn-icon-md" onClick={() => removeVariant(index)} aria-label="Supprimer la variante">
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className="nx-btn nx-btn-secondary nx-btn-sm" onClick={addVariant}>
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                  Ajouter une variante
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div className="nx-field">
