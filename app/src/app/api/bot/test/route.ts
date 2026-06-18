@@ -762,7 +762,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: 'Reponse Groq vide.' }, { status: 502 })
   }
 
-  const order = modelPayload.action?.type === 'CREATE_ORDER'
+  const order = modelPayload?.action?.type === 'CREATE_ORDER'
     ? await createTestOrder({
         businessId: session.user.id,
         action: modelPayload.action,
