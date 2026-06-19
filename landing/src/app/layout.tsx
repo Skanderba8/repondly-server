@@ -1,9 +1,9 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { LangProvider } from '@/lib/LangContext'
 
 export const metadata: Metadata = {
-  title: 'Répondly',
-  description: 'Automatisez vos messages',
+  title: 'Répondly — Assistant IA pour WhatsApp, Messenger et Instagram',
+  description: 'Répondly aide les businesses en Tunisie à répondre aux clients, collecter les commandes et centraliser WhatsApp, Messenger et Instagram avec un assistant IA.',
   icons: { icon: '/logo.png' },
   alternates: {
     canonical: 'https://repondly.com',

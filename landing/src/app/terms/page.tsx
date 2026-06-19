@@ -1,4 +1,4 @@
-import LegalShell from '@/components/LegalShell'
+﻿import LegalShell from '@/components/LegalShell'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -103,7 +103,7 @@ const s = {
 function Li({ children }: { children: React.ReactNode }) {
   return (
     <li style={s.li}>
-      <span style={s.bullet}>▸</span>
+      <span style={s.bullet}>â–¸</span>
       <span>{children}</span>
     </li>
   )
@@ -119,7 +119,7 @@ export default function TermsPage() {
       <div style={s.section}>
         <h2 style={s.h2}>1. Identification du Prestataire</h2>
         <p style={s.p}>
-          Les présentes Conditions Générales de Vente et d&apos;Utilisation (ci-après « CGV ») régissent
+          Les présentes Conditions Générales de Vente et d&apos;Utilisation (ci-après Â« CGV Â») régissent
           les relations contractuelles entre <strong>Répondly</strong>, auto-entrepreneur enregistré en
           Tunisie, et tout client souscrivant aux services de la plateforme.
         </p>
@@ -152,23 +152,25 @@ export default function TermsPage() {
           </thead>
           <tbody>
             <tr>
-              <td style={s.td}><strong>Starter</strong></td>
-              <td style={s.td}>49 DT / mois</td>
-            </tr>
-            <tr>
-              <td style={s.td}><strong>Pro</strong></td>
-              <td style={s.td}>99 DT / mois</td>
+              <td style={s.td}><strong>Essentiel</strong></td>
+              <td style={s.td}>39 DT / mois</td>
             </tr>
             <tr>
               <td style={s.td}><strong>Business</strong></td>
+              <td style={s.td}>89 DT / mois</td>
+            </tr>
+            <tr>
+              <td style={s.td}><strong>Business Plus</strong></td>
+              <td style={s.td}>119 DT / mois</td>
+            </tr>
+            <tr>
+              <td style={s.td}><strong>Growth</strong></td>
               <td style={s.td}>199 DT / mois</td>
             </tr>
           </tbody>
         </table>
         <p style={{ ...s.p, marginTop: 14 }}>
-          Des <strong>frais de mise en place</strong> (configuration initiale du bot, intégration WhatsApp
-          et paramétrage des scénarios) s&apos;ajoutent à l&apos;abonnement mensuel. Ces frais sont communiqués
-          au client avant la signature du contrat et font l&apos;objet d&apos;une facturation distincte.
+          Aucun coût d&apos;installation n&apos;est ajouté aux plans affichés. L&apos;installation accompagnée est incluse pendant le lancement selon les conditions du plan choisi.
         </p>
         <p style={{ ...s.p, marginBottom: 0 }}>
           Les tarifs sont exprimés en dinars tunisiens (DT), toutes taxes comprises. Répondly se réserve
@@ -192,7 +194,7 @@ export default function TermsPage() {
         </p>
         <ul style={s.ul}>
           <Li>L&apos;abonnement est facturé mensuellement, à date anniversaire de souscription.</Li>
-          <Li>Les frais de mise en place sont facturés en une seule fois, avant le démarrage de la prestation.</Li>
+          <Li>L&apos;installation accompagnée incluse pendant le lancement ne fait pas l&apos;objet d&apos;un coût séparé.</Li>
           <Li>Tout retard de paiement peut entraîner la suspension du service après mise en demeure.</Li>
         </ul>
       </div>
@@ -210,15 +212,6 @@ export default function TermsPage() {
           <a href="mailto:repondly.tn@gmail.com" style={s.link}>repondly.tn@gmail.com</a>{' '}
           dans le délai imparti.
         </p>
-        <div style={{ ...s.highlight, borderLeft: `3px solid ${C.blue}` }}>
-          <p style={{ ...s.p, margin: 0, fontWeight: 600, color: C.ink }}>Exception — Frais de configuration du bot</p>
-          <p style={{ ...s.p, margin: '8px 0 0 0', marginBottom: 0 }}>
-            Conformément à la réglementation applicable aux prestations de services numériques, le droit
-            de rétractation est <strong>levé pour les frais de mise en place et de configuration du bot</strong>{' '}
-            dès lors que la prestation a commencé avec l&apos;accord exprès du client. Cet accord est
-            recueilli lors de la signature du bon de commande ou de l&apos;acceptation du devis.
-          </p>
-        </div>
       </div>
 
       {/* 5. Résiliation */}
@@ -249,11 +242,7 @@ export default function TermsPage() {
           lois tunisiennes et internationales relatives à la propriété intellectuelle.
         </p>
         <p style={s.p}>
-          Le <strong>bot configuré par Répondly</strong> — incluant les scénarios de conversation,
-          les flux d&apos;automatisation et les paramètres d&apos;intégration — demeure la{' '}
-          <strong>propriété de Répondly jusqu&apos;au paiement intégral des frais de mise en place</strong>.
-          À compter du règlement complet de ces frais, le client acquiert un droit d&apos;usage non
-          exclusif de la configuration réalisée, dans le cadre de son abonnement actif.
+          Le <strong>bot configuré par Répondly</strong>, incluant les scénarios de conversation, les flux d&apos;automatisation et les paramètres d&apos;intégration, est fourni dans le cadre de l&apos;abonnement actif du client.
         </p>
         <p style={{ ...s.p, marginBottom: 0 }}>
           Les contenus fournis par le client (textes, données de configuration, bases de connaissances)
@@ -278,3 +267,5 @@ export default function TermsPage() {
     </LegalShell>
   )
 }
+
+

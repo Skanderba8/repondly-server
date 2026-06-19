@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef, CSSProperties } from 'react'
 import Image from 'next/image'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const C = {
   bg:        '#ffffff',
   bgAlt:     '#f5f7fa',
@@ -24,7 +24,7 @@ const C = {
   white:     '#ffffff',
 }
 
-// ── Animation variants ────────────────────────────────────────────────────────
+// â”€â”€ Animation variants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
   visible: (i = 0) => ({
@@ -36,7 +36,7 @@ const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.09 } }
 
 const featureIcons = [MessageSquare, CalendarCheck, Bell, MessageSquare, Globe, UserCheck, Smartphone, LayoutDashboard]
 
-// ── Background patterns ───────────────────────────────────────────────────────
+// â”€â”€ Background patterns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /** Pattern A — dot grid (hero) */
 function PatternDots() {
@@ -81,7 +81,7 @@ function PatternGrid() {
   )
 }
 
-// ── Soft glow ─────────────────────────────────────────────────────────────────
+// â”€â”€ Soft glow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Glow({ x = '70%', y = '30%', size = 600, opacity = 0.10 }: {
   x?: string; y?: string; size?: number; opacity?: number
 }) {
@@ -95,7 +95,7 @@ function Glow({ x = '70%', y = '30%', size = 600, opacity = 0.10 }: {
   )
 }
 
-// ── useBreakpoint ─────────────────────────────────────────────────────────────
+// â”€â”€ useBreakpoint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function useBreakpoint() {
   const [w, setW] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
   useEffect(() => {
@@ -107,7 +107,7 @@ function useBreakpoint() {
   return { isMobile: w < 768, isTablet: w < 1024, w }
 }
 
-// ── useActiveSection ──────────────────────────────────────────────────────────
+// â”€â”€ useActiveSection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function useActiveSection(ids: string[]) {
   const [active, setActive] = useState('')
   useEffect(() => {
@@ -126,13 +126,14 @@ function useActiveSection(ids: string[]) {
   return active
 }
 
-// ── DEMO: Booking flow ────────────────────────────────────────────────────────
-function BookingDemo({ active, fading }: { active: boolean; fading: boolean }) {
+// â”€â”€ DEMO: Booking flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function OrderDemo({ active, fading }: { active: boolean; fading: boolean }) {
   const STEPS = [
-    { dir: 'left',    text: 'Salam! prix mta3na yabda men 49 DT/mois. Tnajem tchouf les détails: repondly.com/tarifs' },
-    { dir: 'left',    text: 'T7eb nreservilk appel bech na7kiw akther?' },
-    { dir: 'right',   text: 'Oui n7eb nchouf démo' },
-    { dir: 'booking', text: '' },
+    { dir: 'left',  text: 'Bonjour, disponible en noir taille M ?' },
+    { dir: 'right', text: 'Bonjour ! Oui, la taille M en noir est disponible. Livraison possible selon votre ville.' },
+    { dir: 'left',  text: 'Je veux commander.' },
+    { dir: 'right', text: "Parfait. Pouvez-vous m'envoyer votre nom, numéro de téléphone, adresse et quantité souhaitée ?" },
+    { dir: 'order', text: '' },
   ]
   const [shown, setShown] = useState(0)
 
@@ -141,7 +142,7 @@ function BookingDemo({ active, fading }: { active: boolean; fading: boolean }) {
     const timers: ReturnType<typeof setTimeout>[] = []
     timers.push(setTimeout(() => setShown(0), 0))
     STEPS.forEach((_, i) => {
-      timers.push(setTimeout(() => setShown(i + 1), 800 + i * 1800))
+      timers.push(setTimeout(() => setShown(i + 1), 800 + i * 1650))
     })
     return () => timers.forEach(clearTimeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,7 +154,7 @@ function BookingDemo({ active, fading }: { active: boolean; fading: boolean }) {
         {shown >= 1 && (
           <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: fading ? 0 : 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ display: 'flex', gap: 5 }}>
-            {['Darija', 'Français', 'Arabe'].map((l, i) => (
+            {['WhatsApp', 'Commande', 'À confirmer'].map((l, i) => (
               <span key={l} style={{
                 fontSize: 10.5, padding: '2px 9px', borderRadius: 100,
                 background: i === 0 ? C.blueLight : 'transparent',
@@ -174,36 +175,36 @@ function BookingDemo({ active, fading }: { active: boolean; fading: boolean }) {
               initial={{ opacity: 0, y: 7 }} animate={{ opacity: fading ? 0 : 1, y: 0 }}
               exit={{ opacity: 0 }} transition={{ duration: 0.35 }}
               style={{ display: 'flex', gap: 8, flexDirection: step.dir === 'right' ? 'row-reverse' : 'row', flexShrink: 0 }}>
-              {step.dir !== 'booking' && (
+              {step.dir !== 'order' && (
                 <div style={{
                   width: 27, height: 27, borderRadius: '50%', flexShrink: 0,
                   background: step.dir === 'right' ? C.blueLight : '#eef0f3',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9,
                   color: step.dir === 'right' ? C.blue : C.mid,
                 }}>
-                  {step.dir === 'right' ? 'C' : <Bot size={12} />}
+                  {step.dir === 'right' ? <Bot size={12} /> : 'C'}
                 </div>
               )}
-              {step.dir === 'booking' ? (
+              {step.dir === 'order' ? (
                 <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}
                   style={{
                     background: C.white, border: `1px solid ${C.border}`, borderRadius: 12,
                     padding: '12px 14px', boxShadow: '0 2px 16px rgba(26,107,255,0.09)',
-                    width: '100%', maxWidth: 210,
+                    width: '100%', maxWidth: 230,
                   }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
-                    <CalendarCheck size={12} color={C.blue} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: C.ink, fontFamily: "'DM Sans', sans-serif" }}>Réserver une démo</span>
+                    <CheckCircle size={12} color={C.blue} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: C.ink, fontFamily: "'DM Sans', sans-serif" }}>Nouvelle commande</span>
                   </div>
                   <p style={{ fontSize: 11, color: C.mid, margin: '0 0 9px', lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
-                    Choisissez un créneau horaire qui vous convient.
+                    Nouvelle commande prête à confirmer.
                   </p>
                   <div style={{
                     background: C.blue, color: C.white, borderRadius: 7,
                     padding: '7px 0', fontSize: 11, fontWeight: 500, textAlign: 'center',
                     fontFamily: "'DM Sans', sans-serif",
                   }}>
-                    Voir le calendrier →
+                    À confirmer
                   </div>
                 </motion.div>
               ) : (
@@ -243,29 +244,26 @@ function BookingDemo({ active, fading }: { active: boolean; fading: boolean }) {
     </div>
   )
 }
-
-// ── DEMO: Chat ────────────────────────────────────────────────────────────────
 const chatConvos = [
   {
-    channel: 'WhatsApp', color: '#25d366',
+    channel: 'Messenger', color: '#0084ff',
     msgs: [
-      { side: 'left' as const,  text: 'Bonjour, je voudrais prendre un rendez-vous pour demain.' },
-      { side: 'right' as const, text: 'Bonjour ! Quelle heure vous convient le mieux, matin ou après-midi ?' },
-      { side: 'left' as const,  text: '10h si possible.' },
-      { side: 'right' as const, text: 'Parfait. RDV mardi à 10h confirmé. Un rappel vous sera envoyé 1h avant. ✓' },
+      { side: 'left' as const,  text: 'Bonjour, livraison disponible à Sfax ?' },
+      { side: 'right' as const, text: 'Bonjour ! Oui, la livraison est disponible à Sfax. Le délai dépend de votre adresse.' },
+      { side: 'left' as const,  text: 'Je peux payer à la livraison ?' },
+      { side: 'right' as const, text: 'Oui, le paiement à la livraison est possible. Je peux préparer votre commande à confirmer.' },
     ],
   },
   {
     channel: 'Instagram', color: '#e1306c',
     msgs: [
-      { side: 'left' as const,  text: 'Bonjour, quels sont vos horaires d\'ouverture ?' },
-      { side: 'right' as const, text: 'Bonjour ! Nous sommes ouverts lundi–samedi, 9h à 19h.' },
-      { side: 'left' as const,  text: 'Vous proposez des consultations en ligne ?' },
-      { side: 'right' as const, text: 'Oui ! Je peux vous réserver un créneau en ligne dès maintenant si vous souhaitez.' },
+      { side: 'left' as const,  text: "Bonsoir, je veux parler à quelqu'un pour une demande spéciale." },
+      { side: 'right' as const, text: "Bien sûr. Je transfère votre conversation à l'équipe pour vous répondre correctement." },
+      { side: 'left' as const,  text: 'Merci.' },
+      { side: 'right' as const, text: "Avec plaisir. Votre demande est signalée à l'équipe." },
     ],
   },
 ]
-
 function ChatDemo({ convo, active, fading }: { convo: typeof chatConvos[0]; active: boolean; fading: boolean }) {
   const [shown, setShown] = useState(0)
 
@@ -330,11 +328,11 @@ function ChatDemo({ convo, active, fading }: { convo: typeof chatConvos[0]; acti
   )
 }
 
-// ── Hero mockup ───────────────────────────────────────────────────────────────
+// â”€â”€ Hero mockup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DEMOS = [
-  { label: 'Prise de démo',  channel: 'WhatsApp',  color: '#25d366' },
-  { label: 'Répondly Chat',  channel: 'WhatsApp',  color: '#25d366' },
-  { label: 'Répondly Chat',  channel: 'Instagram', color: '#e1306c' },
+  { label: 'Commande', channel: 'WhatsApp', color: '#25d366' },
+  { label: 'Messenger', channel: 'Messenger', color: '#0084ff' },
+  { label: 'Transfert humain', channel: 'Instagram', color: '#e1306c' },
 ]
 const DEMO_DURATION = 9500
 
@@ -386,7 +384,7 @@ function HeroMockup() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}>
             {ci === 0
-              ? <BookingDemo active={inView} fading={fading} />
+              ? <OrderDemo active={inView} fading={fading} />
               : <ChatDemo convo={chatConvos[ci - 1]} active={inView} fading={fading} />
             }
           </motion.div>
@@ -423,43 +421,29 @@ function HeroMockup() {
   )
 }
 
-// ── Stats row ─────────────────────────────────────────────────────────────────
-function StatsRow({ lang, isMobile }: { lang: string; isMobile: boolean }) {
-  const stats = lang === 'fr'
-    ? [
-        { value: '+50', label: 'entreprises actives' },
-        { value: '98%',  label: 'satisfaction client' },
-        { value: '24/7', label: 'disponibilité IA' },
-        { value: '<2s',  label: 'temps de réponse' },
-      ]
-    : [
-        { value: '50+', label: 'active businesses' },
-        { value: '98%',  label: 'client satisfaction' },
-        { value: '24/7', label: 'AI availability' },
-        { value: '<2s',  label: 'response time' },
-      ]
-
+// â”€â”€ Stats row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function HeroBadges({ badges, isMobile }: { badges: string[]; isMobile: boolean }) {
   return (
     <div style={{
-      display: 'grid',
-      gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, auto)',
-      gap: isMobile ? '16px 24px' : '0 28px',
+      display: 'flex', flexWrap: 'wrap', gap: isMobile ? 8 : 10,
+      maxWidth: 460,
     }}>
-      {stats.map((s, i) => (
-        <div key={i}>
-          <div style={{
-            fontFamily: "'DM Serif Display', serif",
-            fontSize: isMobile ? '1.3rem' : '1.45rem',
-            color: C.ink, letterSpacing: '-0.03em', lineHeight: 1,
-          }}>{s.value}</div>
-          <div style={{ fontSize: 12, color: C.muted, marginTop: 3, fontFamily: 'Inter, sans-serif' }}>{s.label}</div>
+      {badges.map((label, i) => (
+        <div key={label} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 7,
+          border: `1px solid ${C.border}`, background: i === 0 ? C.blueLight : C.white,
+          color: i === 0 ? C.blue : C.mid,
+          borderRadius: 100, padding: '7px 12px', fontSize: 12.5,
+          fontWeight: i === 0 ? 600 : 500,
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
+          <Check size={12} />
+          {label}
         </div>
       ))}
     </div>
   )
 }
-
-// ── FAQ item ──────────────────────────────────────────────────────────────────
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
@@ -485,7 +469,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   )
 }
 
-// ── Section wrapper ───────────────────────────────────────────────────────────
+// â”€â”€ Section wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Sec({ id, children, bg = C.bg, pattern, style = {} }: {
   id?: string
   children: React.ReactNode
@@ -526,15 +510,24 @@ function Eyebrow({ label }: { label: string }) {
   )
 }
 
-// ── Contact form ──────────────────────────────────────────────────────────────
+// â”€â”€ Contact form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext').useLang>['tr'] }) {
   const [business, setBusiness] = useState('')
   const [autre, setAutre] = useState('')
   const [focused, setFocused] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [channels, setChannels] = useState<string[]>([])
+  const [volume, setVolume] = useState('')
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+
+  const toggleChannel = (channel: string) => {
+    setChannels(current => current.includes(channel)
+      ? current.filter(item => item !== channel)
+      : [...current, channel]
+    )
+  }
 
   const handleSubmit = async () => {
     if (!name || !phone) return
@@ -547,6 +540,8 @@ function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext')
           name,
           phone,
           business: business === 'Autre' || business === 'Other' ? autre : business,
+          channels,
+          volume,
           message,
         }),
       })
@@ -622,7 +617,7 @@ function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext')
               <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid, fontFamily: "'DM Sans', sans-serif" }}>
                 Précisez
               </label>
-              <input type="text" placeholder="Ex : Coiffure, Pharmacie, Garage…" value={autre}
+              <input type="text" placeholder="Ex: coiffure, pharmacie, garage..." value={autre}
                 onChange={e => setAutre(e.target.value)} style={inp('autre')}
                 onFocus={() => setFocused('autre')} onBlur={() => setFocused(null)} />
             </div>
@@ -630,11 +625,49 @@ function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext')
         )}
       </AnimatePresence>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid, fontFamily: "'DM Sans', sans-serif" }}>
+          {tr.formChannels}
+        </label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {tr.formChannelsOptions.map(channel => {
+            const active = channels.includes(channel)
+            return (
+              <button key={channel} type="button" onClick={() => toggleChannel(channel)}
+                style={{
+                  border: `1.5px solid ${active ? C.blue : C.border}`,
+                  background: active ? C.blueLight : C.white,
+                  color: active ? C.blue : C.mid,
+                  borderRadius: 100, padding: '8px 13px', fontSize: 13,
+                  fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                }}>
+                {channel}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid, fontFamily: "'DM Sans', sans-serif" }}>
+          {tr.formVolume}
+        </label>
+        <div style={{ position: 'relative' }}>
+          <select value={volume} onChange={e => setVolume(e.target.value)}
+            style={{ ...inp('volume'), appearance: 'none', paddingRight: 34, cursor: 'pointer', color: volume ? C.ink : C.mid } as CSSProperties}
+            onFocus={() => setFocused('volume')} onBlur={() => setFocused(null)}>
+            <option value="" disabled>{tr.formVolumePh}</option>
+            {tr.formVolumeOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+          <ChevronDown size={14} color={C.mid} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+        </div>
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
         <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.mid, fontFamily: "'DM Sans', sans-serif" }}>
           {tr.formMessage}
         </label>
-        <textarea rows={3} placeholder={tr.formMessagePh} value={message}
+        <textarea rows={4} placeholder={tr.formMessagePh} value={message}
           onChange={e => setMessage(e.target.value)}
           style={{ ...inp('msg'), resize: 'none' } as CSSProperties}
           onFocus={() => setFocused('msg')} onBlur={() => setFocused(null)} />
@@ -663,8 +696,6 @@ function ContactForm({ tr }: { tr: ReturnType<typeof import('@/lib/LangContext')
     </motion.div>
   )
 }
-
-// ── Mobile nav drawer ─────────────────────────────────────────────────────────
 function MobileDrawer({
   open, onClose, navLinks, lang, toggle, tr,
 }: {
@@ -749,7 +780,7 @@ function MobileDrawer({
                 padding: '9px 12px', fontSize: 12, fontWeight: 500, color: C.mid, cursor: 'pointer',
                 fontFamily: "'DM Sans', sans-serif",
               }}>
-                {lang === 'fr' ? '🌐 EN' : '🌐 FR'}
+                {lang === 'fr' ? 'ðŸŒ EN' : 'ðŸŒ FR'}
               </button>
             </div>
           </motion.div>
@@ -759,7 +790,7 @@ function MobileDrawer({
   )
 }
 
-// ── Sticky mobile CTA bar ─────────────────────────────────────────────────────
+// â”€â”€ Sticky mobile CTA bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function StickyMobileCta({ label, contactInView }: { label: string; contactInView: boolean }) {
   return (
     <AnimatePresence>
@@ -789,10 +820,9 @@ function StickyMobileCta({ label, contactInView }: { label: string; contactInVie
   )
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────────
+// â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function Home() {
   const { lang, tr, toggle } = useLang()
-  console.log('lang:', lang)
   const { isMobile, isTablet } = useBreakpoint()
   const [scrolled, setScrolled] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -813,10 +843,9 @@ export default function Home() {
     { href: '#how',      label: tr.navHow },
     { href: '#pricing',  label: tr.navPricing },
     { href: '#faq',      label: tr.navFaq },
-    { href: '#contact',  label: tr.navContact },
   ]
   const howIcons = [MessageSquare, Bot, Zap, LayoutDashboard]
-  // ── Computed layout values ─────────────────────────────────────────────────
+  // â”€â”€ Computed layout values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const heroPad  = isMobile ? '0 16px' : isTablet ? '0 24px' : '0 48px'
   const heroGrid = isMobile
     ? { display: 'flex', flexDirection: 'column' as const, gap: 40 }
@@ -825,7 +854,7 @@ export default function Home() {
   return (
     <div style={{ background: C.bg, color: C.ink, fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }}>
 
-      {/* ── NAV ─────────────────────────────────────────────────────────── */}
+      {/* â”€â”€ NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <header style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         backdropFilter: 'blur(18px) saturate(160%)',
@@ -864,19 +893,6 @@ export default function Home() {
                   {l.label}
                 </a>
               ))}
-              {!isTablet && (
-                <>
-                  <div style={{ width: 1, height: 16, background: C.border, margin: '0 4px' }} />
-                  <a href="https://repondly.com/privacy"
-                    style={{ fontSize: 12, color: C.muted, textDecoration: 'none', padding: '4px 7px', fontFamily: "'DM Sans', sans-serif" }}>
-                    Confidentialité
-                  </a>
-                  <a href="https://repondly.com/terms"
-                    style={{ fontSize: 12, color: C.muted, textDecoration: 'none', padding: '4px 7px', fontFamily: "'DM Sans', sans-serif" }}>
-                    CGU
-                  </a>
-                </>
-              )}
             </nav>
           )}
 
@@ -884,7 +900,7 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {!isMobile && (
               <>
-                <button onClick={() => { toggle(); console.log('toggled') }} style={{
+                <button onClick={toggle} style={{
                   background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 100,
                   padding: '5px 12px', fontSize: 12, fontWeight: 500, color: C.mid, cursor: 'pointer',
                   fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.15s',
@@ -940,7 +956,7 @@ export default function Home() {
         <StickyMobileCta label={tr.navCta} contactInView={contactInView} />
       )}
 
-      {/* ── HERO ────────────────────────────────────────────────────────── */}
+      {/* â”€â”€ HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section style={{
         minHeight: '100vh',
         padding: heroPad,
@@ -968,7 +984,6 @@ export default function Home() {
               color: C.ink, margin: '0 0 18px',
             }}>
               {tr.heroTitle}
-              <em style={{ fontStyle: 'italic', color: C.blue, display: 'block' }}>{tr.heroTitleEm}</em>
             </motion.h1>
 
             <motion.p variants={fadeUp} custom={1} style={{
@@ -995,7 +1010,7 @@ export default function Home() {
                 onMouseLeave={e => { e.currentTarget.style.background = C.blue; e.currentTarget.style.transform = 'none' }}>
                 {tr.heroBtn1} <ArrowRight size={14} />
               </a>
-              <a href="#features" style={{
+              <a href="#pricing" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                 background: 'transparent', color: C.ink, borderRadius: 100,
                 padding: isMobile ? '14px 28px' : '12px 26px',
@@ -1013,7 +1028,7 @@ export default function Home() {
               style={{ height: 1, background: C.border, marginBottom: 26, maxWidth: 360 }} />
 
             <motion.div variants={fadeUp} custom={4}>
-              <StatsRow lang={lang} isMobile={isMobile} />
+              <HeroBadges badges={tr.heroBadges} isMobile={isMobile} />
             </motion.div>
           </motion.div>
 
@@ -1028,7 +1043,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FEATURES ────────────────────────────────────────────────────── */}
+      {/* â”€â”€ FEATURES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Sec id="features" bg={C.bgAlt} pattern="diagonal">
         <div style={wrap}>
           <motion.div variants={fadeUp} style={{ marginBottom: 40 }}>
@@ -1074,19 +1089,59 @@ export default function Home() {
         </div>
       </Sec>
 
-      {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
-      <Sec id="how" bg={C.bg} pattern="grid">
+      {/* Audience */}
+      <Sec id="audience" bg={C.bg} pattern="grid">
+        <div style={wrap}>
+          <motion.div variants={fadeUp} style={{ marginBottom: 30 }}>
+            <Eyebrow label={tr.audienceLabel} />
+            <h2 style={{
+              fontFamily: "'DM Serif Display', serif",
+              fontSize: 'clamp(1.7rem, 3vw, 2.2rem)', letterSpacing: '-0.025em',
+              maxWidth: 560, color: C.ink, margin: '0 0 10px', lineHeight: 1.2,
+            }}>
+              {tr.audienceTitle}
+            </h2>
+            <p style={{ color: C.mid, fontSize: 14, lineHeight: 1.8, maxWidth: 520, fontWeight: 300, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+              {tr.audienceSub}
+            </p>
+          </motion.div>
+
+          <motion.div variants={stagger} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
+            {tr.audienceItems.map((item, i) => (
+              <motion.div key={item} variants={fadeUp} custom={i}
+                style={{
+                  background: C.white, border: `1px solid ${C.border}`, borderRadius: 100,
+                  padding: '10px 15px', color: C.ink, fontSize: 13.5, fontWeight: 500,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}>
+                {item}
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.p variants={fadeUp} style={{
+            margin: 0, color: C.mid, fontSize: 13.5, lineHeight: 1.8, maxWidth: 720,
+            background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 12,
+            padding: '14px 16px', fontFamily: 'Inter, sans-serif',
+          }}>
+            {tr.audienceNote}
+          </motion.p>
+        </div>
+      </Sec>
+
+      {/* How it works */}
+      <Sec id="how" bg={C.bgAlt} pattern="grid">
         <div style={wrap}>
           <motion.div variants={fadeUp} style={{ marginBottom: 40 }}>
             <Eyebrow label={tr.howLabel} />
             <h2 style={{
               fontFamily: "'DM Serif Display', serif",
               fontSize: 'clamp(1.7rem, 3vw, 2.2rem)', letterSpacing: '-0.025em',
-              color: C.ink, maxWidth: 460, margin: '0 0 10px', lineHeight: 1.2,
+              color: C.ink, maxWidth: 520, margin: '0 0 10px', lineHeight: 1.2,
             }}>
               {tr.howTitle}
             </h2>
-            <p style={{ color: C.mid, fontSize: 14, lineHeight: 1.8, fontWeight: 300, maxWidth: 380, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+            <p style={{ color: C.mid, fontSize: 14, lineHeight: 1.8, fontWeight: 300, maxWidth: 500, margin: 0, fontFamily: 'Inter, sans-serif' }}>
               {tr.howSub}
             </p>
           </motion.div>
@@ -1096,7 +1151,6 @@ export default function Home() {
             gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
             gap: 12, position: 'relative',
           }}>
-            {/* Connector line — desktop only */}
             {!isMobile && !isTablet && (
               <div style={{ position: 'absolute', top: 23, left: '12%', right: '12%', height: 1, background: C.border, zIndex: 0 }} />
             )}
@@ -1115,7 +1169,7 @@ export default function Home() {
                   }}>
                     <Icon size={17} />
                   </div>
-                  <div style={{ background: C.bgAlt, borderRadius: 11, padding: '14px 13px' }}>
+                  <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 11, padding: '14px 13px' }}>
                     <p style={{ fontSize: 10, fontWeight: 700, color: C.blue, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 5px', fontFamily: "'DM Sans', sans-serif" }}>
                       {lang === 'fr' ? `Étape ${s.n}` : `Step ${s.n}`}
                     </p>
@@ -1132,33 +1186,70 @@ export default function Home() {
           </div>
 
           <motion.div variants={fadeUp} style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-            {[
-              { Icon: Zap,          label: lang === 'fr' ? 'Détection IA' : 'AI Detection' },
-              { Icon: MessageSquare,label: lang === 'fr' ? 'Réponse instantanée' : 'Instant Reply' },
-              { Icon: CalendarCheck,label: lang === 'fr' ? 'Réservation auto' : 'Auto Booking' },
-              { Icon: Bell,         label: lang === 'fr' ? 'Rappel envoyé' : 'Reminder Sent' },
-              { Icon: CheckCircle,  label: lang === 'fr' ? 'Client satisfait' : 'Happy Client' },
-            ].map(({ Icon, label }, i, arr) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: C.blueLight, borderRadius: 100, padding: '6px 13px',
-                  fontSize: 12.5, color: C.blue, fontWeight: 500,
-                  fontFamily: "'DM Sans', sans-serif",
-                }}>
-                  <Icon size={12} />{label}
+            {tr.flowItems.map((label, i, arr) => {
+              const Icon = [MessageSquare, Bot, CheckCircle, UserCheck, Bell][i] ?? CheckCircle
+              return (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: C.blueLight, borderRadius: 100, padding: '6px 13px',
+                    fontSize: 12.5, color: C.blue, fontWeight: 500,
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}>
+                    <Icon size={12} />{label}
+                  </div>
+                  {i < arr.length - 1 && <span style={{ color: C.border, fontSize: 14, marginLeft: 2 }}>›</span>}
                 </div>
-                {i < arr.length - 1 && <span style={{ color: C.border, fontSize: 14, marginLeft: 2 }}>›</span>}
-              </div>
-            ))}
+              )
+            })}
           </motion.div>
         </div>
       </Sec>
 
-      {/* ── PRICING ─────────────────────────────────────────────────────── */}
+      {/* Trust */}
+      <Sec id="trust" bg={C.bg} pattern="dots">
+        <div style={wrap}>
+          <motion.div variants={fadeUp} style={{ marginBottom: 34 }}>
+            <Eyebrow label={tr.trustLabel} />
+            <h2 style={{
+              fontFamily: "'DM Serif Display', serif",
+              fontSize: 'clamp(1.7rem, 3vw, 2.2rem)', letterSpacing: '-0.025em',
+              color: C.ink, maxWidth: 520, margin: '0 0 10px', lineHeight: 1.2,
+            }}>
+              {tr.trustTitle}
+            </h2>
+            <p style={{ color: C.mid, fontSize: 14, lineHeight: 1.8, fontWeight: 300, maxWidth: 460, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+              {tr.trustSub}
+            </p>
+          </motion.div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
+            gap: 12,
+          }}>
+            {tr.trustCards.map((card, i) => (
+              <motion.div key={card.title} variants={fadeUp} custom={i}
+                style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, padding: '18px 16px' }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: C.blueLight, color: C.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 11 }}>
+                  <CheckCircle size={15} />
+                </div>
+                <h3 style={{ fontSize: '0.88rem', fontWeight: 600, color: C.ink, margin: '0 0 6px', lineHeight: 1.35, fontFamily: "'DM Sans', sans-serif" }}>
+                  {card.title}
+                </h3>
+                <p style={{ color: C.mid, fontSize: 12.5, lineHeight: 1.7, fontWeight: 300, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+                  {card.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </Sec>
+
+      {/* Pricing */}
       <Sec id="pricing" bg={C.bgAlt} pattern="diagonal">
         <div style={wrap}>
-          <motion.div variants={fadeUp} style={{ marginBottom: 40 }}>
+          <motion.div variants={fadeUp} style={{ marginBottom: 34 }}>
             <Eyebrow label={tr.pricingLabel} />
             <h2 style={{
               fontFamily: "'DM Serif Display', serif",
@@ -1167,35 +1258,32 @@ export default function Home() {
             }}>
               {tr.pricingTitle}
             </h2>
-            <p style={{ color: C.mid, fontSize: 14, lineHeight: 1.8, fontWeight: 300, maxWidth: 420, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+            <p style={{ color: C.mid, fontSize: 14, lineHeight: 1.8, fontWeight: 300, maxWidth: 500, margin: '0 0 10px', fontFamily: 'Inter, sans-serif' }}>
               {tr.pricingSub}
+            </p>
+            <p style={{ color: C.mid, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, maxWidth: 520, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+              {tr.pricingExplainer}
             </p>
           </motion.div>
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr' : 'repeat(3, 1fr)',
-            gap: 16, alignItems: 'start',
-            maxWidth: isTablet && !isMobile ? 480 : undefined,
+            gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+            gap: 16, alignItems: 'stretch',
           }}>
             {tr.plans.map((plan, i) => {
-              const isPro = i === 1
+              const highlighted = Boolean(plan.badge)
               return (
                 <motion.div key={plan.name} variants={fadeUp} custom={i} style={{
                   background: C.white,
-                  border: `1.5px solid ${isPro ? C.blue : C.border}`,
-                  borderRadius: 14, padding: 26,
+                  border: `1.5px solid ${highlighted ? C.blue : C.border}`,
+                  borderRadius: 14, padding: 22,
                   position: 'relative', overflow: 'hidden',
-                  boxShadow: isPro ? '0 8px 32px rgba(26,107,255,0.13)' : 'none',
+                  boxShadow: highlighted ? '0 8px 32px rgba(26,107,255,0.13)' : 'none',
                   display: 'flex', flexDirection: 'column',
-                  transform: isPro && !isMobile ? 'scale(1.02)' : 'scale(1)',
-                  /* On mobile, Pro card gets extra top border accent */
-                  marginTop: isPro && isMobile ? 0 : 0,
                 }}>
-                  {isPro && (
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.blue }} />
-                  )}
-                  {isPro && (
+                  {highlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.blue }} />}
+                  {plan.badge && (
                     <div style={{
                       display: 'inline-flex', alignItems: 'center',
                       background: C.blueLight, color: C.blue, borderRadius: 100,
@@ -1203,29 +1291,29 @@ export default function Home() {
                       marginBottom: 12, width: 'fit-content',
                       fontFamily: "'DM Sans', sans-serif",
                     }}>
-                      {tr.pricingBadge}
+                      {plan.badge}
                     </div>
                   )}
 
-                  <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.muted, marginBottom: 10, marginTop: isPro ? 0 : 10, fontFamily: "'DM Sans', sans-serif" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.muted, margin: plan.badge ? '0 0 10px' : '10px 0', fontFamily: "'DM Sans', sans-serif" }}>
                     {plan.name}
                   </p>
 
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                    <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2.1rem', lineHeight: 1, letterSpacing: '-0.04em', color: C.ink }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 10 }}>
+                    <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2rem', lineHeight: 1, letterSpacing: '-0.04em', color: C.ink }}>
                       {plan.price}
                     </span>
                     <span style={{ fontSize: 13, color: C.mid, fontWeight: 300, marginBottom: 4, fontFamily: 'Inter, sans-serif' }}>
                       {tr.planPer}
                     </span>
                   </div>
-                  <p style={{ fontSize: 12.5, color: C.mid, marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${C.border}`, fontFamily: 'Inter, sans-serif' }}>
-                    {plan.setup}
+                  <p style={{ fontSize: 12.5, color: C.mid, margin: '0 0 16px', paddingBottom: 16, borderBottom: `1px solid ${C.border}`, fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
+                    {plan.bestFor}
                   </p>
 
                   <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 22px', display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
                     {plan.features.map(f => (
-                      <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13.5, color: C.ink, lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
+                      <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: C.ink, lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
                         <Check size={13} color={C.blue} style={{ flexShrink: 0, marginTop: 2 }} />{f}
                       </li>
                     ))}
@@ -1233,25 +1321,32 @@ export default function Home() {
 
                   <a href="#contact" style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                    background: isPro ? C.blue : 'transparent',
-                    color: isPro ? C.white : C.blue,
+                    background: highlighted ? C.blue : 'transparent',
+                    color: highlighted ? C.white : C.blue,
                     border: `1.5px solid ${C.blue}`,
                     borderRadius: 100, padding: '11px 0', fontSize: 14, fontWeight: 600,
                     textDecoration: 'none', transition: 'all 0.18s',
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                     onMouseEnter={e => { e.currentTarget.style.background = C.blue; e.currentTarget.style.color = C.white; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = isPro ? C.blue : 'transparent'; e.currentTarget.style.color = isPro ? C.white : C.blue; e.currentTarget.style.transform = 'none' }}>
+                    onMouseLeave={e => { e.currentTarget.style.background = highlighted ? C.blue : 'transparent'; e.currentTarget.style.color = highlighted ? C.white : C.blue; e.currentTarget.style.transform = 'none' }}>
                     {tr.planCta} <ArrowRight size={13} />
                   </a>
                 </motion.div>
               )
             })}
           </div>
+
+          <motion.div variants={fadeUp} style={{ marginTop: 22, display: 'grid', gap: 8 }}>
+            {tr.pricingNotes.map(note => (
+              <p key={note} style={{ color: C.mid, fontSize: 13, lineHeight: 1.6, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+                {note}
+              </p>
+            ))}
+          </motion.div>
         </div>
       </Sec>
-
-      {/* ── FAQ ─────────────────────────────────────────────────────────── */}
+      {/* FAQ */}
       <Sec id="faq" bg={C.bg} pattern="grid">
         <div style={{ ...wrap, maxWidth: 700 }}>
           <motion.div variants={fadeUp} style={{ marginBottom: 36 }}>
@@ -1266,7 +1361,7 @@ export default function Home() {
         </div>
       </Sec>
 
-      {/* ── CONTACT ─────────────────────────────────────────────────────── */}
+      {/* â”€â”€ CONTACT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Sec
         id="contact" bg={C.bgAlt} pattern="grid"
         style={{ paddingBottom: isMobile ? 120 : undefined } as CSSProperties}
@@ -1333,38 +1428,42 @@ export default function Home() {
             boxShadow: '0 4px 18px rgba(26,107,255,0.06)',
           }}>
             <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.2rem', color: C.ink, margin: '0 0 20px' }}>
-              {lang === 'fr' ? "Démarrez dès aujourd'hui" : 'Get started today'}
+              {lang === 'fr' ? "Tester Répondly" : 'Try Répondly'}
             </h3>
             <ContactForm tr={tr} />
           </motion.div>
         </div>
       </Sec>
-
-      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
+      {/* Footer */}
       <footer style={{
         borderTop: `1px solid ${C.border}`,
-        padding: isMobile ? '16px 20px' : '20px 40px',
+        padding: isMobile ? '24px 20px' : '28px 40px',
         background: C.white,
       }}>
         <div style={{
           maxWidth: 1200, margin: '0 auto',
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1.4fr auto auto',
           alignItems: isMobile ? 'flex-start' : 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap', gap: 12,
+          gap: isMobile ? 16 : 28,
         }}>
-          <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-            <Image src="/logo.png" alt="Répondly" width={20} height={20} style={{ objectFit: 'contain' }} />
-            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.95rem', color: C.ink, letterSpacing: '-0.02em' }}>
-              Répondly<span style={{ color: C.blue }}>.</span>
-            </span>
-          </a>
+          <div>
+            <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 8 }}>
+              <Image src="/logo.png" alt="Répondly" width={20} height={20} style={{ objectFit: 'contain' }} />
+              <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.95rem', color: C.ink, letterSpacing: '-0.02em' }}>
+                Répondly<span style={{ color: C.blue }}>.</span>
+              </span>
+            </a>
+            <p style={{ fontSize: 12.5, color: C.mid, margin: 0, lineHeight: 1.6, maxWidth: 360, fontFamily: 'Inter, sans-serif' }}>
+              {tr.footerDescription}
+            </p>
+          </div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
             {[
               { label: 'Confidentialité', href: 'https://repondly.com/privacy' },
-              { label: 'CGU',             href: 'https://repondly.com/terms' },
-              { label: 'SLA',             href: 'https://repondly.com/sla' },
+              { label: 'CGU', href: 'https://repondly.com/terms' },
+              { label: 'SLA', href: 'https://repondly.com/sla' },
+              { label: tr.footerContact, href: '#contact' },
             ].map(l => (
               <a key={l.href} href={l.href}
                 style={{ fontSize: 12.5, color: C.muted, textDecoration: 'none', transition: 'color 0.15s', fontFamily: "'DM Sans', sans-serif" }}

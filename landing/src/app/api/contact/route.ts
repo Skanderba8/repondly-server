@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 
 export async function POST(req: NextRequest) {
-  const { name, phone, business, message } = await req.json()
+  const { name, phone, business, channels, volume, message } = await req.json()
 
   if (!name || !phone) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
@@ -27,9 +27,12 @@ export async function POST(req: NextRequest) {
       <p><strong>Nom:</strong> ${name}</p>
       <p><strong>Téléphone:</strong> ${phone}</p>
       <p><strong>Secteur:</strong> ${business || 'Non précisé'}</p>
+      <p><strong>Canaux utilisés:</strong> ${Array.isArray(channels) && channels.length ? channels.join(', ') : 'Non précisé'}</p>
+      <p><strong>Messages par jour:</strong> ${volume || 'Non précisé'}</p>
       <p><strong>Message:</strong> ${message || 'Aucun'}</p>
     `,
   })
 
   return NextResponse.json({ success: true })
 }
+
