@@ -11,6 +11,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     select: {
       name: true,
       email: true,
+      phone: true,
       businessType: true,
       tone: true,
       plan: true,
@@ -32,6 +33,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           initialBusiness={{
             name: shellBusiness.name,
             email: business?.email ?? session.user.email,
+            phone: business?.phone ?? '',
             businessType: business?.businessType ?? '',
             tone: business?.tone ?? 'friendly',
             plan: shellBusiness.plan,

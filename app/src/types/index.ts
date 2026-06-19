@@ -99,6 +99,10 @@ export interface Product {
 export interface ProductVariant {
   name: string
   values: string[]
+  priceMode?: 'same' | 'different'
+  stockMode?: 'same' | 'different'
+  priceDetails?: string
+  stockDetails?: string
 }
 
 export interface ProductImage {

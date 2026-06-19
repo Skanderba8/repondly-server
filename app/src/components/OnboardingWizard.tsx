@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Bot, Camera, Check, ChevronLeft, ChevronRight, ImagePlus, MessageCircle, Plus, Store, Trash2, Upload, X } from 'lucide-react'
+import { useState } from 'react'
+import { Bot, Camera, ChevronLeft, ChevronRight, ImagePlus, MessageCircle, Pencil, Plus, Store, Trash2, Upload, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { BusinessImage, Plan, ProductImage, ProductType, ProductVariant } from '@/types'
 
@@ -9,10 +9,22 @@ type OnboardingWizardProps = {
   initialBusiness: {
     name: string
     email: string
+    phone: string
     businessType: string
     tone: string
     plan: Plan
   }
+}
+
+type SellType = 'products' | 'services' | 'both'
+type BusinessLocationMode = 'physical' | 'virtual'
+
+type WorkingDay = {
+  key: string
+  label: string
+  open: boolean
+  from: string
+  to: string
 }
 
 type ProductDraft = {
@@ -40,19 +52,18 @@ type BotDraft = {
   botEnabled: boolean
   botName: string
   botMode: string
-  botWorkingHoursStart: string
-  botWorkingHoursEnd: string
   botHandoffKeywords: string
   availability: 'always' | 'scheduled'
+  weeklyHours: WorkingDay[]
   deliveryEnabled: boolean
   deliveryDelay: string
-  boutiqueAddress: string
   paymentMethods: {
     cashDelivery: boolean
     onSite: boolean
     card: boolean
   }
   orderCaptureEnabled: boolean
+  appointmentCaptureEnabled: boolean
   notes: string
 }
 
@@ -62,7 +73,6 @@ type SaveResponse = {
 }
 
 const steps = [
-  'Plan',
   'Entreprise',
   'Images',
   'Catalogue',
@@ -70,48 +80,6 @@ const steps = [
   'Canaux',
   'Validation',
 ] as const
-
-const plans: Array<{
-  key: Plan
-  name: string
-  label: string
-  price: string
-  bestFor: string
-  features: string[]
-}> = [
-  {
-    key: 'ESSENTIEL',
-    name: 'Essentiel',
-    label: 'Pour commencer',
-    price: '29 TND/mois',
-    bestFor: 'Petites entreprises avec un canal',
-    features: ['1 canal connecte', 'Assistant IA 24/7', 'Base de connaissances simple', '1 utilisateur'],
-  },
-  {
-    key: 'BUSINESS',
-    name: 'Business',
-    label: 'Le plus accessible',
-    price: '69 TND/mois',
-    bestFor: 'Deux canaux principaux',
-    features: ['2 canaux connectes', 'Collecte commandes a confirmer', 'Inbox centralisee', '2 utilisateurs'],
-  },
-  {
-    key: 'BUSINESS_PLUS',
-    name: 'Business Plus',
-    label: 'Le plus populaire',
-    price: '99 TND/mois',
-    bestFor: 'WhatsApp, Messenger et Instagram',
-    features: ['3 canaux connectes', 'Gestion commandes', 'Relances clients', 'Statistiques simples'],
-  },
-  {
-    key: 'GROWTH',
-    name: 'Growth',
-    label: 'Pour les equipes',
-    price: '149 TND/mois',
-    bestFor: 'Volume eleve et petites equipes',
-    features: ['5 canaux connectes', 'Gestion equipe', 'Relances avancees', 'Support prioritaire'],
-  },
-]
 
 const activityOptions = [
   { value: 'clothing', label: 'Vetements' },
@@ -123,6 +91,22 @@ const activityOptions = [
   { value: 'education', label: 'Formation' },
   { value: 'health', label: 'Sante et bien-etre' },
   { value: 'other', label: 'Autre activite' },
+]
+
+const sellTypeOptions: Array<{ value: SellType; label: string; description: string }> = [
+  { value: 'products', label: 'Produits', description: 'Articles physiques avec stock, variantes ou livraison.' },
+  { value: 'services', label: 'Services', description: 'Prestations, rendez-vous, devis ou reservations.' },
+  { value: 'both', label: 'Les deux', description: 'Catalogue mixte avec produits et services.' },
+]
+
+const defaultWeeklyHours: WorkingDay[] = [
+  { key: 'monday', label: 'Lundi', open: true, from: '09:00', to: '18:00' },
+  { key: 'tuesday', label: 'Mardi', open: true, from: '09:00', to: '18:00' },
+  { key: 'wednesday', label: 'Mercredi', open: true, from: '09:00', to: '18:00' },
+  { key: 'thursday', label: 'Jeudi', open: true, from: '09:00', to: '18:00' },
+  { key: 'friday', label: 'Vendredi', open: true, from: '09:00', to: '18:00' },
+  { key: 'saturday', label: 'Samedi', open: false, from: '09:00', to: '14:00' },
+  { key: 'sunday', label: 'Dimanche', open: false, from: '09:00', to: '14:00' },
 ]
 
 const imageCategories = [
@@ -159,19 +143,18 @@ function createBotDraft(businessName: string): BotDraft {
     botEnabled: true,
     botName: businessName ? `Assistant ${businessName}` : 'Assistant Repondly',
     botMode: 'professionnel',
-    botWorkingHoursStart: '09:00',
-    botWorkingHoursEnd: '18:00',
     botHandoffKeywords: 'humain, agent, responsable, reclamation',
     availability: 'always',
+    weeklyHours: defaultWeeklyHours,
     deliveryEnabled: true,
     deliveryDelay: '24h a 48h',
-    boutiqueAddress: '',
     paymentMethods: {
       cashDelivery: true,
       onSite: false,
       card: false,
     },
     orderCaptureEnabled: true,
+    appointmentCaptureEnabled: false,
     notes: '',
   }
 }
@@ -263,24 +246,24 @@ async function compressImage(file: File, position: number): Promise<ProductImage
   }
 }
 
-function buildKnowledge(bot: BotDraft) {
+function buildKnowledge(bot: BotDraft, business: {
+  managerName: string
+  phone: string
+  locationMode: BusinessLocationMode
+  address: string
+  description: string
+  sellType: SellType
+}) {
   return JSON.stringify({
     version: 2,
-    businessHours: [
-      { key: 'monday', label: 'Lundi', open: true, from: '09:00', to: '18:00' },
-      { key: 'tuesday', label: 'Mardi', open: true, from: '09:00', to: '18:00' },
-      { key: 'wednesday', label: 'Mercredi', open: true, from: '09:00', to: '18:00' },
-      { key: 'thursday', label: 'Jeudi', open: true, from: '09:00', to: '18:00' },
-      { key: 'friday', label: 'Vendredi', open: true, from: '09:00', to: '18:00' },
-      { key: 'saturday', label: 'Samedi', open: false, from: '09:00', to: '14:00' },
-      { key: 'sunday', label: 'Dimanche', open: false, from: '09:00', to: '14:00' },
-    ],
+    businessProfile: business,
+    businessHours: bot.availability === 'always' ? [] : bot.weeklyHours,
     delivery: {
-      enabled: bot.deliveryEnabled,
-      zones: bot.deliveryEnabled ? [{ location: 'Tunisie', enabled: true, price: '', condition: bot.deliveryDelay }] : [],
+      enabled: business.sellType !== 'services' && bot.deliveryEnabled,
+      zones: business.sellType !== 'services' && bot.deliveryEnabled ? [{ location: 'Tunisie', enabled: true, price: '', condition: bot.deliveryDelay }] : [],
     },
     paymentMethods: bot.paymentMethods,
-    boutiqueAddress: bot.boutiqueAddress,
+    boutiqueAddress: business.locationMode === 'physical' ? business.address : '',
     deliveryDelay: bot.deliveryDelay,
     policies: {
       cancellation: true,
@@ -298,6 +281,11 @@ function buildKnowledge(bot: BotDraft) {
       optionalFields: ['email', 'deliveryAddress', 'preferredDate', 'notes'],
       customFields: [],
     },
+    appointmentCapture: {
+      enabled: bot.appointmentCaptureEnabled,
+      requiredFields: ['name', 'phone', 'preferredDate'],
+      optionalFields: ['service', 'notes'],
+    },
     extraFaq: bot.notes.trim() ? [{ question: 'Informations importantes', answer: bot.notes.trim() }] : [],
   })
 }
@@ -310,17 +298,24 @@ function getChannelIcon(channel: ChannelKey) {
 
 export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
   const [step, setStep] = useState(0)
-  const [plan, setPlan] = useState<Plan>(initialBusiness.plan)
+  const [plan] = useState<Plan>(initialBusiness.plan)
   const [business, setBusiness] = useState({
     name: initialBusiness.name,
     email: initialBusiness.email,
+    phone: initialBusiness.phone,
+    managerName: '',
     businessType: initialBusiness.businessType || 'ecommerce',
     customBusinessType: '',
     tone: initialBusiness.tone || 'friendly',
+    locationMode: 'physical' as BusinessLocationMode,
+    address: '',
+    description: '',
+    sellType: 'products' as SellType,
   })
   const [businessImages, setBusinessImages] = useState<BusinessImage[]>([])
   const [productDraft, setProductDraft] = useState<ProductDraft>(createProductDraft)
   const [products, setProducts] = useState<ProductDraft[]>([])
+  const [editingProductIndex, setEditingProductIndex] = useState<number | null>(null)
   const [bot, setBot] = useState<BotDraft>(() => createBotDraft(initialBusiness.name))
   const [channels, setChannels] = useState<Record<ChannelKey, ChannelDraft>>({
     WHATSAPP: { channel: 'WHATSAPP', label: 'WhatsApp principal', selected: false },
@@ -332,9 +327,10 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const currentPlan = useMemo(() => plans.find((item) => item.key === plan) ?? plans[0], [plan])
+  const sellsProducts = business.sellType !== 'services'
+  const availableProductTypes: ProductType[] = business.sellType === 'services' ? ['SERVICE'] : business.sellType === 'products' ? ['PRODUCT'] : ['PRODUCT', 'SERVICE']
   const selectedChannels = Object.values(channels).filter((channel) => channel.selected)
-  const canContinue = step !== 1 || Boolean(business.name.trim() && business.email.trim())
+  const canContinue = step !== 0 || Boolean(business.name.trim() && business.email.trim() && business.phone.trim())
 
   function nextStep() {
     if (step < steps.length - 1) {
@@ -399,8 +395,68 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
       return
     }
 
-    setProducts((current) => [...current, productDraft])
+    setProducts((current) => {
+      if (editingProductIndex === null) {
+        return [...current, productDraft]
+      }
+
+      return current.map((product, index) => index === editingProductIndex ? productDraft : product)
+    })
+    setEditingProductIndex(null)
     setProductDraft(createProductDraft())
+  }
+
+  function updateProductVariant(index: number, field: keyof ProductVariant, value: string) {
+    setProductDraft((current) => ({
+      ...current,
+      variants: current.variants.map((variant, variantIndex) => {
+        if (variantIndex !== index) {
+          return variant
+        }
+
+        if (field === 'values') {
+          return { ...variant, values: value.split(',').map((item) => item.trim()).filter(Boolean) }
+        }
+
+        if (field === 'priceMode') {
+          return { ...variant, priceMode: value === 'different' ? 'different' : 'same' }
+        }
+
+        if (field === 'stockMode') {
+          return { ...variant, stockMode: value === 'different' ? 'different' : 'same' }
+        }
+
+        return { ...variant, [field]: value }
+      }),
+    }))
+  }
+
+  function addProductVariant() {
+    setProductDraft((current) => ({
+      ...current,
+      variants: [...current.variants, { name: '', values: [], priceMode: 'same', stockMode: 'same' }],
+    }))
+  }
+
+  function removeProductVariant(index: number) {
+    setProductDraft((current) => ({
+      ...current,
+      variants: current.variants.filter((_, variantIndex) => variantIndex !== index),
+    }))
+  }
+
+  function updateWorkingDay(index: number, field: 'open', value: boolean): void
+  function updateWorkingDay(index: number, field: 'from' | 'to', value: string): void
+  function updateWorkingDay(index: number, field: 'open' | 'from' | 'to', value: string | boolean) {
+    setBot((current) => ({
+      ...current,
+      weeklyHours: current.weeklyHours.map((day, dayIndex) => dayIndex === index ? { ...day, [field]: value } : day),
+    }))
+  }
+
+  function editProduct(index: number) {
+    setProductDraft(products[index])
+    setEditingProductIndex(index)
   }
 
   function removeBusinessImage(position: number) {
@@ -426,6 +482,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
         business: {
           name: business.name,
           email: business.email,
+          phone: business.phone,
           businessType: business.businessType === 'other' ? business.customBusinessType : business.businessType,
           tone: business.tone,
         },
@@ -435,9 +492,16 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
           botEnabled: bot.botEnabled,
           botName: bot.botName,
           botMode: bot.botMode,
-          botWorkingHoursStart: bot.availability === 'always' ? '' : bot.botWorkingHoursStart,
-          botWorkingHoursEnd: bot.availability === 'always' ? '' : bot.botWorkingHoursEnd,
-          botKnowledge: buildKnowledge(bot),
+          botWorkingHoursStart: '',
+          botWorkingHoursEnd: '',
+          botKnowledge: buildKnowledge(bot, {
+            managerName: business.managerName,
+            phone: business.phone,
+            locationMode: business.locationMode,
+            address: business.address,
+            description: business.description,
+            sellType: business.sellType,
+          }),
           botHandoffKeywords: bot.botHandoffKeywords,
         },
         channels: Object.values(channels),
@@ -485,43 +549,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
         <main className="grid flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className="nx-card min-h-[620px] p-4 md:p-6">
             {step === 0 ? (
-              <div>
-                <div className="mb-5">
-                  <p className="nx-section-label">Launch Pricing Plans</p>
-                  <h2 className="mt-1 text-[20px] font-bold text-[color:var(--text-primary)]">Choisissez le plan de depart</h2>
-                </div>
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  {plans.map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      className={cn('flex min-h-[310px] flex-col rounded-[var(--radius-card)] border bg-[color:var(--bg-card)] p-4 text-left transition', plan === item.key ? 'border-[color:var(--brand)] shadow-[var(--shadow-elevated)]' : 'border-[color:var(--border)] hover:border-[color:var(--brand-border)]')}
-                      onClick={() => setPlan(item.key)}
-                    >
-                      <span className="w-fit rounded-[var(--radius-btn)] bg-[color:var(--brand-soft)] px-2.5 py-1 text-[11px] font-bold text-[color:var(--brand)]">{item.label}</span>
-                      <span className="mt-4 text-[18px] font-bold text-[color:var(--text-primary)]">{item.name}</span>
-                      <span className="mt-1 text-[15px] font-semibold text-[color:var(--brand)]">{item.price}</span>
-                      <span className="mt-2 text-[12.5px] leading-5 text-[color:var(--text-secondary)]">{item.bestFor}</span>
-                      <span className="mt-4 grid gap-2">
-                        {item.features.map((feature) => (
-                          <span key={feature} className="flex items-center gap-2 text-[12.5px] text-[color:var(--text-secondary)]">
-                            <Check className="h-3.5 w-3.5 text-[color:var(--success)]" aria-hidden="true" />
-                            {feature}
-                          </span>
-                        ))}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-4 grid gap-3 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-4 md:grid-cols-2">
-                  <p className="text-[13px] text-[color:var(--text-secondary)]">Canal supplementaire: <strong className="text-[color:var(--text-primary)]">+30 TND/mois</strong></p>
-                  <p className="text-[13px] text-[color:var(--text-secondary)]">Canal supplementaire Growth: <strong className="text-[color:var(--text-primary)]">+25 TND/mois</strong></p>
-                </div>
-              </div>
-            ) : null}
-
-            {step === 1 ? (
-              <div className="max-w-3xl">
+              <div className="max-w-4xl">
                 <p className="nx-section-label">Entreprise</p>
                 <h2 className="mt-1 text-[20px] font-bold text-[color:var(--text-primary)]">Les informations de base</h2>
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -530,8 +558,8 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                     <input className="nx-input" value={business.name} onChange={(event) => setBusiness((current) => ({ ...current, name: event.target.value }))} />
                   </label>
                   <label className="nx-field">
-                    <span className="nx-label">Email</span>
-                    <input className="nx-input" type="email" value={business.email} onChange={(event) => setBusiness((current) => ({ ...current, email: event.target.value }))} />
+                    <span className="nx-label">Nom du gerant</span>
+                    <input className="nx-input" value={business.managerName} onChange={(event) => setBusiness((current) => ({ ...current, managerName: event.target.value }))} />
                   </label>
                   <label className="nx-field">
                     <span className="nx-label">Type d&apos;activite</span>
@@ -542,11 +570,18 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                     </select>
                   </label>
                   <label className="nx-field">
-                    <span className="nx-label">Ton du bot</span>
-                    <select className="nx-input" value={business.tone} onChange={(event) => setBusiness((current) => ({ ...current, tone: event.target.value }))}>
-                      <option value="friendly">Amical</option>
-                      <option value="professional">Professionnel</option>
-                      <option value="formal">Formel</option>
+                    <span className="nx-label">Telephone</span>
+                    <input className="nx-input" value={business.phone} onChange={(event) => setBusiness((current) => ({ ...current, phone: event.target.value }))} />
+                  </label>
+                  <label className="nx-field">
+                    <span className="nx-label">Email</span>
+                    <input className="nx-input" type="email" value={business.email} onChange={(event) => setBusiness((current) => ({ ...current, email: event.target.value }))} />
+                  </label>
+                  <label className="nx-field">
+                    <span className="nx-label">Presence</span>
+                    <select className="nx-input" value={business.locationMode} onChange={(event) => setBusiness((current) => ({ ...current, locationMode: event.target.value as BusinessLocationMode }))}>
+                      <option value="physical">Boutique physique</option>
+                      <option value="virtual">Plateforme virtuelle</option>
                     </select>
                   </label>
                   {business.businessType === 'other' ? (
@@ -555,14 +590,49 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                       <input className="nx-input" value={business.customBusinessType} onChange={(event) => setBusiness((current) => ({ ...current, customBusinessType: event.target.value }))} placeholder="Ex: boutique meubles, agence voyage..." />
                     </label>
                   ) : null}
+                  {business.locationMode === 'physical' ? (
+                    <label className="nx-field md:col-span-2">
+                      <span className="nx-label">Adresse</span>
+                      <input className="nx-input" value={business.address} onChange={(event) => setBusiness((current) => ({ ...current, address: event.target.value }))} placeholder="Adresse de la boutique" />
+                    </label>
+                  ) : null}
+                  <label className="nx-field md:col-span-2">
+                    <span className="nx-label">Description de l&apos;entreprise</span>
+                    <textarea className="nx-input nx-textarea min-h-[100px]" value={business.description} onChange={(event) => setBusiness((current) => ({ ...current, description: event.target.value }))} placeholder="Ce que vous faites, vos specialites, votre positionnement..." />
+                  </label>
+                  <div className="md:col-span-2">
+                    <p className="nx-label mb-2">Qu&apos;est-ce que vous vendez ?</p>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {sellTypeOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={cn('rounded-[var(--radius-card)] border p-4 text-left transition', business.sellType === option.value ? 'border-[color:var(--brand)] bg-[color:var(--brand-soft)]' : 'border-[color:var(--border)] bg-[color:var(--bg-page)]')}
+                          onClick={() => {
+                            setBusiness((current) => ({ ...current, sellType: option.value }))
+                            setProductDraft((current) => ({
+                              ...current,
+                              type: option.value === 'services' ? 'SERVICE' : 'PRODUCT',
+                              deliveryFee: option.value === 'services' ? '0' : current.deliveryFee,
+                              stock: option.value === 'services' ? '' : current.stock,
+                            }))
+                          }}
+                        >
+                          <span className="text-[13px] font-semibold text-[color:var(--text-primary)]">{option.label}</span>
+                          <span className="mt-1 block text-[12px] leading-5 text-[color:var(--text-secondary)]">{option.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : null}
 
-            {step === 2 ? (
+            {step === 1 ? (
               <div>
                 <p className="nx-section-label">Images</p>
                 <h2 className="mt-1 text-[20px] font-bold text-[color:var(--text-primary)]">Ajoutez les images utiles au bot</h2>
+                <p className="mt-2 text-[13px] text-[color:var(--text-secondary)]">Cette etape est optionnelle. Vous pouvez ajouter des images maintenant ou plus tard.</p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                   {imageCategories.map((category) => (
                     <label key={category.key} className="flex min-h-[128px] cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border border-dashed border-[color:var(--border)] bg-[color:var(--bg-page)] p-4 text-center text-[12px] font-semibold text-[color:var(--text-secondary)]">
@@ -598,21 +668,22 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
               </div>
             ) : null}
 
-            {step === 3 ? (
+            {step === 2 ? (
               <div>
                 <p className="nx-section-label">Produits et services</p>
                 <h2 className="mt-1 text-[20px] font-bold text-[color:var(--text-primary)]">Construisez le catalogue de depart</h2>
+                <p className="mt-2 text-[13px] text-[color:var(--text-secondary)]">Le formulaire est adapte a ce que vous avez indique vendre. Vous pouvez aussi passer cette etape.</p>
                 <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
                   <div className="grid gap-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['PRODUCT', 'SERVICE'] as ProductType[]).map((type) => (
+                    <div className={cn('grid gap-2', availableProductTypes.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
+                      {availableProductTypes.map((type) => (
                         <button key={type} type="button" className={cn('nx-filter-chip justify-center', productDraft.type === type && 'is-active')} onClick={() => setProductDraft((current) => ({ ...current, type, deliveryFee: type === 'SERVICE' ? '0' : current.deliveryFee, stock: type === 'SERVICE' ? '' : current.stock }))}>
                           {type === 'PRODUCT' ? 'Produit' : 'Service'}
                         </button>
                       ))}
                     </div>
-                    <input className="nx-input" value={productDraft.name} onChange={(event) => setProductDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Nom" />
-                    <textarea className="nx-input nx-textarea" value={productDraft.description} onChange={(event) => setProductDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Description courte" />
+                    <input className="nx-input" value={productDraft.name} onChange={(event) => setProductDraft((current) => ({ ...current, name: event.target.value }))} placeholder={productDraft.type === 'PRODUCT' ? 'Nom du produit' : 'Nom du service'} />
+                    <textarea className="nx-input nx-textarea" value={productDraft.description} onChange={(event) => setProductDraft((current) => ({ ...current, description: event.target.value }))} placeholder={productDraft.type === 'PRODUCT' ? 'Description, matiere, usage, details importants...' : 'Description, duree, conditions, resultat attendu...'} />
                     <div className="grid gap-3 sm:grid-cols-2">
                       <input className="nx-input" type="number" min={0} value={productDraft.price} onChange={(event) => setProductDraft((current) => ({ ...current, price: event.target.value }))} placeholder="Prix TND" />
                       {productDraft.type === 'PRODUCT' ? <input className="nx-input" type="number" min={0} value={productDraft.deliveryFee} onChange={(event) => setProductDraft((current) => ({ ...current, deliveryFee: event.target.value }))} placeholder="Livraison TND" /> : null}
@@ -621,6 +692,57 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                       {productDraft.type === 'PRODUCT' ? <input className="nx-input" type="number" min={0} value={productDraft.stock} onChange={(event) => setProductDraft((current) => ({ ...current, stock: event.target.value }))} placeholder="Stock optionnel" /> : null}
                       <input className="nx-input" value={productDraft.fournisseur} onChange={(event) => setProductDraft((current) => ({ ...current, fournisseur: event.target.value }))} placeholder="Fournisseur optionnel" />
                     </div>
+                    {productDraft.type === 'PRODUCT' ? (
+                      <div className="rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[13px] font-semibold text-[color:var(--text-primary)]">Variantes</p>
+                            <p className="mt-1 text-[12px] text-[color:var(--text-secondary)]">Taille, couleur, pointure ou autre option.</p>
+                          </div>
+                          <button type="button" className="nx-btn nx-btn-secondary nx-btn-sm" onClick={addProductVariant}>
+                            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                            Ajouter
+                          </button>
+                        </div>
+                        {productDraft.variants.length > 0 ? (
+                          <div className="mt-3 grid gap-3">
+                            {productDraft.variants.map((variant, index) => (
+                              <div key={index} className="grid gap-2 rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-3">
+                                <div className="grid gap-2 md:grid-cols-[130px_1fr_36px]">
+                                  <input className="nx-input" value={variant.name} onChange={(event) => updateProductVariant(index, 'name', event.target.value)} placeholder="Ex: Taille" />
+                                  <input className="nx-input" value={variant.values.join(', ')} onChange={(event) => updateProductVariant(index, 'values', event.target.value)} placeholder="Ex: S, M, L" />
+                                  <button type="button" className="nx-btn nx-btn-ghost nx-btn-icon-md" onClick={() => removeProductVariant(index)} aria-label="Supprimer la variante">
+                                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                                  </button>
+                                </div>
+                                <div className="grid gap-2 md:grid-cols-2">
+                                  <label className="nx-field">
+                                    <span className="nx-label">Prix des variantes</span>
+                                    <select className="nx-input" value={variant.priceMode ?? 'same'} onChange={(event) => updateProductVariant(index, 'priceMode', event.target.value)}>
+                                      <option value="same">Meme prix</option>
+                                      <option value="different">Prix different</option>
+                                    </select>
+                                  </label>
+                                  <label className="nx-field">
+                                    <span className="nx-label">Stock des variantes</span>
+                                    <select className="nx-input" value={variant.stockMode ?? 'same'} onChange={(event) => updateProductVariant(index, 'stockMode', event.target.value)}>
+                                      <option value="same">Meme stock</option>
+                                      <option value="different">Stock different</option>
+                                    </select>
+                                  </label>
+                                </div>
+                                {variant.priceMode === 'different' ? (
+                                  <input className="nx-input" value={variant.priceDetails ?? ''} onChange={(event) => updateProductVariant(index, 'priceDetails', event.target.value)} placeholder="Ex: S 45 TND, M 50 TND" />
+                                ) : null}
+                                {variant.stockMode === 'different' ? (
+                                  <input className="nx-input" value={variant.stockDetails ?? ''} onChange={(event) => updateProductVariant(index, 'stockDetails', event.target.value)} placeholder="Ex: Rouge 4 pieces, Noir 10 pieces" />
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <div className="grid grid-cols-3 gap-2">
                       {productDraft.images.map((image) => (
                         <div key={`${image.position}-${image.sizeBytes}`} className="relative aspect-square overflow-hidden rounded-[var(--radius-btn)] border border-[color:var(--border)]">
@@ -643,20 +765,29 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                     </div>
                     <button type="button" className="nx-btn nx-btn-primary w-fit" disabled={!productDraft.name.trim()} onClick={addProduct}>
                       <Plus className="h-4 w-4" aria-hidden="true" />
-                      Ajouter au catalogue
+                      {editingProductIndex === null ? 'Ajouter au catalogue' : 'Enregistrer'}
                     </button>
                   </div>
                   <div className="grid content-start gap-2">
                     {products.length > 0 ? products.map((product, index) => (
                       <div key={`${product.name}-${index}`} className="rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-card)]">
+                            {product.images[0] ? <img src={product.images[0].dataUrl} alt="" className="h-full w-full object-cover" /> : <ImagePlus className="h-4 w-4 text-[color:var(--text-muted)]" aria-hidden="true" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
                             <p className="text-[13px] font-semibold text-[color:var(--text-primary)]">{product.name}</p>
                             <p className="mt-1 text-[12px] text-[color:var(--text-secondary)]">{product.type === 'PRODUCT' ? 'Produit' : 'Service'} - {product.price || '0'} TND</p>
+                            {product.variants.length > 0 ? <p className="mt-1 text-[12px] text-[color:var(--text-muted)]">{product.variants.length} variante(s)</p> : null}
                           </div>
-                          <button type="button" className="nx-btn nx-btn-ghost nx-btn-icon" onClick={() => setProducts((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label="Supprimer">
-                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          </button>
+                          <div className="flex gap-1">
+                            <button type="button" className="nx-btn nx-btn-ghost nx-btn-icon" onClick={() => editProduct(index)} aria-label="Modifier">
+                              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                            <button type="button" className="nx-btn nx-btn-ghost nx-btn-icon" onClick={() => setProducts((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label="Supprimer">
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )) : (
@@ -667,7 +798,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
               </div>
             ) : null}
 
-            {step === 4 ? (
+            {step === 3 ? (
               <div className="max-w-4xl">
                 <p className="nx-section-label">Bot IA</p>
                 <h2 className="mt-1 text-[20px] font-bold text-[color:var(--text-primary)]">Configurez les reponses automatiques</h2>
@@ -685,44 +816,58 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                     <span className="nx-label">Nom du bot</span>
                     <input className="nx-input" value={bot.botName} onChange={(event) => setBot((current) => ({ ...current, botName: event.target.value }))} />
                   </label>
-                  <label className="nx-field">
-                    <span className="nx-label">Style</span>
-                    <select className="nx-input" value={bot.botMode} onChange={(event) => setBot((current) => ({ ...current, botMode: event.target.value }))}>
-                      <option value="professionnel">Professionnel</option>
-                      <option value="amical">Amical</option>
-                      <option value="direct">Direct</option>
-                    </select>
-                  </label>
                   <div className="grid gap-2 md:col-span-2 md:grid-cols-2">
                     <button type="button" className={cn('nx-btn justify-center', bot.availability === 'always' ? 'nx-btn-primary' : 'nx-btn-secondary')} onClick={() => setBot((current) => ({ ...current, availability: 'always' }))}>Actif 24/7</button>
-                    <button type="button" className={cn('nx-btn justify-center', bot.availability === 'scheduled' ? 'nx-btn-primary' : 'nx-btn-secondary')} onClick={() => setBot((current) => ({ ...current, availability: 'scheduled' }))}>Horaires specifique</button>
+                    <button type="button" className={cn('nx-btn justify-center', bot.availability === 'scheduled' ? 'nx-btn-primary' : 'nx-btn-secondary')} onClick={() => setBot((current) => ({ ...current, availability: 'scheduled' }))}>Horaires par jour</button>
                   </div>
                   {bot.availability === 'scheduled' ? (
+                    <div className="md:col-span-2">
+                      <p className="nx-label mb-2">Horaires</p>
+                      <div className="grid gap-2">
+                        {bot.weeklyHours.map((day, index) => (
+                          <div key={day.key} className="grid gap-2 rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3 md:grid-cols-[110px_130px_1fr] md:items-center">
+                            <span className="text-[13px] font-semibold text-[color:var(--text-primary)]">{day.label}</span>
+                            <select className="nx-input" value={day.open ? 'open' : 'closed'} onChange={(event) => updateWorkingDay(index, 'open', event.target.value === 'open')}>
+                              <option value="open">Ouvert</option>
+                              <option value="closed">Ferme</option>
+                            </select>
+                            <div className={cn('grid gap-2 sm:grid-cols-2', !day.open && 'pointer-events-none opacity-40 blur-[1px]')}>
+                              <input className="nx-input" type="time" value={day.from} onChange={(event) => updateWorkingDay(index, 'from', event.target.value)} disabled={!day.open} />
+                              <input className="nx-input" type="time" value={day.to} onChange={(event) => updateWorkingDay(index, 'to', event.target.value)} disabled={!day.open} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {sellsProducts ? (
                     <>
                       <label className="nx-field">
-                        <span className="nx-label">Debut</span>
-                        <input className="nx-input" type="time" value={bot.botWorkingHoursStart} onChange={(event) => setBot((current) => ({ ...current, botWorkingHoursStart: event.target.value }))} />
+                        <span className="nx-label">Livraison</span>
+                        <select className="nx-input" value={bot.deliveryEnabled ? 'yes' : 'no'} onChange={(event) => setBot((current) => ({ ...current, deliveryEnabled: event.target.value === 'yes' }))}>
+                          <option value="yes">Oui</option>
+                          <option value="no">Non</option>
+                        </select>
                       </label>
                       <label className="nx-field">
-                        <span className="nx-label">Fin</span>
-                        <input className="nx-input" type="time" value={bot.botWorkingHoursEnd} onChange={(event) => setBot((current) => ({ ...current, botWorkingHoursEnd: event.target.value }))} />
+                        <span className="nx-label">Delai de livraison</span>
+                        <input className="nx-input" value={bot.deliveryDelay} onChange={(event) => setBot((current) => ({ ...current, deliveryDelay: event.target.value }))} />
                       </label>
                     </>
                   ) : null}
                   <label className="nx-field">
-                    <span className="nx-label">Livraison</span>
-                    <select className="nx-input" value={bot.deliveryEnabled ? 'yes' : 'no'} onChange={(event) => setBot((current) => ({ ...current, deliveryEnabled: event.target.value === 'yes' }))}>
+                    <span className="nx-label">Prise de rendez-vous</span>
+                    <select className="nx-input" value={bot.appointmentCaptureEnabled ? 'yes' : 'no'} onChange={(event) => setBot((current) => ({ ...current, appointmentCaptureEnabled: event.target.value === 'yes' }))}>
                       <option value="yes">Oui</option>
                       <option value="no">Non</option>
                     </select>
                   </label>
                   <label className="nx-field">
-                    <span className="nx-label">Delai de livraison</span>
-                    <input className="nx-input" value={bot.deliveryDelay} onChange={(event) => setBot((current) => ({ ...current, deliveryDelay: event.target.value }))} />
-                  </label>
-                  <label className="nx-field">
-                    <span className="nx-label">Adresse boutique</span>
-                    <input className="nx-input" value={bot.boutiqueAddress} onChange={(event) => setBot((current) => ({ ...current, boutiqueAddress: event.target.value }))} />
+                    <span className="nx-label">Prise de commande</span>
+                    <select className="nx-input" value={bot.orderCaptureEnabled ? 'yes' : 'no'} onChange={(event) => setBot((current) => ({ ...current, orderCaptureEnabled: event.target.value === 'yes' }))}>
+                      <option value="yes">Oui</option>
+                      <option value="no">Non</option>
+                    </select>
                   </label>
                   <label className="nx-field">
                     <span className="nx-label">Mots cles handoff</span>
@@ -732,7 +877,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                     <p className="nx-label mb-2">Paiement accepte</p>
                     <div className="grid gap-2 md:grid-cols-3">
                       {[
-                        ['cashDelivery', 'Cash a la livraison'],
+                        ...(sellsProducts ? [['cashDelivery', 'Cash a la livraison']] : []),
                         ['onSite', 'Sur place'],
                         ['card', 'Carte'],
                       ].map(([key, label]) => (
@@ -751,7 +896,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
               </div>
             ) : null}
 
-            {step === 5 ? (
+            {step === 4 ? (
               <div>
                 <p className="nx-section-label">Canaux</p>
                 <h2 className="mt-1 text-[20px] font-bold text-[color:var(--text-primary)]">Preparez les connexions</h2>
@@ -778,19 +923,20 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
               </div>
             ) : null}
 
-            {step === 6 ? (
+            {step === 5 ? (
               <div>
                 <p className="nx-section-label">Validation</p>
                 <h2 className="mt-1 text-[20px] font-bold text-[color:var(--text-primary)]">Pret a lancer Repondly</h2>
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
                   <div className="rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-4">
-                    <p className="text-[12px] font-bold uppercase text-[color:var(--text-muted)]">Plan</p>
-                    <p className="mt-2 text-[16px] font-bold text-[color:var(--text-primary)]">{currentPlan.name} - {currentPlan.price}</p>
-                  </div>
-                  <div className="rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-4">
                     <p className="text-[12px] font-bold uppercase text-[color:var(--text-muted)]">Entreprise</p>
                     <p className="mt-2 text-[16px] font-bold text-[color:var(--text-primary)]">{business.name || 'Nom manquant'}</p>
-                    <p className="text-[13px] text-[color:var(--text-secondary)]">{business.email || 'Email manquant'}</p>
+                    <p className="text-[13px] text-[color:var(--text-secondary)]">{business.phone || 'Telephone manquant'}</p>
+                  </div>
+                  <div className="rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-4">
+                    <p className="text-[12px] font-bold uppercase text-[color:var(--text-muted)]">Activite</p>
+                    <p className="mt-2 text-[16px] font-bold text-[color:var(--text-primary)]">{business.sellType === 'products' ? 'Produits' : business.sellType === 'services' ? 'Services' : 'Produits et services'}</p>
+                    <p className="text-[13px] text-[color:var(--text-secondary)]">{business.locationMode === 'physical' ? business.address || 'Adresse non renseignee' : 'Plateforme virtuelle'}</p>
                   </div>
                   <div className="rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-4">
                     <p className="text-[12px] font-bold uppercase text-[color:var(--text-muted)]">Catalogue</p>
@@ -817,7 +963,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
               </div>
             </div>
             <div className="mt-4 grid gap-3 text-[13px] text-[color:var(--text-secondary)]">
-              <p><strong className="text-[color:var(--text-primary)]">Plan:</strong> {currentPlan.name}</p>
+              <p><strong className="text-[color:var(--text-primary)]">Entreprise:</strong> {business.name || 'A completer'}</p>
               <p><strong className="text-[color:var(--text-primary)]">Images:</strong> {businessImages.length}</p>
               <p><strong className="text-[color:var(--text-primary)]">Catalogue:</strong> {products.length}</p>
               <p><strong className="text-[color:var(--text-primary)]">Canaux:</strong> {selectedChannels.length}</p>
@@ -828,12 +974,12 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                 Retour
               </button>
               {step === steps.length - 1 ? (
-                <button type="button" className="nx-btn nx-btn-primary flex-1" onClick={() => void finishOnboarding()} disabled={saving || !business.name.trim() || !business.email.trim()}>
+                <button type="button" className="nx-btn nx-btn-primary flex-1" onClick={() => void finishOnboarding()} disabled={saving || !business.name.trim() || !business.email.trim() || !business.phone.trim()}>
                   {saving ? 'Enregistrement...' : 'Terminer'}
                 </button>
               ) : (
                 <button type="button" className="nx-btn nx-btn-primary flex-1" onClick={nextStep} disabled={!canContinue || saving}>
-                  {step === 0 ? "Continuer l'essai gratuit" : 'Continuer'}
+                  Continuer
                   <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </button>
               )}

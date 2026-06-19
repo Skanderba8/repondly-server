@@ -47,6 +47,7 @@ type OnboardingBody = {
   business?: {
     name?: string
     email?: string
+    phone?: string
     businessType?: string
     tone?: string
   }
@@ -103,12 +104,16 @@ function parseVariants(value: unknown): Prisma.InputJsonValue | typeof Prisma.Js
     .slice(0, 6)
     .filter((item) => isRecord(item) && typeof item.name === 'string' && Array.isArray(item.values))
     .map((item) => ({
-      name: item.name.trim().slice(0, 40),
-      values: (item.values as unknown[])
+        name: item.name.trim().slice(0, 40),
+        values: (item.values as unknown[])
         .filter((option: unknown): option is string => typeof option === 'string')
         .map((option: string) => option.trim().slice(0, 40))
         .filter((option: string) => option.length > 0)
         .slice(0, 20),
+      priceMode: item.priceMode === 'different' ? 'different' : 'same',
+      stockMode: item.stockMode === 'different' ? 'different' : 'same',
+      priceDetails: typeof item.priceDetails === 'string' ? item.priceDetails.trim().slice(0, 160) : '',
+      stockDetails: typeof item.stockDetails === 'string' ? item.stockDetails.trim().slice(0, 160) : '',
     }))
     .filter((item) => item.name && item.values.length > 0)
 
@@ -187,6 +192,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as OnboardingBody
   const name = body.business?.name?.trim() ?? ''
   const email = normalizeEmail(body.business?.email ?? '')
+  const phone = body.business?.phone?.trim() ?? ''
   const businessType = body.business?.businessType?.trim() ?? ''
   const tone = body.business?.tone?.trim() ?? ''
   const botKnowledge = body.bot?.botKnowledge?.trim() ?? ''
@@ -197,6 +203,10 @@ export async function POST(request: Request) {
 
   if (!isValidEmail(email)) {
     return NextResponse.json({ success: false, error: 'Veuillez saisir une adresse email valide.' }, { status: 400 })
+  }
+
+  if (!phone) {
+    return NextResponse.json({ success: false, error: 'Le numero de telephone est obligatoire.' }, { status: 400 })
   }
 
   if (botKnowledge.length > 8000) {
@@ -213,6 +223,18 @@ export async function POST(request: Request) {
 
   if (existingByEmail) {
     return NextResponse.json({ success: false, error: 'Cette adresse email est deja utilisee.' }, { status: 409 })
+  }
+
+  const existingByPhone = await prisma.business.findFirst({
+    where: {
+      phone,
+      id: { not: session.user.id },
+    },
+    select: { id: true },
+  })
+
+  if (existingByPhone) {
+    return NextResponse.json({ success: false, error: 'Ce numero de telephone est deja utilise.' }, { status: 409 })
   }
 
   const currentBusiness = await prisma.business.findUnique({
@@ -237,6 +259,7 @@ export async function POST(request: Request) {
       data: {
         name,
         email,
+        phone,
         slug,
         plan: parsePlan(body.plan),
         businessType: businessType || null,
