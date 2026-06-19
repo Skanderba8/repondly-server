@@ -1,8 +1,10 @@
 import { CatalogItemType, Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { requireBusinessApiSession } from '@/lib/auth'
+import { buildPlanLimitError, getEffectiveLimits, getEffectivePlan } from '@/lib/plans'
 import { getProducts, mapProduct } from '@/lib/products'
 import { prisma } from '@/lib/prisma'
+import { ensureBusinessSubscriptionState } from '@/lib/subscription'
 import type { ProductVariant } from '@/types'
 
 type ProductBody = {
@@ -129,6 +131,30 @@ export async function POST(request: Request) {
 
   if (price.lt(0)) {
     return NextResponse.json({ success: false, error: 'Le prix est invalide.' }, { status: 400 })
+  }
+
+  const business = await ensureBusinessSubscriptionState(session.user.id)
+
+  if (!business) {
+    return NextResponse.json({ success: false, error: 'Entreprise introuvable.' }, { status: 404 })
+  }
+
+  const productCount = await prisma.product.count({ where: { businessId: session.user.id } })
+  const currentPlan = getEffectivePlan(business)
+  const limits = getEffectiveLimits(business)
+
+  if (productCount >= limits.products) {
+    return NextResponse.json(
+      buildPlanLimitError({
+        code: 'PLAN_PRODUCT_LIMIT_REACHED',
+        message: 'Votre plan actuel ne permet pas d ajouter plus de produits ou services.',
+        limitType: 'products',
+        currentLimit: limits.products,
+        currentUsage: productCount,
+        currentPlan,
+      }),
+      { status: 403 },
+    )
   }
 
   const product = await prisma.product.create({

@@ -17,6 +17,10 @@ type UpdateBusinessBody = {
   tone?: string
 }
 
+type DeleteBusinessBody = {
+  confirm?: string
+}
+
 export async function PATCH(request: Request) {
   const { response, session } = await requireBusinessApiSession()
 
@@ -98,4 +102,24 @@ export async function PATCH(request: Request) {
   })
 
   return NextResponse.json({ success: true, data: business })
+}
+
+export async function DELETE(request: Request) {
+  const { response, session } = await requireBusinessApiSession()
+
+  if (response || !session) {
+    return response
+  }
+
+  const body = await request.json() as DeleteBusinessBody
+
+  if (body.confirm !== 'SUPPRIMER') {
+    return NextResponse.json({ success: false, error: 'Confirmation invalide.' }, { status: 400 })
+  }
+
+  await prisma.business.delete({
+    where: { id: session.user.id },
+  })
+
+  return NextResponse.json({ success: true })
 }

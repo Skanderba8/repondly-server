@@ -3,6 +3,7 @@ import { SignOutButton } from '@/components/SignOutButton'
 import { SettingsPageClient } from '@/components/SettingsPageClient'
 import { requireBusinessSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getSubscriptionState } from '@/lib/subscription'
 
 function normalizeValue(value?: string | null) {
   return value ?? ''
@@ -68,6 +69,7 @@ export default async function SettingsPage() {
     WHATSAPP: channelConnections.find((item) => item.channel === 'WHATSAPP'),
     INSTAGRAM: channelConnections.find((item) => item.channel === 'INSTAGRAM'),
   }
+  const subscription = await getSubscriptionState(session.user.id)
 
   return (
     <>
@@ -104,8 +106,9 @@ export default async function SettingsPage() {
             connectedAt: connectionMap.INSTAGRAM?.createdAt.toISOString() ?? null,
           },
         }}
+        initialSubscription={subscription}
       />
-      <section className="nx-card mt-4 p-4 md:p-5">
+      <section id="compte" className="nx-card mt-4 p-4 md:p-5">
         <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Compte</h2>
         <p className="mt-2 text-sm text-[color:var(--text-secondary)]">Session active jusqu&apos;au {new Date(session.sessionExpiresAt).toLocaleString('fr-FR')}</p>
       </section>

@@ -18,7 +18,15 @@ model Business {
   slug       String     @unique
   plan       Plan       @default(ESSENTIEL)
   planStatus PlanStatus @default(ACTIVE)
+  trialStartedAt DateTime?
   trialEndsAt DateTime?
+  trialExpiredAt DateTime?
+  dataDeletionScheduledAt DateTime?
+  subscriptionStartedAt DateTime?
+  subscriptionEndsAt DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd DateTime?
+  cancelledAt DateTime?
   isPaid     Boolean    @default(false)
   onboardingCompletedAt DateTime?
 
@@ -48,6 +56,9 @@ model Business {
   products           Product[]
   webhookEvents      WebhookEvent[]
   aiUsages           AiUsage[]
+  monthlyUsages      MonthlyUsage[]
+  members            BusinessMember[]
+  broadcastCampaigns BroadcastCampaign[]
 }
 
 model BusinessImage {
@@ -237,6 +248,74 @@ model AiUsage {
   @@index([businessId, conversationId, createdAt])
 }
 
+model MonthlyUsage {
+  id            String   @id @default(cuid())
+  businessId    String
+  periodStart   DateTime
+  periodEnd     DateTime
+  aiReplies     Int      @default(0)
+  conversations Int      @default(0)
+  orders        Int      @default(0)
+  appointments  Int      @default(0)
+  broadcasts    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, periodStart])
+  @@index([businessId, periodStart, periodEnd])
+}
+
+model TrialClaim {
+  id                String       @id @default(cuid())
+  businessId        String?
+  email             String?
+  phone             String?
+  channel           ChannelType?
+  externalAccountId String?
+  ipAddress         String?
+  deviceFingerprint String?
+  claimedAt         DateTime     @default(now())
+
+  @@index([email])
+  @@index([phone])
+  @@index([channel, externalAccountId])
+}
+
+model BusinessMember {
+  id         String     @id @default(cuid())
+  businessId String
+  authUserId String
+  email      String
+  name       String?
+  role       MemberRole @default(AGENT)
+  createdAt  DateTime   @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, authUserId])
+  @@index([businessId])
+}
+
+model BroadcastCampaign {
+  id          String          @id @default(cuid())
+  businessId  String
+  title       String
+  content     String
+  channel     ChannelType
+  status      BroadcastStatus @default(DRAFT)
+  sentCount   Int             @default(0)
+  failedCount Int             @default(0)
+  createdAt   DateTime        @default(now())
+  scheduledAt DateTime?
+  sentAt      DateTime?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
+}
+
 model Order {
   id              String        @id @default(cuid())
   businessId      String
@@ -318,8 +397,26 @@ enum Plan {
 }
 
 enum PlanStatus {
+  TRIALING
   ACTIVE
+  TRIAL_EXPIRED
+  PAST_DUE
   SUSPENDED
+  CANCELLED
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  AGENT
+}
+
+enum BroadcastStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
   CANCELLED
 }
 

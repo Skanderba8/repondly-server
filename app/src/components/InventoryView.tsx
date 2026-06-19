@@ -4,6 +4,7 @@ import { startTransition, useMemo, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import { ProductCard } from '@/components/ProductCard'
 import { ProductFormModal, type ProductFormPayload } from '@/components/ProductFormModal'
+import { UpgradeModal, type UpgradeModalState } from '@/components/subscription/UpgradeModal'
 import type { Product } from '@/types'
 
 type InventoryViewProps = {
@@ -14,6 +15,9 @@ type ProductResponse = {
   success: boolean
   data?: Product
   error?: string
+  code?: string
+  currentLimit?: number
+  currentUsage?: number
 }
 
 function buildPayload(payload: ProductFormPayload) {
@@ -37,6 +41,7 @@ export function InventoryView({ products }: InventoryViewProps) {
   const [activeOnly, setActiveOnly] = useState(true)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [upgradeModal, setUpgradeModal] = useState<UpgradeModalState>(null)
   const [pending, setPending] = useState(false)
 
   const filteredProducts = useMemo(() => {
@@ -62,11 +67,19 @@ export function InventoryView({ products }: InventoryViewProps) {
         body: JSON.stringify(buildPayload(payload)),
       })
 
-      if (!response.ok) {
-        throw new Error('PRODUCT_SAVE_FAILED')
+      const result = (await response.json()) as ProductResponse
+      if (!response.ok || !result.success) {
+        if (result.code === 'PLAN_PRODUCT_LIMIT_REACHED') {
+          setUpgradeModal({
+            title: 'Limite de produits/services atteinte',
+            body: 'Votre plan actuel ne permet pas d ajouter plus de produits ou services. Passez a un plan superieur pour augmenter votre catalogue.',
+            currentLimit: result.currentLimit,
+            currentUsage: result.currentUsage,
+          })
+        }
+        throw new Error(result.error ?? 'PRODUCT_SAVE_FAILED')
       }
 
-      const result = (await response.json()) as ProductResponse
       if (!result.data) {
         throw new Error('PRODUCT_SAVE_EMPTY')
       }
@@ -177,6 +190,7 @@ export function InventoryView({ products }: InventoryViewProps) {
         }}
         onSave={saveProduct}
       />
+      <UpgradeModal modal={upgradeModal} onClose={() => setUpgradeModal(null)} />
     </div>
   )
 }

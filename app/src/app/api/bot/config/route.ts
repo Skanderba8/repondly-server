@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireBusinessApiSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { ensureBusinessSubscriptionState } from '@/lib/subscription'
 import type { BotConfig } from '@/types'
 
 type BotConfigBody = Partial<Omit<BotConfig, 'businessName'>>
@@ -65,9 +66,14 @@ export async function PATCH(request: Request) {
   }
 
   const body = (await request.json()) as BotConfigBody
+  const subscription = await ensureBusinessSubscriptionState(session.user.id)
 
   if (body.botKnowledge && body.botKnowledge.length > 8000) {
     return NextResponse.json({ success: false, error: 'La base de connaissances est trop longue.' }, { status: 400 })
+  }
+
+  if (body.botEnabled && subscription && ['TRIAL_EXPIRED', 'PAST_DUE', 'SUSPENDED', 'CANCELLED'].includes(subscription.planStatus)) {
+    return NextResponse.json({ success: false, error: 'Choisissez un plan actif pour reactiver l assistant IA.' }, { status: 403 })
   }
 
   const business = await prisma.business.update({

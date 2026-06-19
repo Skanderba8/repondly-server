@@ -5,7 +5,9 @@ import { executeAiAction } from '@/lib/ai/actions'
 import { AI_CONFIG, type AiChatMessage } from '@/lib/ai/config'
 import { generateAiReply } from '@/lib/ai/groq'
 import { normalizePromptProducts } from '@/lib/ai/promptBuilder'
+import { canUseFeature, getEffectiveLimits } from '@/lib/plans'
 import { prisma } from '@/lib/prisma'
+import { ensureBusinessSubscriptionState, getOrCreateMonthlyUsage, incrementMonthlyUsage } from '@/lib/subscription'
 import { syncAccountChats } from '@/lib/unipile/sync'
 import { unipile, type UnipileAttendee, type UnipileChat, type UnipileMessage } from '@/lib/unipile/client'
 
@@ -165,6 +167,38 @@ async function ensureConnection(accountId: string, businessHint?: { businessId: 
     return null
   }
 
+  const business = await ensureBusinessSubscriptionState(businessHint.businessId)
+
+  if (!business) {
+    return null
+  }
+
+  const existingClaim = await prisma.trialClaim.findFirst({
+    where: {
+      channel,
+      externalAccountId: account.id,
+      businessId: { not: businessHint.businessId },
+    },
+    select: { id: true },
+  })
+
+  if (existingClaim) {
+    return null
+  }
+
+  const activeChannels = await prisma.businessChannelConnection.count({
+    where: {
+      businessId: businessHint.businessId,
+      status: { in: ['PENDING', 'ACTIVE'] },
+      NOT: { unipileAccountId: account.id },
+    },
+  })
+  const limits = getEffectiveLimits(business)
+
+  if (activeChannels >= limits.channels) {
+    return null
+  }
+
   const pendingConnection = await prisma.businessChannelConnection.findFirst({
     where: {
       businessId: businessHint.businessId,
@@ -212,6 +246,25 @@ async function ensureConnection(accountId: string, businessHint?: { businessId: 
           lastSyncedAt: true,
         },
       })
+
+  const existingBusinessClaim = await prisma.trialClaim.findFirst({
+    where: {
+      businessId: businessHint.businessId,
+      channel,
+      externalAccountId: account.id,
+    },
+    select: { id: true },
+  })
+
+  if (!existingBusinessClaim) {
+    await prisma.trialClaim.create({
+      data: {
+        businessId: businessHint.businessId,
+        channel,
+        externalAccountId: account.id,
+      },
+    })
+  }
 
   return { connection, accountType: account.type, accountId: account.id }
 }
@@ -335,6 +388,7 @@ async function upsertInboundMessage(
         },
       },
     })
+    await incrementMonthlyUsage(connection.businessId, 'conversations')
   }
 
   const conversation = existingConversation
@@ -562,10 +616,31 @@ async function maybeSendAiReply(params: {
 
   const business = await prisma.business.findUnique({
     where: { id: params.businessId },
-    select: { botEnabled: true },
+    select: {
+      id: true,
+      plan: true,
+      planStatus: true,
+      botEnabled: true,
+      trialEndsAt: true,
+    },
   })
 
   if (!business?.botEnabled) {
+    return
+  }
+
+  const subscription = await ensureBusinessSubscriptionState(params.businessId)
+
+  if (!subscription || !canUseFeature(subscription, 'aiReplies')) {
+    return
+  }
+
+  const [monthlyUsage, effectiveLimits] = await Promise.all([
+    getOrCreateMonthlyUsage(params.businessId),
+    Promise.resolve(getEffectiveLimits(subscription)),
+  ])
+
+  if (monthlyUsage.aiReplies >= effectiveLimits.aiRepliesPerMonth) {
     return
   }
 
@@ -587,6 +662,8 @@ async function maybeSendAiReply(params: {
     unipileAccountId: params.accountId,
     reply: aiReply.reply,
   })
+
+  await incrementMonthlyUsage(params.businessId, 'aiReplies')
 
   const productImages = getProductImagesFromExtraction(aiReply.extraction)
   if (productImages.length > 0) {

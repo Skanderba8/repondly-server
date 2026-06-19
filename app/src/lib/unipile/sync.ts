@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { incrementMonthlyUsage } from '@/lib/subscription'
 import { unipile, type UnipileAttendee, type UnipileChat, type UnipileMessage } from '@/lib/unipile/client'
 
 type ChannelKey = 'WHATSAPP' | 'INSTAGRAM'
@@ -107,7 +108,7 @@ async function upsertConversation(
     },
   })
 
-  return prisma.conversation.create({
+  const conversation = await prisma.conversation.create({
     data: {
       businessId,
       connectionId,
@@ -118,6 +119,10 @@ async function upsertConversation(
       lastMessageAt: chat.last_message_at ? new Date(chat.last_message_at) : null,
     },
   })
+
+  await incrementMonthlyUsage(businessId, 'conversations')
+
+  return conversation
 }
 
 export async function syncAccountChats(businessId: string, connectionId: string, unipileAccountId: string) {

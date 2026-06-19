@@ -5,7 +5,10 @@ import { usePathname } from 'next/navigation'
 import { BottomNav } from '@/components/BottomNav'
 import { InstallBanner } from '@/components/pwa/InstallBanner'
 import { Sidebar } from '@/components/Sidebar'
+import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner'
+import { TrialExpiredModal } from '@/components/subscription/TrialExpiredModal'
 import { TopBar } from '@/components/TopBar'
+import type { SubscriptionState } from '@/lib/subscription'
 
 type DashboardShellProps = {
   children: ReactNode
@@ -13,6 +16,7 @@ type DashboardShellProps = {
     name: string
     plan: string
   }
+  subscription: SubscriptionState | null
 }
 
 function getTitle(pathname: string) {
@@ -27,7 +31,7 @@ function getTitle(pathname: string) {
   return 'Inbox'
 }
 
-export function DashboardShell({ children, business }: DashboardShellProps) {
+export function DashboardShell({ children, business, subscription }: DashboardShellProps) {
   const pathname = usePathname()
   const inboxRoute = pathname.startsWith('/inbox')
 
@@ -37,10 +41,12 @@ export function DashboardShell({ children, business }: DashboardShellProps) {
       <div className="nx-stage">
         <TopBar title={getTitle(pathname)} businessName={business.name} plan={business.plan} />
         <InstallBanner />
+        <SubscriptionBanner subscription={subscription} />
         <main className="nx-main">
           <div className={inboxRoute ? 'nx-content-inbox' : 'nx-content'}>{children}</div>
         </main>
       </div>
+      <TrialExpiredModal subscription={subscription} />
       <BottomNav />
     </div>
   )

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { requireBusinessApiSession } from '@/lib/auth'
+import { buildPlanLimitError, getEffectiveLimits, getEffectivePlan } from '@/lib/plans'
+import { ensureBusinessSubscriptionState } from '@/lib/subscription'
+import { prisma } from '@/lib/prisma'
 import { unipile } from '@/lib/unipile/client'
 
 type ChannelKey = 'WHATSAPP' | 'INSTAGRAM'
@@ -23,6 +26,49 @@ export async function POST(request: Request) {
 
   if (!isSupportedChannel(body.channel)) {
     return NextResponse.json({ success: false, error: 'Canal invalide.' }, { status: 400 })
+  }
+
+  const business = await ensureBusinessSubscriptionState(session.user.id)
+
+  if (!business) {
+    return NextResponse.json({ success: false, error: 'Entreprise introuvable.' }, { status: 404 })
+  }
+
+  const blockedStatuses = ['TRIAL_EXPIRED', 'PAST_DUE', 'SUSPENDED', 'CANCELLED']
+
+  if (blockedStatuses.includes(business.planStatus)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Votre abonnement ne permet pas de connecter un nouveau canal pour le moment.',
+        code: 'PLAN_ACCESS_BLOCKED',
+        limitType: 'channels',
+      },
+      { status: 403 },
+    )
+  }
+
+  const activeChannels = await prisma.businessChannelConnection.count({
+    where: {
+      businessId: session.user.id,
+      status: { in: ['PENDING', 'ACTIVE'] },
+    },
+  })
+  const currentPlan = getEffectivePlan(business)
+  const limits = getEffectiveLimits(business)
+
+  if (activeChannels >= limits.channels) {
+    return NextResponse.json(
+      buildPlanLimitError({
+        code: 'PLAN_CHANNEL_LIMIT_REACHED',
+        message: 'Votre plan actuel ne permet pas d ajouter plus de canaux.',
+        limitType: 'channels',
+        currentLimit: limits.channels,
+        currentUsage: activeChannels,
+        currentPlan,
+      }),
+      { status: 403 },
+    )
   }
 
   const webhookUrl = process.env.UNIPILE_WEBHOOK_URL

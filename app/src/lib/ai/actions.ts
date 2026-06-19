@@ -6,6 +6,7 @@ import { type ProductPromptRecord } from '@/lib/ai/promptBuilder'
 import { normalizeOrderSlots } from '@/lib/ai/slots'
 import { mapOrder } from '@/lib/orders'
 import { prisma } from '@/lib/prisma'
+import { incrementMonthlyUsage } from '@/lib/subscription'
 
 type ExecuteActionParams = {
   businessId: string
@@ -167,7 +168,7 @@ async function createOrder(params: ExecuteActionParams) {
       email ? `Email: ${email}` : null,
     ].filter(Boolean).join('\n')
 
-    return tx.order.create({
+    const createdOrder = await tx.order.create({
       data: {
         businessId: params.businessId,
         contactId: contact.id,
@@ -187,6 +188,10 @@ async function createOrder(params: ExecuteActionParams) {
         },
       },
     })
+
+    await incrementMonthlyUsage(params.businessId, 'orders', 1, tx)
+
+    return createdOrder
   })
 
   if (order) {

@@ -2,6 +2,7 @@ import type { Plan } from '@/types'
 import { NextResponse } from 'next/server'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { ensureBusinessSubscriptionState } from '@/lib/subscription'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 type BusinessSessionUser = {
@@ -52,6 +53,8 @@ export async function getBusinessSession(): Promise<BusinessSession | null> {
   if (!business?.id || !business.email || !business.authUserId) {
     return null
   }
+
+  await ensureBusinessSubscriptionState(business.id)
 
   return {
     user: {

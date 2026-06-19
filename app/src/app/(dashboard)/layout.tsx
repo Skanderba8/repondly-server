@@ -3,6 +3,7 @@ import { DashboardShell } from '@/components/DashboardShell'
 import { OnboardingWizard } from '@/components/OnboardingWizard'
 import { requireBusinessSession, type BusinessSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getSubscriptionState } from '@/lib/subscription'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session: BusinessSession = await requireBusinessSession()
@@ -23,10 +24,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     name: business?.name || session.user.name || 'Mon entreprise',
     plan: business?.plan || session.user.plan,
   }
+  const subscription = await getSubscriptionState(session.user.id)
 
   return (
     <DashboardShell
       business={shellBusiness}
+      subscription={subscription}
     >
       {!business?.onboardingCompletedAt ? (
         <OnboardingWizard

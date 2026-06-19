@@ -28,6 +28,5 @@ db:migrate() {
   echo "Running migrations from admin..."
   (cd admin && npx prisma migrate dev)
 }
-
 npx prisma generate
 npx prisma migrate deploy

@@ -2,6 +2,7 @@ import { CatalogItemType, ChannelType, Plan, Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { buildUniqueBusinessSlug, isValidEmail, normalizeEmail } from '@/lib/auth-utils'
 import { requireBusinessApiSession } from '@/lib/auth'
+import { PLAN_LIMITS, TRIAL_DURATION_DAYS } from '@/lib/plans'
 import { prisma } from '@/lib/prisma'
 import type { ProductVariant } from '@/types'
 
@@ -239,7 +240,7 @@ export async function POST(request: Request) {
 
   const currentBusiness = await prisma.business.findUnique({
     where: { id: session.user.id },
-    select: { name: true, slug: true },
+    select: { name: true, slug: true, trialStartedAt: true },
   })
 
   if (!currentBusiness) {
@@ -248,10 +249,33 @@ export async function POST(request: Request) {
 
   const slug = currentBusiness.name === name ? currentBusiness.slug : await buildUniqueBusinessSlug(name)
   const businessImages = parseImages(body.images, MAX_BUSINESS_IMAGES, true)
-  const products = parseProducts(body.products)
+  const products = parseProducts(body.products).slice(0, PLAN_LIMITS.TRIAL.products)
   const selectedChannels = Array.isArray(body.channels)
     ? body.channels.filter((channel) => channel.selected && channel.channel && SUPPORTED_CHANNELS.has(channel.channel))
+        .slice(0, PLAN_LIMITS.TRIAL.channels)
     : []
+  const existingTrialClaim = await prisma.trialClaim.findFirst({
+    where: {
+      OR: [
+        { email, businessId: { not: session.user.id } },
+        { phone, businessId: { not: session.user.id } },
+      ],
+    },
+    select: { id: true },
+  })
+
+  if (existingTrialClaim) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Une periode d essai a deja ete utilisee avec cet email ou ce numero de telephone.',
+      },
+      { status: 409 },
+    )
+  }
+  const now = new Date()
+  const trialEndsAt = new Date(now)
+  trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DURATION_DAYS)
 
   await prisma.$transaction(async (tx) => {
     await tx.business.update({
@@ -262,6 +286,12 @@ export async function POST(request: Request) {
         phone,
         slug,
         plan: parsePlan(body.plan),
+        planStatus: 'TRIALING',
+        isPaid: false,
+        trialStartedAt: currentBusiness.trialStartedAt ?? now,
+        trialEndsAt: currentBusiness.trialStartedAt ? undefined : trialEndsAt,
+        trialExpiredAt: null,
+        dataDeletionScheduledAt: null,
         businessType: businessType || null,
         tone: tone || null,
         botEnabled: body.bot?.botEnabled ?? true,
@@ -273,6 +303,20 @@ export async function POST(request: Request) {
         botHandoffKeywords: normalizeOptional(body.bot?.botHandoffKeywords),
         onboardingCompletedAt: new Date(),
       },
+    })
+
+    await tx.trialClaim.createMany({
+      data: [
+        {
+          businessId: session.user.id,
+          email,
+        },
+        {
+          businessId: session.user.id,
+          phone,
+        },
+      ],
+      skipDuplicates: true,
     })
 
     await tx.businessImage.deleteMany({

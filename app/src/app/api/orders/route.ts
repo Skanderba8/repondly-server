@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireBusinessApiSession } from '@/lib/auth'
 import { getOrders, mapOrder, ORDER_STATUS_VALUES, PAYMENT_STATUS_VALUES } from '@/lib/orders'
 import { prisma } from '@/lib/prisma'
+import { incrementMonthlyUsage } from '@/lib/subscription'
 
 type CreateOrderItemBody = {
   productName?: string
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
       new Prisma.Decimal(0),
     )
 
-    return tx.order.create({
+    const createdOrder = await tx.order.create({
       data: {
         businessId: session.user.id,
         contactId: contact.id,
@@ -126,6 +127,10 @@ export async function POST(request: Request) {
         },
       },
     })
+
+    await incrementMonthlyUsage(session.user.id, 'orders', 1, tx)
+
+    return createdOrder
   }).catch((error: unknown) => {
     if (error instanceof Error && error.message === 'CONTACT_NOT_FOUND') {
       return null

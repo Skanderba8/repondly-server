@@ -4,6 +4,8 @@ import { startTransition, useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { UpgradeModal, type UpgradeModalState } from '@/components/subscription/UpgradeModal'
+import type { SubscriptionState } from '@/lib/subscription'
 
 type ConnectionStatus = 'PENDING' | 'ACTIVE' | 'DISCONNECTED' | 'ERROR'
 
@@ -30,6 +32,7 @@ type ChannelSettings = {
 type SettingsPageClientProps = {
   initialBusiness: BusinessSettings
   initialChannels: Record<ChannelKey, ChannelSettings>
+  initialSubscription: SubscriptionState | null
 }
 
 type SaveState = {
@@ -100,9 +103,56 @@ function formatConnectedAt(value: string | null) {
   }).format(new Date(value))
 }
 
-export function SettingsPageClient({ initialBusiness, initialChannels }: SettingsPageClientProps) {
+function formatDate(value: string | null) {
+  if (!value) return 'Non defini'
+  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date(value))
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('fr-FR').format(value)
+}
+
+function getUsageTone(used: number, limit: number) {
+  if (limit <= 0) return used > 0 ? 'danger' : 'neutral'
+  const ratio = used / limit
+  if (ratio >= 1) return 'danger'
+  if (ratio >= 0.9) return 'warning'
+  if (ratio >= 0.7) return 'brand'
+  return 'success'
+}
+
+function UsageMeter({ label, used, limit }: { label: string, used: number, limit: number }) {
+  const ratio = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0
+  const tone = getUsageTone(used, limit)
+
+  return (
+    <div className="rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[12px] font-semibold text-[color:var(--text-primary)]">{label}</p>
+        <span className={`nx-badge nx-badge-${tone}`}>{formatNumber(used)} / {formatNumber(limit)}</span>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-[var(--radius-btn)] bg-[color:var(--border)]">
+        <div className={`h-full rounded-[var(--radius-btn)] nx-badge-${tone}`} style={{ width: `${ratio}%` }} />
+      </div>
+    </div>
+  )
+}
+
+const statusLabels: Record<string, string> = {
+  TRIALING: 'Essai gratuit',
+  ACTIVE: 'Actif',
+  TRIAL_EXPIRED: 'Essai termine',
+  PAST_DUE: 'Paiement en attente',
+  SUSPENDED: 'Suspendu',
+  CANCELLED: 'Annule',
+}
+
+export function SettingsPageClient({ initialBusiness, initialChannels, initialSubscription }: SettingsPageClientProps) {
   const [business, setBusiness] = useState(initialBusiness)
   const [channels, setChannels] = useState(initialChannels)
+  const [subscription, setSubscription] = useState(initialSubscription)
+  const [upgradeModal, setUpgradeModal] = useState<UpgradeModalState>(null)
+  const [choosingPlan, setChoosingPlan] = useState('')
   const [businessState, setBusinessState] = useState<SaveState>(buildDefaultState())
   const [channelStates, setChannelStates] = useState<Record<ChannelKey, SaveState>>({
     WHATSAPP: buildDefaultState(),
@@ -221,11 +271,22 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
     const result = await response.json() as {
       success: boolean
       error?: string
+      code?: string
+      currentLimit?: number
+      currentUsage?: number
       data?: { url: string }
     }
 
     if (!result.success || !result.data?.url) {
       setConnectingChannels((current) => ({ ...current, [channel]: false }))
+      if (result.code === 'PLAN_CHANNEL_LIMIT_REACHED') {
+        setUpgradeModal({
+          title: 'Limite de canaux atteinte',
+          body: `Votre plan actuel inclut ${result.currentLimit ?? 0} canal/canaux. Passez a un plan superieur pour connecter plus de canaux.`,
+          currentLimit: result.currentLimit,
+          currentUsage: result.currentUsage,
+        })
+      }
       setChannelStates((current) => ({
         ...current,
         [channel]: { type: 'error', message: result.error ?? 'Impossible de démarrer la connexion Unipile.' },
@@ -234,6 +295,29 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
     }
 
     window.location.href = result.data.url
+  }
+
+  async function choosePlan(plan: string) {
+    setChoosingPlan(plan)
+    const response = await fetch('/api/subscription/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan }),
+    })
+    const result = await response.json() as { success: boolean, error?: string, data?: SubscriptionState }
+
+    setChoosingPlan('')
+
+    if (!result.success || !result.data) {
+      setUpgradeModal({
+        title: 'Plan non modifie',
+        body: result.error ?? 'Impossible de choisir ce plan pour le moment.',
+      })
+      return
+    }
+
+    setSubscription(result.data)
+    setBusiness((current) => ({ ...current, plan: result.data?.plan ?? current.plan }))
   }
 
   async function disconnectChannel(channel: ChannelKey) {
@@ -394,15 +478,83 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
         </p>
       </section>
 
-      <section className="nx-card p-4 md:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section id="plan-utilisation" className="nx-card p-4 md:p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <h2 className="text-[14px] font-semibold text-[color:var(--text-primary)]">Abonnement</h2>
-            <div className="mt-2 flex items-center gap-2"><Badge variant={business.plan} /><span className="text-[12.5px] text-[color:var(--text-secondary)]">Plan actuel</span></div>
+            <p className="nx-section-label">Plan & utilisation</p>
+            <h2 className="mt-1 text-[18px] font-bold text-[color:var(--text-primary)]">Abonnement</h2>
+            {subscription ? (
+              <div className="mt-3 grid gap-2 text-[13px] text-[color:var(--text-secondary)]">
+                <p><strong className="text-[color:var(--text-primary)]">Plan actuel:</strong> {subscription.planName}</p>
+                <p><strong className="text-[color:var(--text-primary)]">Statut:</strong> {statusLabels[subscription.planStatus] ?? subscription.planStatus}</p>
+                {subscription.planStatus === 'TRIALING' ? <p><strong className="text-[color:var(--text-primary)]">Fin de l essai:</strong> {formatDate(subscription.trialEndsAt)} ({subscription.daysUntilTrialEnds} jour(s) restant(s))</p> : null}
+                {subscription.dataDeletionScheduledAt ? <p><strong className="text-[color:var(--danger)]">Suppression prevue:</strong> {formatDate(subscription.dataDeletionScheduledAt)}</p> : null}
+              </div>
+            ) : (
+              <p className="mt-2 text-[13px] text-[color:var(--text-secondary)]">Etat d abonnement indisponible.</p>
+            )}
           </div>
-          <a href="#" className="text-[12.5px] font-semibold text-[color:var(--text-primary)] underline-offset-2 hover:underline">Mettre à niveau</a>
+          <Badge variant={subscription?.plan ?? business.plan} />
         </div>
+
+        {subscription?.planStatus === 'TRIALING' ? (
+          <div className="mt-4 rounded-[var(--radius-card)] border border-[color:var(--warning-border)] bg-[color:var(--warning-soft)] p-3">
+            <p className="text-[13px] font-medium text-[color:var(--text-primary)]">Votre essai gratuit se termine le {formatDate(subscription.trialEndsAt)}. Choisissez un plan pour continuer a utiliser l assistant IA apres l essai.</p>
+          </div>
+        ) : null}
+
+        {subscription ? (
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <UsageMeter label="Reponses IA" used={subscription.usage.aiReplies} limit={subscription.limits.aiRepliesPerMonth} />
+            <UsageMeter label="Conversations" used={subscription.usage.conversations} limit={subscription.limits.conversationsPerMonth} />
+            <UsageMeter label="Commandes & rendez-vous" used={subscription.usage.orders + subscription.usage.appointments} limit={subscription.limits.ordersAndAppointmentsPerMonth} />
+            <UsageMeter label="Canaux connectes" used={subscription.usage.channels} limit={subscription.limits.channels} />
+            <UsageMeter label="Produits/services" used={subscription.usage.products} limit={subscription.limits.products} />
+            <UsageMeter label="Utilisateurs" used={subscription.usage.users} limit={subscription.limits.users} />
+            <UsageMeter label="Campagnes promotionnelles" used={subscription.usage.broadcasts} limit={subscription.limits.broadcastsPerMonth} />
+          </div>
+        ) : null}
+
+        {subscription?.warnings.length ? (
+          <div className="mt-4 grid gap-2">
+            {subscription.warnings.map((warning) => <p key={warning} className="rounded-[var(--radius-card)] border border-[color:var(--warning-border)] bg-[color:var(--warning-soft)] p-3 text-[13px] text-[color:var(--text-primary)]">{warning}</p>)}
+          </div>
+        ) : null}
+
+        {subscription ? (
+          <div className="mt-6">
+            <h3 className="text-[15px] font-bold text-[color:var(--text-primary)]">Choisir un plan</h3>
+            <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
+              {subscription.planCards.map((card) => {
+                const current = subscription.plan === card.plan && subscription.planStatus === 'ACTIVE'
+                const trialing = subscription.planStatus === 'TRIALING'
+                const cta = current ? 'Plan actuel' : trialing ? 'Choisir ce plan' : 'Passer a ce plan'
+
+                return (
+                  <article key={card.plan} className="rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-page)] p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="text-[15px] font-bold text-[color:var(--text-primary)]">{card.name}</h4>
+                        <p className="mt-1 text-[12px] leading-5 text-[color:var(--text-secondary)]">{card.description}</p>
+                      </div>
+                      {card.badge ? <span className="nx-badge nx-badge-success">{card.badge}</span> : null}
+                    </div>
+                    <p className="mt-4 text-[22px] font-bold text-[color:var(--text-primary)]">{card.price} DT <span className="text-[12px] font-medium text-[color:var(--text-secondary)]">/ mois</span></p>
+                    <p className="mt-2 text-[12px] leading-5 text-[color:var(--text-secondary)]">{card.bestFor}</p>
+                    <ul className="mt-4 grid gap-2 text-[12.5px] text-[color:var(--text-secondary)]">
+                      {card.features.map((feature) => <li key={feature}>• {feature}</li>)}
+                    </ul>
+                    <Button className="mt-4 w-full" disabled={current} loading={choosingPlan === card.plan} onClick={() => void choosePlan(card.plan)}>
+                      {cta}
+                    </Button>
+                  </article>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
       </section>
+      <UpgradeModal modal={upgradeModal} onClose={() => setUpgradeModal(null)} />
     </div>
   )
 }
