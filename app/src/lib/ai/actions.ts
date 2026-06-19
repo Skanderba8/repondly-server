@@ -3,6 +3,7 @@
 import { Prisma } from '@prisma/client'
 import { type AiAction } from '@/lib/ai/parser'
 import { type ProductPromptRecord } from '@/lib/ai/promptBuilder'
+import { normalizeOrderSlots } from '@/lib/ai/slots'
 import { mapOrder } from '@/lib/orders'
 import { prisma } from '@/lib/prisma'
 
@@ -191,9 +192,22 @@ async function createOrder(params: ExecuteActionParams) {
   if (order) {
     await appendConversationSummary(params.conversationId, buildActionNote(action, `Commande creee #${order.orderNumber}.`))
     if (params.conversationId) {
+      const conversation = await prisma.conversation.findUnique({
+        where: { id: params.conversationId },
+        select: { orderSlots: true },
+      })
+      const orderSlots = {
+        ...normalizeOrderSlots(conversation?.orderSlots),
+        phase: 'done' as const,
+        confirmedAt: new Date().toISOString(),
+      }
+
       await prisma.conversation.update({
         where: { id: params.conversationId },
-        data: { status: 'CONFIRMED' },
+        data: {
+          status: 'CONFIRMED',
+          orderSlots: orderSlots as Prisma.InputJsonValue,
+        },
       })
     }
   }

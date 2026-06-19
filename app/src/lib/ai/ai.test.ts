@@ -3,10 +3,20 @@
 import { Prisma } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
 import { validateOrderAction } from '@/lib/ai/actions'
-import { cleanHistory } from '@/lib/ai/groq'
+import { cleanHistory, shouldHandover } from '@/lib/ai/groq'
 import { detectCustomerLanguage, getFallbackReply } from '@/lib/ai/language'
 import { parseAiResponse, truncateReply } from '@/lib/ai/parser'
 import { buildSystemPrompt, parseKnowledgeConfig } from '@/lib/ai/promptBuilder'
+import {
+  extractOrderSlots,
+  getNextMissingSlot,
+  hasRepeatedComplaint,
+  isExplicitOrderConfirmation,
+  mergeOrderSlots,
+  normalizeOrderSlots,
+  withNextMissingSlot,
+  withSummaryShown,
+} from '@/lib/ai/slots'
 import { getTemplate } from '@/lib/ai/templates'
 
 describe('AI language helpers', () => {
@@ -147,9 +157,7 @@ describe('AI templates', () => {
     const order = getTemplate('order_start', { productName: 'Pack A' }, { business, products, knowledge, outputLanguage: 'FR' })
 
     expect(delivery).toContain('Informations livraison')
-    expect(order).toContain('Pour confirmer la commande')
-    expect(order).toContain('- Produit: Pack A')
-    expect(order).toContain('- Nom complet')
+    expect(order).toContain('nom complet')
   })
 
   it('returns Arabic templates for Arabic output policy', () => {
@@ -182,6 +190,94 @@ describe('AI templates', () => {
     expect(reply).toContain('robe bleu ciel')
     expect(reply).toContain('robe bleu')
     expect(reply).not.toContain('robe gold')
+  })
+})
+
+describe('AI order slots', () => {
+  const products = [{
+    type: 'PRODUCT',
+    name: 'Robe bleue',
+    description: 'Robe ete',
+    price: new Prisma.Decimal(55),
+    deliveryFee: new Prisma.Decimal(7),
+    stock: 4,
+    fournisseur: null,
+    variants: [{ name: 'Taille', values: ['S', 'M', 'L'] }],
+    images: [],
+  }]
+
+  it('persists product and phone collected in separate messages', () => {
+    const first = mergeOrderSlots(normalizeOrderSlots(null), extractOrderSlots('je veux la robe bleue', products, normalizeOrderSlots(null)))
+    const second = mergeOrderSlots(first, extractOrderSlots('55123456', products, first))
+
+    expect(second.productName).toBe('Robe bleue')
+    expect(second.phone).toBe('55123456')
+  })
+
+  it('asks for name after product, variant, and phone are known', () => {
+    const slots = normalizeOrderSlots({
+      phase: 'collecting',
+      productName: 'Robe bleue',
+      variantNotes: 'Taille: M',
+      phone: '55123456',
+    })
+
+    expect(getNextMissingSlot(slots, products[0])).toBe('customerName')
+  })
+
+  it('asks variant before confirmation when the product has variants', () => {
+    const slots = normalizeOrderSlots({
+      phase: 'collecting',
+      productName: 'Robe bleue',
+      customerName: 'Sarra',
+      phone: '55123456',
+    })
+
+    expect(getNextMissingSlot(slots, products[0])).toBe('variant')
+  })
+
+  it('does not accept short confirmation before the summary was shown', () => {
+    const slots = normalizeOrderSlots({
+      phase: 'collecting',
+      productName: 'Robe bleue',
+      variantNotes: 'Taille: M',
+      customerName: 'Sarra',
+      phone: '55123456',
+    })
+
+    expect(isExplicitOrderConfirmation('oui', slots)).toBe(false)
+  })
+
+  it('accepts explicit confirmation after summary was shown', () => {
+    const slots = withSummaryShown(normalizeOrderSlots({
+      phase: 'collecting',
+      productName: 'Robe bleue',
+      variantNotes: 'Taille: M',
+      customerName: 'Sarra',
+      phone: '55123456',
+    }))
+
+    expect(isExplicitOrderConfirmation('oui', slots)).toBe(true)
+  })
+
+  it('extracts a name only when the bot asked for it', () => {
+    const slots = withNextMissingSlot(normalizeOrderSlots({ phase: 'collecting', productName: 'Robe bleue' }), 'customerName')
+    const extracted = extractOrderSlots('Sarra Ben Ali', products, slots)
+
+    expect(extracted.customerName).toBe('Sarra Ben Ali')
+  })
+})
+
+describe('AI handover routing', () => {
+  it('does not hand over negotiation immediately', () => {
+    expect(shouldHandover('negotiation', [], 'c est cher')).toBe(false)
+  })
+
+  it('hands over repeated complaints', () => {
+    const history = [{ role: 'user' as const, content: 'j ai un probleme avec ma commande' }]
+
+    expect(hasRepeatedComplaint(history, 'toujours pas resolu ce probleme')).toBe(true)
+    expect(shouldHandover('complaint', history, 'toujours pas resolu ce probleme')).toBe(true)
   })
 })
 

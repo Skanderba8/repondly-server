@@ -133,6 +133,7 @@ model Conversation {
   resolvedAt           DateTime?
   externalThreadId     String?
   summary              String?
+  orderSlots           Json?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 

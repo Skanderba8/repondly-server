@@ -6,6 +6,20 @@ import { detectCustomerLanguage, getFallbackReply } from '@/lib/ai/language'
 import { parseAiResponse, type ParsedAiPayload } from '@/lib/ai/parser'
 import { buildSystemPrompt, getDailyTokenLimit, normalizePromptProducts, parseKnowledgeConfig, type ProductPromptRecord, type PromptBusiness } from '@/lib/ai/promptBuilder'
 import { routeIntent, type RouterIntent, type RouterResult } from '@/lib/ai/router'
+import {
+  extractOrderSlots,
+  getMatchedProduct as getMatchedSlotProduct,
+  getNextMissingSlot,
+  getOrderProduct,
+  hasRepeatedComplaint,
+  isExplicitOrderConfirmation,
+  isOrderSignal,
+  mergeOrderSlots,
+  normalizeOrderSlots,
+  type OrderSlots,
+  withNextMissingSlot,
+  withSummaryShown,
+} from '@/lib/ai/slots'
 import { getTemplate } from '@/lib/ai/templates'
 import { prisma } from '@/lib/prisma'
 
@@ -208,8 +222,10 @@ async function callGroq(systemPrompt: string, history: AiChatMessage[], customer
   }
 }
 
-function shouldHandover(intent: RouterIntent) {
-  return intent === 'negotiation' || intent === 'complaint' || intent === 'human_request'
+export function shouldHandover(intent: RouterIntent, history: AiChatMessage[], customerMessage: string) {
+  if (intent === 'human_request') return true
+  if (intent === 'complaint') return hasRepeatedComplaint(history, customerMessage)
+  return false
 }
 
 function normalizeForContext(value: string) {
@@ -360,103 +376,8 @@ async function safeRouteIntent(customerMessage: string): Promise<RouterResult> {
   }
 }
 
-function isOrderConfirmation(message: string) {
-  const normalized = normalizeForContext(message).trim()
-  return isShortConfirmation(message) || /\b(commande|commander|order|acheter|passer)\b/.test(normalized)
-}
-
-function extractPhone(text: string) {
-  const match = text.match(/(?:\+?216[\s.-]?)?([24579]\d[\s.-]?\d{3}[\s.-]?\d{3})\b/)
-  return match ? match[0].replace(/[^\d+]/g, '') : null
-}
-
-function extractQuantity(text: string, phone: string | null) {
-  const withoutPhone = phone ? text.replace(/(?:\+?216[\s.-]?)?[24579]\d[\s.-]?\d{3}[\s.-]?\d{3}\b/, ' ') : text
-  const match = withoutPhone.match(/\b([1-9]\d?)\b/)
-  return match ? Number(match[1]) : 1
-}
-
-function extractCustomerName(text: string, product: ProductPromptRecord, phone: string | null) {
-  const productName = product.name
-  const productTokens = normalizeExactProductName(productName).split(/\s+/).filter(Boolean)
-  const variantTokens = new Set(product.variants.flatMap((variant) => [
-    normalizeExactProductName(variant.name),
-    ...variant.values.map((value) => normalizeExactProductName(value)),
-  ]).filter(Boolean))
-  const phoneDigits = phone?.replace(/\D/g, '') ?? ''
-  const ignoredTokens = new Set(['oui', 'yes', 'commande', 'commander', 'order', 'acheter', 'passer', 'la', 'le', 'un', 'une', 'pour'])
-
-  const tokens = text
-    .replace(/[^\p{L}\p{N}\s+]/gu, ' ')
-    .split(/\s+/)
-    .map((token) => token.trim())
-    .filter(Boolean)
-    .filter((token) => {
-      const normalized = normalizeExactProductName(token)
-      const digits = token.replace(/\D/g, '')
-      if (!normalized) return false
-      if (/^\d+$/.test(normalized)) return false
-      if (phoneDigits && digits && phoneDigits.includes(digits)) return false
-      if (productTokens.includes(normalized)) return false
-      if (variantTokens.has(normalized)) return false
-      return !ignoredTokens.has(normalized)
-    })
-
-  return tokens.slice(-3).join(' ') || null
-}
-
-function extractVariantNotes(message: string, product: ProductPromptRecord) {
-  if (product.variants.length === 0) return null
-
-  const normalizedMessage = normalizeExactProductName(message)
-  const messageTokens = new Set(normalizedMessage.split(/\s+/).filter(Boolean))
-  const selections = product.variants.flatMap((variant) => {
-    const selectedValue = variant.values.find((value) => {
-      const normalizedValue = normalizeExactProductName(value)
-      return normalizedValue.length <= 2 ? messageTokens.has(normalizedValue) : normalizedMessage.includes(normalizedValue)
-    })
-    return selectedValue ? [`${variant.name}: ${selectedValue}`] : []
-  })
-
-  return selections.length === product.variants.length ? selections.join(', ') : null
-}
-
-function findCompleteOrderRequest(message: string, products: ProductPromptRecord[], contextProductName?: string | null) {
-  const product = getMatchedProduct(message, products)
-    ?? (contextProductName ? products.find((item) => item.name === contextProductName) ?? null : null)
-  if (!product) return null
-
-  const variantNotes = extractVariantNotes(message, product)
-  if (product.variants.length > 0 && !variantNotes) return null
-
-  const phone = extractPhone(message)
-  if (!phone) return null
-
-  const customerName = extractCustomerName(message, product, phone)
-  if (!customerName) return null
-
-  return {
-    customerName,
-    phone,
-    product,
-    quantity: extractQuantity(message, phone),
-    variantNotes,
-  }
-}
-
-function findCompleteOrderInHistory(history: AiChatMessage[], products: ProductPromptRecord[], contextProductName?: string | null) {
-  for (const message of [...history].reverse()) {
-    if (message.role !== 'user') continue
-    const orderRequest = findCompleteOrderRequest(message.content, products, contextProductName)
-    if (orderRequest) return orderRequest
-  }
-
-  return null
-}
-
-function buildOrderConfirmationReply(orderRequest: NonNullable<ReturnType<typeof findCompleteOrderRequest>>) {
-  const variant = orderRequest.variantNotes ? ` (${orderRequest.variantNotes})` : ''
-  return `Merci ${orderRequest.customerName}, votre commande pour ${orderRequest.quantity} x ${orderRequest.product.name}${variant} est confirmee. Nous vous contacterons rapidement si une precision est necessaire. Bonne journee.`
+function buildOrderCreatedReply(slots: OrderSlots) {
+  return `Merci ${slots.customerName ?? ''}, votre commande pour ${slots.quantity} x ${slots.productName ?? 'le produit demande'} est confirmee. Nous vous contacterons rapidement si une precision est necessaire. Bonne journee.`
 }
 
 function getProductMediaExtraction(product: ProductPromptRecord | null) {
@@ -471,6 +392,68 @@ function getProductMediaExtraction(product: ProductPromptRecord | null) {
       position: image.position,
     })),
   }
+}
+
+async function loadConversationOrderSlots(conversationId?: string | null) {
+  if (!conversationId) return normalizeOrderSlots(null)
+
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    select: { orderSlots: true },
+  })
+
+  return normalizeOrderSlots(conversation?.orderSlots)
+}
+
+async function saveConversationOrderSlots(conversationId: string | null | undefined, slots: OrderSlots) {
+  if (!conversationId) return
+
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { orderSlots: toPrismaJson(slots) },
+  })
+}
+
+function buildSlotsFromHistory(history: AiChatMessage[], products: ProductPromptRecord[]) {
+  return history.reduce((slots, message) => {
+    if (message.role === 'user') {
+      return mergeOrderSlots(slots, extractOrderSlots(message.content, products, slots))
+    }
+
+    const normalized = normalizeForContext(message.content)
+    const product = getOrderProduct(slots, products)
+
+    if ((normalized.includes('confirmez avec oui') || normalized.includes('اكد بكلمة نعم')) && !getNextMissingSlot(slots, product)) {
+      return withSummaryShown(slots)
+    }
+    if (normalized.includes('nom complet') || normalized.includes('اسمك الكامل')) return withNextMissingSlot(slots, 'customerName')
+    if (normalized.includes('telephone') || normalized.includes('رقم هاتفك')) return withNextMissingSlot(slots, 'phone')
+    if (normalized.includes('quel produit') || normalized.includes('ما المنتج')) return withNextMissingSlot(slots, 'product')
+    if (normalized.includes('quelle taille') || normalized.includes('ما taille')) return withNextMissingSlot(slots, 'variant')
+
+    return slots
+  }, normalizeOrderSlots(null))
+}
+
+function buildSlotStatePrompt(slots: OrderSlots, nextMissingSlot: string | null) {
+  const lines = [
+    '',
+    'Etat conversation commande:',
+    `- Phase: ${slots.phase}`,
+    `- Produit identifie: ${slots.productName ?? '[manquant]'}`,
+    `- Variante: ${slots.variantNotes ?? '[manquant ou non requise]'}`,
+    `- Quantite: ${slots.quantity}`,
+    `- Nom client: ${slots.customerName ?? '[manquant]'}`,
+    `- Telephone: ${slots.phone ?? '[manquant]'}`,
+    `- Adresse livraison: ${slots.deliveryAddress ?? '[non fournie]'}`,
+    `- Prochaine information a demander: ${nextMissingSlot ?? '[aucune]'}`,
+    'Regles slot-state:',
+    '- Ne cree jamais de commande dans le fallback LLM.',
+    '- Si une information manque, pose uniquement la prochaine question naturelle.',
+    '- Si toutes les informations sont presentes, demande une confirmation explicite.',
+  ]
+
+  return lines.join('\n')
 }
 
 export async function generateAiReply(params: GenerateAiReplyParams): Promise<GenerateAiReplyResult> {
@@ -502,33 +485,109 @@ export async function generateAiReply(params: GenerateAiReplyParams): Promise<Ge
   const routed = await safeRouteIntent(trimmedMessage)
   const history = cleanHistory(params.history ?? [])
   const resolvedRoute = resolveRoutedContext(routed, trimmedMessage, history, products)
-  const completeOrderRequest = findCompleteOrderRequest(trimmedMessage, products, resolvedRoute.slots.productName)
-    ?? (isOrderConfirmation(trimmedMessage) ? findCompleteOrderInHistory(history, products, resolvedRoute.slots.productName) : null)
+  const storedSlots = params.conversationId
+    ? await loadConversationOrderSlots(params.conversationId)
+    : buildSlotsFromHistory(history, products)
+  const storedProduct = getOrderProduct(storedSlots, products)
 
-  if (completeOrderRequest) {
+  if (isExplicitOrderConfirmation(trimmedMessage, storedSlots) && !getNextMissingSlot(storedSlots, storedProduct)) {
     return {
-      reply: buildOrderConfirmationReply(completeOrderRequest),
+      reply: buildOrderCreatedReply(storedSlots),
       action: {
         type: 'order_complete',
-        customerName: completeOrderRequest.customerName,
-        phone: completeOrderRequest.phone,
+        customerName: storedSlots.customerName ?? undefined,
+        phone: storedSlots.phone ?? undefined,
         items: [{
-          productName: completeOrderRequest.product.name,
-          quantity: completeOrderRequest.quantity,
-          unitPrice: Number(completeOrderRequest.product.price),
+          productName: storedSlots.productName ?? '',
+          quantity: storedSlots.quantity,
+          unitPrice: Number(storedProduct?.price ?? 0),
         }],
-        notes: completeOrderRequest.variantNotes ?? undefined,
+        deliveryAddress: storedSlots.deliveryAddress ?? undefined,
+        notes: storedSlots.variantNotes ?? undefined,
       },
       extraction: {
         intent: 'order_complete',
-        ...getProductMediaExtraction(completeOrderRequest.product),
+        ...getProductMediaExtraction(storedProduct),
       },
       usage: null,
       limitExceeded: false,
     }
   }
 
-  if (shouldHandover(resolvedRoute.intent)) {
+  const mergedSlots = mergeOrderSlots(
+    storedSlots,
+    extractOrderSlots(trimmedMessage, products, storedSlots, resolvedRoute.slots),
+  )
+  const currentProduct = getOrderProduct(mergedSlots, products)
+  const nextMissingSlot = getNextMissingSlot(mergedSlots, currentProduct)
+  const questionIntent = ['product_inquiry', 'product_specific', 'price_inquiry', 'size_inquiry', 'delivery_inquiry', 'payment_inquiry'].includes(resolvedRoute.intent)
+  const orderRelevant = (storedSlots.phase !== 'browsing' && !questionIntent)
+    || isOrderSignal(trimmedMessage, resolvedRoute.intent)
+    || Boolean(storedSlots.productName && isShortConfirmation(trimmedMessage))
+
+  if (orderRelevant) {
+    if (nextMissingSlot) {
+      const collectingSlots = withNextMissingSlot(mergedSlots, nextMissingSlot)
+      await saveConversationOrderSlots(params.conversationId, collectingSlots)
+
+      const template = getTemplate(
+        'order_collect',
+        {
+          productName: collectingSlots.productName ?? '',
+          nextMissingSlot,
+          variantName: currentProduct?.variants[0]?.name ?? 'variante',
+        },
+        {
+          business,
+          products,
+          knowledge: parseKnowledgeConfig(business.botKnowledge),
+          outputLanguage: language,
+        },
+      )
+
+      return {
+        reply: template ?? fallback,
+        action: null,
+        extraction: { intent: 'order_collect', slots: collectingSlots, ...getProductMediaExtraction(currentProduct) },
+        usage: null,
+        limitExceeded: false,
+      }
+    }
+
+    const confirmingSlots = withSummaryShown(mergedSlots)
+    await saveConversationOrderSlots(params.conversationId, confirmingSlots)
+
+    const template = getTemplate(
+      'order_confirm',
+      {
+        productName: confirmingSlots.productName ?? '',
+        quantity: String(confirmingSlots.quantity),
+        customerName: confirmingSlots.customerName ?? '',
+        phone: confirmingSlots.phone ?? '',
+        variantNotes: confirmingSlots.variantNotes ?? '',
+      },
+      {
+        business,
+        products,
+        knowledge: parseKnowledgeConfig(business.botKnowledge),
+        outputLanguage: language,
+      },
+    )
+
+    return {
+      reply: template ?? fallback,
+      action: null,
+      extraction: { intent: 'order_confirm', slots: confirmingSlots, ...getProductMediaExtraction(currentProduct) },
+      usage: null,
+      limitExceeded: false,
+    }
+  }
+
+  if (mergedSlots.productName || mergedSlots.customerName || mergedSlots.phone) {
+    await saveConversationOrderSlots(params.conversationId, mergedSlots)
+  }
+
+  if (shouldHandover(resolvedRoute.intent, history, trimmedMessage)) {
     return {
       reply: getLocalizedHandoverReply(language),
       action: {
@@ -573,7 +632,7 @@ export async function generateAiReply(params: GenerateAiReplyParams): Promise<Ge
 
   if (template) {
     const templateProduct = ['product_specific', 'price_inquiry'].includes(resolvedRoute.intent)
-      ? getMatchedProduct(resolvedRoute.slots.productName ?? trimmedMessage, products)
+      ? getMatchedSlotProduct(resolvedRoute.slots.productName ?? trimmedMessage, products)
       : null
 
     return {
@@ -585,7 +644,12 @@ export async function generateAiReply(params: GenerateAiReplyParams): Promise<Ge
     }
   }
 
-  const systemPrompt = buildSystemPrompt(business, products)
+  const fallbackProduct = getOrderProduct(mergedSlots, products)
+  const fallbackNextSlot = getNextMissingSlot(mergedSlots, fallbackProduct)
+  const systemPrompt = truncateText(
+    `${buildSystemPrompt(business, products)}${buildSlotStatePrompt(mergedSlots, fallbackNextSlot)}`,
+    AI_CONFIG.MAX_SYSTEM_PROMPT_CHARS,
+  )
   const payload = await callGroq(systemPrompt, history, trimmedMessage)
   const rawContent = payload.choices?.[0]?.message?.content?.trim()
   const parsed = rawContent ? parseAiResponse(rawContent, trimmedMessage) : parseAiResponse(fallback, trimmedMessage)
