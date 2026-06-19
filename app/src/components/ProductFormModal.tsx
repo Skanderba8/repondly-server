@@ -134,7 +134,11 @@ export function ProductFormModal({ open, product, pending, onClose, onSave }: Pr
 
   useEffect(() => {
     if (open) {
-      setDraft(createDraft(product))
+      const timeoutId = window.setTimeout(() => {
+        setDraft(createDraft(product))
+      }, 0)
+
+      return () => window.clearTimeout(timeoutId)
     }
   }, [open, product])
 

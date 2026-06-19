@@ -18,9 +18,13 @@ export function ContactPanel({ contact }: ContactPanelProps) {
   const notesRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    setTags(contact.tags)
-    setNotes(contact.notes ?? '')
-    setFollowUp(false)
+    const timeoutId = window.setTimeout(() => {
+      setTags(contact.tags)
+      setNotes(contact.notes ?? '')
+      setFollowUp(false)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [contact.id, contact.tags, contact.notes])
 
   useEffect(() => {

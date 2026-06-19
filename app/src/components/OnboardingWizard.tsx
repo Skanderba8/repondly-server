@@ -526,7 +526,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                 <h2 className="mt-1 text-[20px] font-bold text-[color:var(--text-primary)]">Les informations de base</h2>
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <label className="nx-field">
-                    <span className="nx-label">Nom de l'entreprise</span>
+                    <span className="nx-label">Nom de l&apos;entreprise</span>
                     <input className="nx-input" value={business.name} onChange={(event) => setBusiness((current) => ({ ...current, name: event.target.value }))} />
                   </label>
                   <label className="nx-field">
@@ -534,7 +534,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                     <input className="nx-input" type="email" value={business.email} onChange={(event) => setBusiness((current) => ({ ...current, email: event.target.value }))} />
                   </label>
                   <label className="nx-field">
-                    <span className="nx-label">Type d'activite</span>
+                    <span className="nx-label">Type d&apos;activite</span>
                     <select className="nx-input" value={business.businessType} onChange={(event) => setBusiness((current) => ({ ...current, businessType: event.target.value }))}>
                       {activityOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -588,7 +588,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                       <div key={`${image.position}-${image.sizeBytes}`} className="relative aspect-square overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]">
                         <img src={image.dataUrl} alt="" className="h-full w-full object-cover" />
                         <span className="absolute bottom-2 left-2 rounded-[var(--radius-btn)] bg-[color:var(--bg-card)] px-2 py-1 text-[11px] font-semibold text-[color:var(--text-secondary)]">{image.category}</span>
-                        <button type="button" className="nx-btn nx-btn-ghost nx-btn-icon absolute right-2 top-2 bg-[color:var(--bg-card)]" onClick={() => removeBusinessImage(image.position)} aria-label="Retirer l'image">
+                        <button type="button" className="nx-btn nx-btn-ghost nx-btn-icon absolute right-2 top-2 bg-[color:var(--bg-card)]" onClick={() => removeBusinessImage(image.position)} aria-label="Retirer l&apos;image">
                           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
                       </div>
@@ -854,7 +854,7 @@ export function OnboardingWizard({ initialBusiness }: OnboardingWizardProps) {
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
-            <p className="mt-4 text-[13px] leading-6 text-[color:var(--text-secondary)]">La connexion automatique sera activee plus tard. Pour l'instant, Repondly va seulement enregistrer ce canal comme a preparer.</p>
+            <p className="mt-4 text-[13px] leading-6 text-[color:var(--text-secondary)]">La connexion automatique sera activee plus tard. Pour l&apos;instant, Repondly va seulement enregistrer ce canal comme a preparer.</p>
             <div className="mt-5 flex gap-2">
               <button type="button" className="nx-btn nx-btn-secondary flex-1" onClick={() => setActiveChannelModal(null)}>Passer</button>
               <button

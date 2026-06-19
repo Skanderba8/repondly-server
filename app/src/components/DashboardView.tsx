@@ -215,12 +215,12 @@ export function DashboardView({ stats, recentConversations, followUpConversation
             {recentConversations.length ? recentConversations.map((conversation) => (
               <ActivityRow key={conversation.id} conversation={conversation} />
             )) : (
-              <CompactEmptyState text="L'activité apparaîtra ici dès que vos canaux recevront des messages." />
+              <CompactEmptyState text="L&apos;activité apparaîtra ici dès que vos canaux recevront des messages." />
             )}
           </div>
           {recentConversations.length ? (
             <Link href="/inbox" className="nx-panel-link">
-              Voir toute l'activité
+              Voir toute l&apos;activité
               <ArrowRight size={15} aria-hidden="true" />
             </Link>
           ) : null}

@@ -1,7 +1,7 @@
 'use client'
 
 import type { KeyboardEvent } from 'react'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, ChevronDown, Ellipsis, Send, UserRoundCheck } from 'lucide-react'
@@ -82,10 +82,14 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
   const statusMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setDraft('')
-    setMessages(conversation.messages ?? [])
-    setStatus(conversation.status)
-    setIsStatusMenuOpen(false)
+    const timeoutId = window.setTimeout(() => {
+      setDraft('')
+      setMessages(conversation.messages ?? [])
+      setStatus(conversation.status)
+      setIsStatusMenuOpen(false)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [conversation.id, conversation.messages, conversation.status])
 
   useEffect(() => {
@@ -258,7 +262,21 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
     }
   }
 
-  let lastDayKey = ''
+  const messagesWithLayout = useMemo(
+    () => messages.map((message, index) => {
+      const key = dayKey(new Date(message.timestamp))
+      const previousMessage = messages[index - 1]
+      const previousKey = previousMessage ? dayKey(new Date(previousMessage.timestamp)) : ''
+      const nextMessage = messages[index + 1]
+
+      return {
+        message,
+        showDivider: key !== previousKey,
+        isGroupEnd: !nextMessage || nextMessage.direction !== message.direction || dayKey(new Date(nextMessage.timestamp)) !== key,
+      }
+    }),
+    [messages],
+  )
   const actionBanner = getActionBanner(conversation.summary)
   const ActionBannerIcon = actionBanner?.icon
 
@@ -332,12 +350,7 @@ export function InboxThread({ conversation, showBackButton = false, suggestions 
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto bg-[color:var(--bg-page)] px-4 py-4">
-          {messages.map((message, index) => {
-            const key = dayKey(new Date(message.timestamp))
-            const showDivider = key !== lastDayKey
-            lastDayKey = key
-            const nextMessage = messages[index + 1]
-            const isGroupEnd = !nextMessage || nextMessage.direction !== message.direction || dayKey(new Date(nextMessage.timestamp)) !== key
+          {messagesWithLayout.map(({ message, showDivider, isGroupEnd }, index) => {
             return (
               <div key={message.id} className="flex flex-col gap-1">
                 {showDivider ? (

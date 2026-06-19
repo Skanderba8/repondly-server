@@ -1,18 +1,20 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { usePWAInstall } from '@/lib/pwa/usePWAInstall'
 
 const DISMISSED_KEY = 'rp_install_dismissed'
 
 export function InstallBanner() {
   const { canInstall, install } = usePWAInstall()
-  const [dismissed, setDismissed] = useState(true)
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true
+    }
 
-  useEffect(() => {
-    setDismissed(localStorage.getItem(DISMISSED_KEY) === '1')
-  }, [])
+    return localStorage.getItem(DISMISSED_KEY) === '1'
+  })
 
   function dismiss() {
     localStorage.setItem(DISMISSED_KEY, '1')

@@ -10,7 +10,7 @@ type CookieToSet = {
 }
 
 export async function updateSupabaseSession(request: NextRequest) {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request,
   })
 

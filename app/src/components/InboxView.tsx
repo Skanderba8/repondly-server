@@ -42,7 +42,11 @@ export function InboxView({ businessId, conversations }: InboxViewProps) {
   const [query, setQuery] = useState('')
 
   useEffect(() => {
-    setLocalConversations(conversations)
+    const timeoutId = window.setTimeout(() => {
+      setLocalConversations(conversations)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [conversations])
 
   const handleNewMessage = useCallback((conversationId: string, preview: string) => {
@@ -93,13 +97,8 @@ export function InboxView({ businessId, conversations }: InboxViewProps) {
     })
   }, [activeTab, localConversations, query])
 
-  useEffect(() => {
-    if (!filteredConversations.some((conversation) => conversation.id === selectedId)) {
-      setSelectedId(filteredConversations[0]?.id ?? null)
-    }
-  }, [filteredConversations, selectedId])
-
-  const selectedConversation: Conversation | null = filteredConversations.find((conversation) => conversation.id === selectedId) ?? null
+  const visibleSelectedId = filteredConversations.some((conversation) => conversation.id === selectedId) ? selectedId : (filteredConversations[0]?.id ?? null)
+  const selectedConversation: Conversation | null = filteredConversations.find((conversation) => conversation.id === visibleSelectedId) ?? null
 
   return (
     <div className="nx-card flex h-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -142,7 +141,7 @@ export function InboxView({ businessId, conversations }: InboxViewProps) {
             {filteredConversations.map((conversation) => (
               <div key={conversation.id}>
                 <div className="block md:hidden"><ConversationCard conversation={conversation} isSelected={false} onClick={() => router.push(`/inbox/${conversation.id}`)} /></div>
-                <div className="hidden md:block"><ConversationCard conversation={conversation} isSelected={conversation.id === selectedId} onClick={() => setSelectedId(conversation.id)} /></div>
+                <div className="hidden md:block"><ConversationCard conversation={conversation} isSelected={conversation.id === visibleSelectedId} onClick={() => setSelectedId(conversation.id)} /></div>
               </div>
             ))}
             {filteredConversations.length === 0 ? <EmptyState icon={<Inbox className="h-4 w-4" aria-hidden="true" />} title="Aucune conversation" description="Ce filtre ne contient pas encore de message correspondant." /> : null}

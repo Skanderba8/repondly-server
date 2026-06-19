@@ -74,7 +74,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Configuration"
         title="Paramètres"
-        description="Connectez WhatsApp et Instagram via Unipile pour recevoir les messages dans l'inbox Répondly."
+        description="Connectez WhatsApp et Instagram via Unipile pour recevoir les messages dans l&apos;inbox Répondly."
         actions={<SignOutButton className="inline-flex h-9 w-fit items-center rounded-[var(--radius-btn)] border border-[color:var(--border)] bg-[color:var(--bg-card)] px-3 text-[13px] font-medium text-[color:var(--danger)] transition-colors duration-150 hover:bg-[color:var(--danger-soft)]" />}
       />
       <SettingsPageClient
@@ -107,7 +107,7 @@ export default async function SettingsPage() {
       />
       <section className="nx-card mt-4 p-4 md:p-5">
         <h2 className="text-sm font-semibold text-[color:var(--text-primary)]">Compte</h2>
-        <p className="mt-2 text-sm text-[color:var(--text-secondary)]">Session active jusqu'au {new Date(session.sessionExpiresAt).toLocaleString('fr-FR')}</p>
+        <p className="mt-2 text-sm text-[color:var(--text-secondary)]">Session active jusqu&apos;au {new Date(session.sessionExpiresAt).toLocaleString('fr-FR')}</p>
       </section>
     </>
   )

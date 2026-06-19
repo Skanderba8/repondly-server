@@ -295,11 +295,11 @@ export function SettingsPageClient({ initialBusiness, initialChannels }: Setting
           <p className="mt-1 text-[12.5px] text-[color:var(--text-secondary)]">Informations visibles dans votre espace Répondly.</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Nom de l'entreprise<Input value={business.name} onChange={(event) => updateBusinessField('name', event.target.value)} placeholder="Nom de l'entreprise" /></label>
+          <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Nom de l&apos;entreprise<Input value={business.name} onChange={(event) => updateBusinessField('name', event.target.value)} placeholder="Nom de l&apos;entreprise" /></label>
           <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">Téléphone<Input value={business.phone} onChange={(event) => updateBusinessField('phone', event.target.value)} placeholder="Téléphone" /></label>
           <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)] md:col-span-2">Email<Input value={business.email} onChange={(event) => updateBusinessField('email', event.target.value)} placeholder="Email" type="email" /></label>
           <label className="nx-field text-[12px] font-medium text-[color:var(--text-secondary)]">
-            Type d'activité
+            Type d&apos;activité
             <select
               value={selectedActivity}
               onChange={(event) => updateBusinessField('businessType', event.target.value === 'other' ? '' : event.target.value)}

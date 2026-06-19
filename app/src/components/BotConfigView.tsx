@@ -769,7 +769,7 @@ export function BotConfigView({ config }: BotConfigViewProps) {
               <div className="nx-field mt-4">
                 <label className="nx-label" htmlFor="bot-handoff">Mots cles supplementaires</label>
                 <input id="bot-handoff" className="nx-input" value={draft.botHandoffKeywords} onChange={(event) => setDraft({ ...draft, botHandoffKeywords: event.target.value })} />
-                <p className="mt-2 text-[12px] text-[color:var(--text-secondary)]">Recommande: oui. Le bot transfere s'il ne comprend pas, s'il manque une information ou si le client demande un humain.</p>
+                <p className="mt-2 text-[12px] text-[color:var(--text-secondary)]">Recommande: oui. Le bot transfere s&apos;il ne comprend pas, s&apos;il manque une information ou si le client demande un humain.</p>
               </div>
             ) : null}
           </div>
@@ -832,7 +832,7 @@ export function BotConfigView({ config }: BotConfigViewProps) {
               <div className="mb-1 flex items-start gap-2 rounded-[var(--radius-btn)] border border-[color:var(--warning)] bg-[color:var(--warning-soft)] px-3 py-2 text-[12.5px] text-[color:var(--warning)]">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 <div>
-                  <p className="font-semibold">Cette conversation a besoin d'un agent.</p>
+                  <p className="font-semibold">Cette conversation a besoin d&apos;un agent.</p>
                   <p className="mt-0.5">Raison: {handoverNotice.reason}</p>
                 </div>
               </div>

@@ -56,7 +56,6 @@ export function CreateOrderModal({ open, pending, onClose, onCreate }: CreateOrd
     }
 
     if (!deferredQuery.trim() || selectedContact) {
-      setResults([])
       return
     }
 
@@ -85,19 +84,25 @@ export function CreateOrderModal({ open, pending, onClose, onCreate }: CreateOrd
       return
     }
 
-    setQuery('')
-    setResults([])
-    setSelectedContact(null)
-    setItems([createDraftItem(0)])
-    setDeliveryMethod('')
-    setDeliveryAddress('')
-    setPaymentStatus('PAS_ENCORE')
-    setNotes('')
+    const timeoutId = window.setTimeout(() => {
+      setQuery('')
+      setResults([])
+      setSelectedContact(null)
+      setItems([createDraftItem(0)])
+      setDeliveryMethod('')
+      setDeliveryAddress('')
+      setPaymentStatus('PAS_ENCORE')
+      setNotes('')
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [open])
 
   if (!open) {
     return null
   }
+
+  const visibleResults = deferredQuery.trim() && !selectedContact ? results : []
 
   return (
     <div className="nx-modal-backdrop" role="dialog" aria-modal="true">
@@ -129,9 +134,9 @@ export function CreateOrderModal({ open, pending, onClose, onCreate }: CreateOrd
                   aria-label="Rechercher un contact"
                 />
               </label>
-              {!selectedContact && results.length > 0 ? (
+              {visibleResults.length > 0 ? (
                 <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-10 overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--bg-card)] shadow-[var(--shadow-dropdown)]">
-                  {results.map((contact) => (
+                  {visibleResults.map((contact) => (
                     <button
                       key={contact.id}
                       type="button"

@@ -37,11 +37,15 @@ export function OrderDetailModal({ open, order, pending, onClose, onSave, onCanc
       return
     }
 
-    setStatus(order.status)
-    setPaymentStatus(order.paymentStatus)
-    setDeliveryMethod(order.deliveryMethod ?? '')
-    setDeliveryAddress(order.deliveryAddress ?? '')
-    setNotes(order.notes ?? '')
+    const timeoutId = window.setTimeout(() => {
+      setStatus(order.status)
+      setPaymentStatus(order.paymentStatus)
+      setDeliveryMethod(order.deliveryMethod ?? '')
+      setDeliveryAddress(order.deliveryAddress ?? '')
+      setNotes(order.notes ?? '')
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [open, order])
 
   if (!open || !order) {

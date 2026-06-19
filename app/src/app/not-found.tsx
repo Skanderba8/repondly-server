@@ -6,9 +6,9 @@ export default function NotFound() {
       <section className="nx-card w-full max-w-[380px] p-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[color:var(--text-muted)]">404</p>
         <h1 className="mt-3 text-[22px] font-semibold text-[color:var(--text-primary)]">Page introuvable</h1>
-        <p className="mt-2 text-[13.5px] leading-[1.55] text-[color:var(--text-secondary)]">Cette page n'existe pas ou a été déplacée.</p>
+        <p className="mt-2 text-[13.5px] leading-[1.55] text-[color:var(--text-secondary)]">Cette page n&apos;existe pas ou a été déplacée.</p>
         <Link href="/inbox" className="nx-btn nx-btn-primary mt-5">
-          Retour à l'inbox
+          Retour à l&apos;inbox
         </Link>
       </section>
     </main>
