@@ -60,10 +60,10 @@ function parseVariants(value: unknown): Prisma.InputJsonValue | typeof Prisma.Js
     .filter((item) => isRecord(item) && typeof item.name === 'string' && Array.isArray(item.values))
     .map((item) => ({
       name: item.name.trim().slice(0, 40),
-      values: item.values
-        .filter((option): option is string => typeof option === 'string')
-        .map((option) => option.trim().slice(0, 40))
-        .filter(Boolean)
+      values: (item.values as unknown[])
+        .filter((option: unknown): option is string => typeof option === 'string')
+        .map((option: string) => option.trim().slice(0, 40))
+        .filter((option: string) => option.length > 0)
         .slice(0, 20),
     }))
     .filter((item) => item.name && item.values.length > 0)

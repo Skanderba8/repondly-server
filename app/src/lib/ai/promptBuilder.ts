@@ -179,7 +179,7 @@ function parseProductVariants(value: unknown): ProductVariant[] {
     .filter((item) => isRecord(item) && typeof item.name === 'string' && Array.isArray(item.values))
     .map((item) => ({
       name: truncateText(item.name, 40),
-      values: item.values.filter((option): option is string => typeof option === 'string').map((option) => truncateText(option, 40)).filter(Boolean),
+      values: (item.values as unknown[]).filter((option: unknown): option is string => typeof option === 'string').map((option: string) => truncateText(option, 40)).filter((option: string) => option.length > 0),
     }))
     .filter((item) => item.name && item.values.length > 0)
 

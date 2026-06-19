@@ -27,7 +27,7 @@ function parseVariants(value: unknown): ProductVariant[] {
     .filter((item) => isRecord(item) && typeof item.name === 'string' && Array.isArray(item.values))
     .map((item) => ({
       name: item.name.trim(),
-      values: item.values.filter((option): option is string => typeof option === 'string').map((option) => option.trim()).filter(Boolean),
+      values: (item.values as unknown[]).filter((option: unknown): option is string => typeof option === 'string').map((option: string) => option.trim()).filter((option: string) => option.length > 0),
     }))
     .filter((item) => item.name && item.values.length > 0)
 
