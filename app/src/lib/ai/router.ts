@@ -48,11 +48,11 @@ Intents:
 - greeting: only hello, bonjour, salam, hi without another request.
 - product_inquiry: asks what products/services are available.
 - product_specific: asks details about a named product/service.
-- price_inquiry: asks price, cost, 9adeh, ch7al, combien.
+- price_inquiry: asks price, cost, 9adeh, ch7al, soum, souma, combien.
 - size_inquiry: asks size, dimension, taille, pointure, variant.
-- delivery_inquiry: asks delivery, shipping, livraison, tawsil.
+- delivery_inquiry: asks delivery, shipping, livraison, tawsil, tou9sel, tnajmou touslou.
 - payment_inquiry: asks payment methods, cash, card, paiement.
-- order_start: wants to buy, order, reserve, commander.
+- order_start: wants to buy, order, reserve, commander, nheb ncommandi, n7eb ne5ou.
 - order_name: sends or asks about customer name during ordering.
 - order_phone: sends or asks about phone number during ordering.
 - negotiation: asks for discount, lower price, bargain.

@@ -1,6 +1,6 @@
-﻿// Deterministic structured templates for common bot intents.
-// French is the default output language; Arabic is used only for pure Arabic-script input.
-import { type CustomerLanguage } from '@/lib/ai/language'
+// Deterministic structured templates for common bot intents.
+// Product, delivery, payment, and order facts come only from trusted business context.
+import { isTunisianLanguage, type CustomerLanguage } from '@/lib/ai/language'
 import { type KnowledgeConfig, type ProductPromptRecord, type PromptBusiness } from '@/lib/ai/promptBuilder'
 
 export type BusinessContext = {
@@ -24,7 +24,7 @@ function tokenize(value: string) {
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .split(/\s+/)
     .map((token) => token.replace(/s$/, ''))
-    .filter((token) => token.length > 1)
+    .filter((token) => token.length > 1 && !['des', 'les', 'vos', 'vot', 'avec', 'and', 'the', 'pour', 'eli'].includes(token))
 }
 
 function tokenMatches(queryToken: string, productToken: string) {
@@ -38,15 +38,20 @@ function tokenMatches(queryToken: string, productToken: string) {
 }
 
 function getMatchingProducts(slots: Record<string, string>, products: ProductPromptRecord[]) {
-  const queryTokens = tokenize(slots.productName ?? '')
-  if (queryTokens.length === 0) return products.slice(0, 4)
+  const productTokenGroups = products.map((product) => ({ product, tokens: tokenize(product.name) }))
+  const rawQueryTokens = tokenize(slots.productName ?? '')
+  const queryTokens = rawQueryTokens.filter((token) => productTokenGroups.some((item) => item.tokens.some((productToken) => tokenMatches(token, productToken))))
+  if (queryTokens.length === 0) return products.slice(0, 3)
 
-  return products
-    .filter((product) => {
-      const productTokens = tokenize(product.name)
-      return queryTokens.every((token) => productTokens.some((productToken) => tokenMatches(token, productToken)))
+  return productTokenGroups
+    .map((item) => {
+      const score = queryTokens.filter((token) => item.tokens.some((productToken) => tokenMatches(token, productToken))).length
+      return { product: item.product, score }
     })
-    .slice(0, 4)
+    .filter((item) => item.score === queryTokens.length)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.product)
+    .slice(0, 3)
 }
 
 function getProduct(slots: Record<string, string>, products: ProductPromptRecord[]) {
@@ -63,52 +68,15 @@ function formatAmount(value: { toFixed: (digits: number) => string }) {
   return `${value.toFixed(2)} DT`
 }
 
-function formatOrderTotal(product: ProductPromptRecord | null, quantity: number) {
-  if (!product) return null
-
-  const itemsTotal = Number(product.price) * quantity
-  const deliveryFee = Number(product.deliveryFee)
-  const total = itemsTotal + deliveryFee
-
-  return {
-    itemLine: `${quantity} x ${product.name}: ${itemsTotal.toFixed(2)} DT`,
-    deliveryLine: deliveryFee > 0 ? `Livraison: ${deliveryFee.toFixed(2)} DT` : null,
-    totalLine: `Total: ${total.toFixed(2)} DT`,
-  }
-}
-
-function getFrenchOrderQuestion(slots: Record<string, string>, product: ProductPromptRecord | null) {
-  const nextMissingSlot = slots.nextMissingSlot
-
-  if (nextMissingSlot === 'product') return 'Quel produit souhaitez-vous commander ?'
-  if (nextMissingSlot === 'variant') {
-    const variantName = slots.variantName || product?.variants[0]?.name || 'variante'
-    return `Quelle ${variantName.toLowerCase()} souhaitez-vous ?`
-  }
-  if (nextMissingSlot === 'customerName') return 'Parfait. Quel est votre nom complet ?'
-  if (nextMissingSlot === 'phone') return 'Merci. Quel est votre numero de telephone ?'
-
-  return null
-}
-
-function getArabicOrderQuestion(slots: Record<string, string>, product: ProductPromptRecord | null) {
-  const nextMissingSlot = slots.nextMissingSlot
-
-  if (nextMissingSlot === 'product') return 'Ù…Ø§ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø°ÙŠ ØªØ±ÙŠØ¯ Ø·Ù„Ø¨Ù‡ØŸ'
-  if (nextMissingSlot === 'variant') {
-    const variantName = slots.variantName || product?.variants[0]?.name || 'Ø§Ù„Ø®ÙŠØ§Ø±'
-    return `Ù…Ø§ ${variantName} Ø§Ù„Ø°ÙŠ ØªØ±ÙŠØ¯Ù‡ØŸ`
-  }
-  if (nextMissingSlot === 'customerName') return 'ØªÙ…Ø§Ù…. Ù…Ø§ Ø§Ø³Ù…Ùƒ Ø§Ù„ÙƒØ§Ù…Ù„ØŸ'
-  if (nextMissingSlot === 'phone') return 'Ø´ÙƒØ±Ø§. Ù…Ø§ Ø±Ù‚Ù… Ù‡Ø§ØªÙÙƒØŸ'
-
-  return null
-}
-
 function listProducts(products: ProductPromptRecord[]) {
-  const names = products.map((product) => product.name)
-  if (names.length === 0) return null
-  return names.join(', ')
+  if (products.length === 0) return null
+
+  return products.map((product) => {
+    const variants = formatVariants(product)
+    const variantLine = variants ? ` | Variantes: ${variants}` : ''
+    const deliveryLine = Number(product.deliveryFee) > 0 ? ` | Livraison: ${formatAmount(product.deliveryFee)}` : ''
+    return `${product.name} | Prix: ${formatAmount(product.price)}${variantLine}${deliveryLine}`
+  }).join('\n')
 }
 
 function formatVariants(product: ProductPromptRecord | null) {
@@ -132,152 +100,129 @@ function formatVariants(product: ProductPromptRecord | null) {
     .join(' | ')
 }
 
-function formatDeliveryFr(context: BusinessContext) {
-  if (!context.knowledge.delivery.enabled) return 'La livraison n est pas disponible actuellement.'
+function formatVariantOptions(product: ProductPromptRecord | null) {
+  if (!product || product.variants.length === 0) return null
+  return product.variants
+    .map((variant) => `${variant.name}: ${variant.values.join(', ')}`)
+    .join(' | ')
+}
+
+function formatOrderTotal(product: ProductPromptRecord | null, quantity: number) {
+  if (!product) return null
+
+  const itemsTotal = Number(product.price) * quantity
+  const deliveryFee = Number(product.deliveryFee)
+  const total = itemsTotal + deliveryFee
+
+  return {
+    itemLine: `${quantity} x ${product.name}: ${itemsTotal.toFixed(2)} DT`,
+    deliveryLine: deliveryFee > 0 ? `Livraison: ${deliveryFee.toFixed(2)} DT` : null,
+    totalLine: `Total: ${total.toFixed(2)} DT`,
+  }
+}
+
+function formatDelivery(context: BusinessContext, tunisian: boolean) {
+  if (!context.knowledge.delivery.enabled) return tunisian ? 'Livraison mech disponible tawa.' : 'La livraison n est pas disponible actuellement.'
+
   const enabledZones = context.knowledge.delivery.zones.filter((zone) => zone.enabled)
-  if (enabledZones.length === 0) return 'La livraison est disponible, mais les zones et frais doivent etre confirmes.'
+  if (enabledZones.length === 0) {
+    return tunisian ? 'Livraison disponible, ama les zones w frais lezim net2akdou menhom.' : 'La livraison est disponible, mais les zones et frais doivent etre confirmes.'
+  }
 
   return enabledZones
     .slice(0, 3)
     .map((zone) => {
-      const location = zone.location || 'zone non precisee'
-      const price = zone.price ? `${zone.price} DT` : 'frais a confirmer'
+      const location = zone.location || (tunisian ? 'zone mech mhadeda' : 'zone non precisee')
+      const price = zone.price ? `${zone.price} DT` : (tunisian ? 'frais a confirmer' : 'frais a confirmer')
       return `${location}: ${price}`
     })
     .join(' | ')
 }
 
-function formatDeliveryAr(context: BusinessContext) {
-  if (!context.knowledge.delivery.enabled) return 'Ø§Ù„ØªÙˆØµÙŠÙ„ ØºÙŠØ± Ù…ØªÙˆÙØ± Ø­Ø§Ù„ÙŠØ§.'
-  const enabledZones = context.knowledge.delivery.zones.filter((zone) => zone.enabled)
-  if (enabledZones.length === 0) return 'Ø§Ù„ØªÙˆØµÙŠÙ„ Ù…ØªÙˆÙØ±ØŒ Ù„ÙƒÙ† Ø§Ù„Ù…Ù†Ø§Ø·Ù‚ ÙˆØ§Ù„Ø±Ø³ÙˆÙ… ØªØ­ØªØ§Ø¬ Ø¥Ù„Ù‰ ØªØ£ÙƒÙŠØ¯.'
-
-  return enabledZones
-    .slice(0, 3)
-    .map((zone) => {
-      const location = zone.location || 'Ù…Ù†Ø·Ù‚Ø© ØºÙŠØ± Ù…Ø­Ø¯Ø¯Ø©'
-      const price = zone.price ? `${zone.price} DT` : 'Ø§Ù„Ø±Ø³ÙˆÙ… ØªØ­ØªØ§Ø¬ Ø¥Ù„Ù‰ ØªØ£ÙƒÙŠØ¯'
-      return `${location}: ${price}`
-    })
-    .join(' | ')
-}
-
-function formatPaymentsFr(context: BusinessContext) {
+function formatPayments(context: BusinessContext, tunisian: boolean) {
   const methods = [
-    context.knowledge.paymentMethods.cashDelivery ? 'paiement a la livraison' : null,
-    context.knowledge.paymentMethods.onSite ? 'paiement sur place' : null,
-    context.knowledge.paymentMethods.card ? 'paiement par carte' : null,
+    context.knowledge.paymentMethods.cashDelivery ? (tunisian ? 'cash 3and livraison' : 'paiement a la livraison') : null,
+    context.knowledge.paymentMethods.onSite ? (tunisian ? 'sur place' : 'paiement sur place') : null,
+    context.knowledge.paymentMethods.card ? (tunisian ? 'carte' : 'paiement par carte') : null,
   ].filter(Boolean)
 
   return methods.length > 0 ? methods.join(', ') : null
 }
 
-function formatPaymentsAr(context: BusinessContext) {
-  const methods = [
-    context.knowledge.paymentMethods.cashDelivery ? 'Ø§Ù„Ø¯ÙØ¹ Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù…' : null,
-    context.knowledge.paymentMethods.onSite ? 'Ø§Ù„Ø¯ÙØ¹ ÙÙŠ Ø§Ù„Ù…Ø­Ù„' : null,
-    context.knowledge.paymentMethods.card ? 'Ø§Ù„Ø¯ÙØ¹ Ø¨Ø§Ù„Ø¨Ø·Ø§Ù‚Ø©' : null,
-  ].filter(Boolean)
+function formatMissingFields(slots: Record<string, string>, product: ProductPromptRecord | null, tunisian: boolean) {
+  const missingSlots = (slots.missingSlots || slots.nextMissingSlot || '').split(',').map((slot) => slot.trim()).filter(Boolean)
+  const fields = missingSlots.map((slot) => {
+    if (slot === 'product') return tunisian ? 'produit eli t7eb tcommandih' : 'le produit souhaite'
+    if (slot === 'variant') {
+      const variantName = slots.variantName || product?.variants[0]?.name || 'variante'
+      const options = formatVariantOptions(product)
+      const label = tunisian ? `${variantName.toLowerCase()} eli t7ebha` : `la ${variantName.toLowerCase()} souhaitee`
+      return options ? `${label} (${options})` : label
+    }
+    if (slot === 'customerName') return tunisian ? 'esm el client' : 'le nom complet'
+    if (slot === 'phone') return tunisian ? 'numero telephone' : 'le numero de telephone'
+    if (slot === 'deliveryAddress') return tunisian ? 'adresse livraison' : 'l adresse de livraison'
+    return null
+  }).filter(Boolean)
 
-  return methods.length > 0 ? methods.join('ØŒ ') : null
+  if (fields.length === 0) return null
+  if (fields.length === 1) return fields[0]
+  return `${fields.slice(0, -1).join(', ')} ${tunisian ? 'w' : 'et'} ${fields.at(-1)}`
 }
 
-function getFrenchTemplate(intent: string, slots: Record<string, string>, product: ProductPromptRecord | null, products: string | null, context: BusinessContext) {
-  if (intent === 'greeting') {
-    return `Bonjour, bienvenue chez ${context.business.name}. Comment puis-je vous aider aujourd hui ?`
+function getOrderQuestion(slots: Record<string, string>, product: ProductPromptRecord | null, tunisian: boolean) {
+  const nextMissingSlot = slots.nextMissingSlot
+  const firstMessageGreeting = slots.isFirstMessage === 'true'
+    ? (tunisian ? 'Ahla, marhbe bik. ' : 'Bonjour, bienvenue. ')
+    : ''
+  const acknowledged = ''
+  const missingFields = formatMissingFields(slots, product, tunisian)
+
+  if (missingFields) {
+    return `${firstMessageGreeting}${acknowledged}${tunisian ? `Bech nconfirmi el commande, ab3athli ${missingFields}.` : `Pour confirmer la commande, envoyez-moi ${missingFields}.`}`
   }
 
-  if (intent === 'product_inquiry') {
-    if (!products) return null
-    return `Voici les options correspondantes: ${products}. Indiquez le produit exact qui vous interesse pour recevoir les details.`
+  if (nextMissingSlot === 'product') return `${acknowledged}${tunisian ? 'Chnowa t7eb tcommandi?' : 'Quel produit souhaitez-vous commander ?'}`
+  if (nextMissingSlot === 'variant') {
+    const variantName = slots.variantName || product?.variants[0]?.name || 'variante'
+    const options = formatVariantOptions(product)
+    const optionLine = options ? ` Options: ${options}.` : ''
+    return `${acknowledged}${tunisian ? `Anahi ${variantName.toLowerCase()} t7eb?${optionLine}` : `Quelle ${variantName.toLowerCase()} souhaitez-vous ?${optionLine}`}`
   }
-
-  if (intent === 'product_specific') {
-    if (!product) return null
-    const description = product.description ? `\n- Details: ${product.description}` : ''
-    const variants = formatVariants(product)
-    const variantLine = variants ? `\n- Variantes: ${variants}` : ''
-    return `${product.name}\n- Prix: ${formatAmount(product.price)}${description}${variantLine}\n\nJe vous envoie la photo. Est-ce bien le produit souhaite ?`
-  }
-
-  if (intent === 'price_inquiry') {
-    if (!product) return null
-    const variants = formatVariants(product)
-    const variantLine = variants ? `\n- Variantes: ${variants}` : ''
-    return `${product.name}\n- Prix: ${formatAmount(product.price)}${variantLine}\n\nJe vous envoie la photo. Est-ce bien le produit souhaite ?`
-  }
-
-  if (intent === 'size_inquiry') {
-    const variants = formatVariants(product)
-    return variants ? `Variantes disponibles pour ${product?.name}:\n- ${variants}` : null
-  }
-
-  if (intent === 'delivery_inquiry') {
-    return `Informations livraison:\n- ${formatDeliveryFr(context)}`
-  }
-
-  if (intent === 'payment_inquiry') {
-    const payments = formatPaymentsFr(context)
-    if (!payments) return null
-    return `Modes de paiement disponibles:\n- ${payments}`
-  }
-
-  if (intent === 'negotiation') {
-    return 'Je comprends. Le prix reflete la qualite du produit et le service inclus. Si vous voulez, je peux vous aider a choisir l option la plus adaptee a votre budget.'
-  }
-
-  if (intent === 'complaint') {
-    return 'Je suis desole pour ce souci. Donnez-moi le detail du probleme et je vais vous orienter vers la meilleure solution.'
-  }
-
-  if (intent === 'order_collect') {
-    return getFrenchOrderQuestion(slots, product)
-  }
-
-  if (intent === 'order_confirm') {
-    const quantity = Math.max(1, Number(slots.quantity || 1))
-    const totals = formatOrderTotal(product, quantity)
-    if (!product || !totals) return null
-
-    const variantLine = slots.variantNotes ? `\nVariante: ${slots.variantNotes}` : ''
-    const deliveryLine = totals.deliveryLine ? `\n${totals.deliveryLine}` : ''
-    return `Votre commande:\n${totals.itemLine}${variantLine}\nNom: ${slots.customerName}\nTelephone: ${slots.phone}${deliveryLine}\n${totals.totalLine}\n\nConfirmez avec oui ou dites-moi ce que vous voulez changer.`
-  }
-
-  if (intent === 'order_start') {
-    return product?.variants.length ? `Quelle ${product.variants[0].name.toLowerCase()} souhaitez-vous ?` : 'Parfait. Quel est votre nom complet ?'
-  }
-
-  if (intent === 'order_name') {
-    return 'Merci. Quel est votre numero de telephone ?'
-  }
-
-  if (intent === 'order_phone') {
-    return product ? 'Merci. Je vous prepare le recapitulatif de la commande.' : 'Merci. Quel produit souhaitez-vous commander ?'
-  }
+  if (nextMissingSlot === 'customerName') return `${acknowledged}${tunisian ? 'Chnowa esm el client?' : 'Quel est votre nom complet ?'}`
+  if (nextMissingSlot === 'phone') return `${acknowledged}${tunisian ? 'Aatini numero telephone mte3ek.' : 'Quel est votre numero de telephone ?'}`
+  if (nextMissingSlot === 'deliveryAddress') return `${acknowledged}${tunisian ? 'Aatini adresse livraison.' : 'Quelle est l adresse de livraison ?'}`
 
   return null
 }
 
-function getArabicTemplate(intent: string, slots: Record<string, string>, product: ProductPromptRecord | null, products: string | null, context: BusinessContext) {
+function getLocalizedTemplate(intent: string, slots: Record<string, string>, product: ProductPromptRecord | null, products: string | null, context: BusinessContext) {
+  const tunisian = isTunisianLanguage(context.outputLanguage)
+
   if (intent === 'greeting') {
-    return `Ù…Ø±Ø­Ø¨Ø§ Ø¨Ùƒ ÙÙŠ ${context.business.name}. ÙƒÙŠÙ ÙŠÙ…ÙƒÙ†Ù†ÙŠ Ù…Ø³Ø§Ø¹Ø¯ØªÙƒ Ø§Ù„ÙŠÙˆÙ…ØŸ`
+    return tunisian ? `Ahla, marhbe bik chez ${context.business.name}. Kifeh najmou n3awnouk?` : `Bonjour, bienvenue chez ${context.business.name}. Comment puis-je vous aider aujourd hui ?`
   }
 
   if (intent === 'product_inquiry') {
     if (!products) return null
-    return `Ù‡Ø°Ù‡ Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„Ù…Ø·Ø§Ø¨Ù‚Ø©: ${products}. ÙŠØ±Ø¬Ù‰ ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø°ÙŠ ÙŠÙ‡Ù…Ùƒ Ù„Ø£Ø±Ø³Ù„ Ù„Ùƒ Ø§Ù„ØªÙØ§ØµÙŠÙ„.`
+    return tunisian
+      ? `Hedhom les options el mawjoudin:\n${products}\n\nChnouma t7eb menhom?`
+      : `Voici les options correspondantes:\n${products}\n\nLequel vous interesse ?`
   }
 
-  if (intent === 'product_specific') {
-    if (!product) return null
-    const description = product.description ? `\n- Ø§Ù„ØªÙØ§ØµÙŠÙ„: ${product.description}` : ''
-    return `${product.name}\n- Ø§Ù„Ø³Ø¹Ø±: ${formatAmount(product.price)}${description}`
-  }
+  if (intent === 'product_specific' || intent === 'price_inquiry') {
+    if (products?.includes('\n')) {
+      return tunisian
+        ? `Hedhom les options eli ymatchiw talabek:\n${products}\n\nChnouma t7eb menhom?`
+        : `Voici les options qui correspondent a votre demande:\n${products}\n\nLequel vous interesse ?`
+    }
 
-  if (intent === 'price_inquiry') {
     if (!product) return null
-    return `${product.name}\n- Ø§Ù„Ø³Ø¹Ø±: ${formatAmount(product.price)}\n\nÙ‡Ù„ ØªØ±ÙŠØ¯ ØªØ³Ø¬ÙŠÙ„ Ø·Ù„Ø¨ØŸ`
+    const description = product.description ? `\n- Details: ${product.description}` : ''
+    const variants = formatVariants(product)
+    const variantLine = variants ? `\n- Variantes: ${variants}` : ''
+    const photoLine = tunisian ? 'Taw nab3athlek photo. Houwa hedha el produit?' : 'Je vous envoie la photo. Est-ce bien le produit souhaite ?'
+    return `${product.name}\n- Prix: ${formatAmount(product.price)}${description}${variantLine}\n\n${photoLine}`
   }
 
   if (intent === 'size_inquiry') {
@@ -286,25 +231,29 @@ function getArabicTemplate(intent: string, slots: Record<string, string>, produc
   }
 
   if (intent === 'delivery_inquiry') {
-    return `Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„ØªÙˆØµÙŠÙ„:\n- ${formatDeliveryAr(context)}`
+    return tunisian ? `Livraison:\n- ${formatDelivery(context, true)}` : `Informations livraison:\n- ${formatDelivery(context, false)}`
   }
 
   if (intent === 'payment_inquiry') {
-    const payments = formatPaymentsAr(context)
+    const payments = formatPayments(context, tunisian)
     if (!payments) return null
-    return `Ø·Ø±Ù‚ Ø§Ù„Ø¯ÙØ¹ Ø§Ù„Ù…ØªÙˆÙØ±Ø©:\n- ${payments}`
+    return tunisian ? `Tnajjem tkhalles b: ${payments}` : `Modes de paiement disponibles:\n- ${payments}`
   }
 
   if (intent === 'negotiation') {
-    return 'Je comprends. Le prix reflete la qualite du produit et le service inclus. Je peux vous aider a choisir l option la plus adaptee a votre budget.'
+    return tunisian
+      ? 'Netfahmek. El prix marbout bel qualite w service. Najem n3awnek tal9a option a9reb lel budget mte3ek.'
+      : 'Je comprends. Le prix reflete la qualite du produit et le service inclus. Si vous voulez, je peux vous aider a choisir l option la plus adaptee a votre budget.'
   }
 
   if (intent === 'complaint') {
-    return 'Je suis desole pour ce souci. Donnez-moi le detail du probleme et je vais vous orienter vers la meilleure solution.'
+    return tunisian
+      ? 'Smahna 3al souci. Aatini details el probleme w taw norientiwk lel solution.'
+      : 'Je suis desole pour ce souci. Donnez-moi le detail du probleme et je vais vous orienter vers la meilleure solution.'
   }
 
   if (intent === 'order_collect') {
-    return getArabicOrderQuestion(slots, product)
+    return getOrderQuestion(slots, product, tunisian)
   }
 
   if (intent === 'order_confirm') {
@@ -313,21 +262,27 @@ function getArabicTemplate(intent: string, slots: Record<string, string>, produc
     if (!product || !totals) return null
 
     const variantLine = slots.variantNotes ? `\nVariante: ${slots.variantNotes}` : ''
+    const addressLine = slots.deliveryAddress ? `\nAdresse: ${slots.deliveryAddress}` : ''
     const deliveryLine = totals.deliveryLine ? `\n${totals.deliveryLine}` : ''
-    return `Votre commande:\n${totals.itemLine}${variantLine}\nNom: ${slots.customerName}\nTelephone: ${slots.phone}${deliveryLine}\n${totals.totalLine}\n\nConfirmez avec oui ou dites-moi ce que vous voulez changer.`
+    const confirmLine = tunisian ? 'Commande haka behya? Ken fama haja nbadlouha 9olli.' : 'Vous confirmez la commande ? Si vous voulez changer quelque chose, dites-moi.'
+    return `Votre commande:\n${totals.itemLine}${variantLine}\nNom: ${slots.customerName}\nTelephone: ${slots.phone}${addressLine}${deliveryLine}\n${totals.totalLine}\n\n${confirmLine}`
   }
 
   if (intent === 'order_start') {
-    const productLine = product ? `- Ø§Ù„Ù…Ù†ØªØ¬: ${product.name}` : '- Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨'
-    return `Ù„ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø·Ù„Ø¨ØŒ ÙŠØ±Ø¬Ù‰ Ø¥Ø±Ø³Ø§Ù„ Ù‡Ø°Ù‡ Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª:\n${productLine}\n- Ø§Ù„ÙƒÙ…ÙŠØ©\n- Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„\n- Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ`
+    if (product?.variants.length) {
+      return tunisian ? `Ahla, behi. Anahi ${product.variants[0].name.toLowerCase()} t7eb?` : `Bonjour, parfait. Quelle ${product.variants[0].name.toLowerCase()} souhaitez-vous ?`
+    }
+    return tunisian ? 'Ahla, behi. Chnowa esm el client?' : 'Bonjour, parfait. Quel est votre nom complet ?'
   }
 
   if (intent === 'order_name') {
-    return 'Ø´ÙƒØ±Ø§. Ù„Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø·Ù„Ø¨ØŒ ÙŠØ±Ø¬Ù‰ Ø¥Ø±Ø³Ø§Ù„:\n- Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ\n- Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨\n- Ø§Ù„ÙƒÙ…ÙŠØ©'
+    return tunisian ? 'Merci. Aatini numero telephone mte3ek.' : 'Merci. Quel est votre numero de telephone ?'
   }
 
   if (intent === 'order_phone') {
-    return 'Ø´ÙƒØ±Ø§. Ù„Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø·Ù„Ø¨ØŒ ÙŠØ±Ø¬Ù‰ Ø¥Ø±Ø³Ø§Ù„:\n- Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨\n- Ø§Ù„ÙƒÙ…ÙŠØ©'
+    return product
+      ? (tunisian ? 'Merci. Taw n7adherlek recap commande.' : 'Merci. Je vous prepare le recapitulatif de la commande.')
+      : (tunisian ? 'Merci. Chnowa el produit eli t7eb tcommandi?' : 'Merci. Quel produit souhaitez-vous commander ?')
   }
 
   return null
@@ -337,9 +292,5 @@ export function getTemplate(intent: string, slots: Record<string, string>, conte
   const product = getProduct(slots, context.products)
   const products = listProducts(getMatchingProducts(slots, context.products))
 
-  if (context.outputLanguage === 'AR') {
-    return getArabicTemplate(intent, slots, product, products, context)
-  }
-
-  return getFrenchTemplate(intent, slots, product, products, context)
+  return getLocalizedTemplate(intent, slots, product, products, context)
 }

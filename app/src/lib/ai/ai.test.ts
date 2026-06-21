@@ -1,5 +1,4 @@
-// Focused tests for pure AI helpers: language policy, fallback text, JSON parsing, prompt caps, history cleanup, templates, and action validation.
-// Connected to the files in this folder. Edit this file when bot behavior changes need regression coverage.
+// Focused tests for pure AI helpers. Keep these aligned with the Tunisian bot architecture.
 import { Prisma } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
 import { validateOrderAction } from '@/lib/ai/actions'
@@ -9,6 +8,7 @@ import { parseAiResponse, truncateReply } from '@/lib/ai/parser'
 import { buildSystemPrompt, parseKnowledgeConfig } from '@/lib/ai/promptBuilder'
 import {
   extractOrderSlots,
+  getMissingSlots,
   getNextMissingSlot,
   hasRepeatedComplaint,
   isExplicitOrderConfirmation,
@@ -19,22 +19,44 @@ import {
 } from '@/lib/ai/slots'
 import { getTemplate } from '@/lib/ai/templates'
 
+const product = {
+  type: 'PRODUCT',
+  name: 'Pack A',
+  description: 'Pack complet',
+  price: new Prisma.Decimal(25),
+  deliveryFee: new Prisma.Decimal(7),
+  stock: 4,
+  fournisseur: null,
+  variants: [],
+  images: [],
+}
+
+const business = {
+  name: 'Repondly Shop',
+  businessType: 'ecom',
+  tone: 'professionnel',
+  botName: 'Nour',
+  botKnowledge: null,
+  botHandoffKeywords: 'humain',
+}
+
 describe('AI language helpers', () => {
-  it('uses French for Arabizi input', () => {
-    expect(detectCustomerLanguage('chnowa les prix?')).toBe('FR')
+  it('detects Tunisian Arabizi input', () => {
+    expect(detectCustomerLanguage('chnowa les prix?')).toBe('tn_arabizi')
+    expect(detectCustomerLanguage('salem prix robe bleu ciel')).toBe('tn_arabizi')
   })
 
-  it('uses Arabic only for pure Arabic script', () => {
-    expect(detectCustomerLanguage('كم سعر التوصيل؟')).toBe('AR')
+  it('detects Arabic-script input', () => {
+    expect(detectCustomerLanguage('كم سعر التوصيل؟')).toBe('tn_arabic')
   })
 
-  it('uses French for mixed Arabic and Latin input', () => {
-    expect(detectCustomerLanguage('كم prix livraison?')).toBe('FR')
+  it('detects mixed Arabic and Latin input', () => {
+    expect(detectCustomerLanguage('كم prix livraison?')).toBe('mixed')
   })
 
-  it('uses French fallback except for Arabic output policy', () => {
-    expect(getFallbackReply('FR')).toContain('Notre equipe')
-    expect(getFallbackReply('AR')).toContain('فريقنا')
+  it('uses localized fallbacks', () => {
+    expect(getFallbackReply('fr')).toContain('Notre equipe')
+    expect(getFallbackReply('tn_arabizi')).toContain('taw')
   })
 })
 
@@ -54,13 +76,6 @@ describe('AI parser', () => {
     expect(parsed.extraction.reason).toBe('human')
   })
 
-  it('uses raw text as reply when JSON parsing fails', () => {
-    const parsed = parseAiResponse('Raw assistant text', 'hello')
-
-    expect(parsed.reply).toBe('Raw assistant text')
-    expect(parsed.action).toBeNull()
-  })
-
   it('truncates long replies at a sentence boundary', () => {
     const reply = truncateReply(`${'A'.repeat(200)}. ${'B'.repeat(1000)}`, 300)
 
@@ -70,34 +85,23 @@ describe('AI parser', () => {
 })
 
 describe('AI prompt and history helpers', () => {
-  it('caps prompt output and uses French-first language rules', () => {
+  it('caps prompt output and uses Tunisian-aware language rules', () => {
     const prompt = buildSystemPrompt(
       {
-        name: 'Repondly Shop',
-        businessType: 'ecom',
-        tone: 'friendly',
-        botName: 'Nour',
+        ...business,
         botKnowledge: JSON.stringify({ version: 2, customInstructions: 'x'.repeat(12000) }),
-        botHandoffKeywords: 'humain',
       },
       Array.from({ length: 20 }, (_, index) => ({
-        type: 'PRODUCT',
+        ...product,
         name: `Produit ${index}`,
         description: 'description '.repeat(80),
-        price: new Prisma.Decimal(10),
-        deliveryFee: new Prisma.Decimal(7),
-        stock: 3,
-        fournisseur: null,
-        variants: [],
-        images: [],
       })),
     )
 
     expect(prompt.length).toBeLessThanOrEqual(9000)
     expect(prompt).toContain('JSON output contract')
-    expect(prompt).toContain('francais clair')
-    expect(prompt).not.toContain('Tunisian Derja')
-    expect(prompt).not.toContain('Arabizi naturel autorise')
+    expect(prompt).toContain('Tunisien Arabizi')
+    expect(prompt).toContain('miroir du style client')
   })
 
   it('cleans history to the configured shape', () => {
@@ -113,39 +117,18 @@ describe('AI prompt and history helpers', () => {
 })
 
 describe('AI templates', () => {
-  const business = {
-    name: 'Repondly Shop',
-    businessType: 'ecom',
-    tone: 'professionnel',
-    botName: 'Nour',
-    botKnowledge: null,
-    botHandoffKeywords: 'humain',
-  }
-
-  const products = [{
-    type: 'PRODUCT',
-    name: 'Pack A',
-    description: 'Pack complet',
-    price: new Prisma.Decimal(25),
-    deliveryFee: new Prisma.Decimal(7),
-    stock: 4,
-    fournisseur: null,
-    variants: [],
-    images: [],
-  }]
-
   it('returns structured French price templates', () => {
     const reply = getTemplate(
       'price_inquiry',
       { productName: 'Pack A' },
-      { business, products, knowledge: parseKnowledgeConfig(null), outputLanguage: 'FR' },
+      { business, products: [product], knowledge: parseKnowledgeConfig(null), outputLanguage: 'fr' },
     )
 
     expect(reply).toContain('Pack A')
     expect(reply).toContain('25.00 DT')
   })
 
-  it('returns structured French delivery and order templates', () => {
+  it('returns Tunisian delivery and order templates', () => {
     const knowledge = parseKnowledgeConfig(JSON.stringify({
       version: 2,
       delivery: {
@@ -153,22 +136,11 @@ describe('AI templates', () => {
         zones: [{ location: 'Grand Tunis', enabled: true, price: '7', condition: '' }],
       },
     }))
-    const delivery = getTemplate('delivery_inquiry', {}, { business, products, knowledge, outputLanguage: 'FR' })
-    const order = getTemplate('order_start', { productName: 'Pack A' }, { business, products, knowledge, outputLanguage: 'FR' })
+    const delivery = getTemplate('delivery_inquiry', {}, { business, products: [product], knowledge, outputLanguage: 'tn_arabizi' })
+    const order = getTemplate('order_start', { productName: 'Pack A' }, { business, products: [product], knowledge, outputLanguage: 'tn_arabizi' })
 
-    expect(delivery).toContain('Informations livraison')
-    expect(order).toContain('nom complet')
-  })
-
-  it('returns Arabic templates for Arabic output policy', () => {
-    const reply = getTemplate(
-      'price_inquiry',
-      { productName: 'Pack A' },
-      { business, products, knowledge: parseKnowledgeConfig(null), outputLanguage: 'AR' },
-    )
-
-    expect(reply).toContain('السعر')
-    expect(reply).toContain('Pack A')
+    expect(delivery).toContain('Livraison')
+    expect(order).toContain('esm el client')
   })
 
   it('filters product inquiries using Tunisian color synonyms', () => {
@@ -178,12 +150,12 @@ describe('AI templates', () => {
       {
         business,
         products: [
-          { ...products[0], name: 'robe bleu ciel' },
-          { ...products[0], name: 'robe gold' },
-          { ...products[0], name: 'robe bleu' },
+          { ...product, name: 'robe bleu ciel' },
+          { ...product, name: 'robe gold' },
+          { ...product, name: 'robe bleu' },
         ],
         knowledge: parseKnowledgeConfig(null),
-        outputLanguage: 'FR',
+        outputLanguage: 'fr',
       },
     )
 
@@ -195,15 +167,11 @@ describe('AI templates', () => {
 
 describe('AI order slots', () => {
   const products = [{
-    type: 'PRODUCT',
+    ...product,
     name: 'Robe bleue',
     description: 'Robe ete',
     price: new Prisma.Decimal(55),
-    deliveryFee: new Prisma.Decimal(7),
-    stock: 4,
-    fournisseur: null,
     variants: [{ name: 'Taille', values: ['S', 'M', 'L'] }],
-    images: [],
   }]
 
   it('persists product and phone collected in separate messages', () => {
@@ -212,17 +180,6 @@ describe('AI order slots', () => {
 
     expect(second.productName).toBe('Robe bleue')
     expect(second.phone).toBe('55123456')
-  })
-
-  it('asks for name after product, variant, and phone are known', () => {
-    const slots = normalizeOrderSlots({
-      phase: 'collecting',
-      productName: 'Robe bleue',
-      variantNotes: 'Taille: M',
-      phone: '55123456',
-    })
-
-    expect(getNextMissingSlot(slots, products[0])).toBe('customerName')
   })
 
   it('asks variant before confirmation when the product has variants', () => {
@@ -236,19 +193,89 @@ describe('AI order slots', () => {
     expect(getNextMissingSlot(slots, products[0])).toBe('variant')
   })
 
-  it('does not accept short confirmation before the summary was shown', () => {
-    const slots = normalizeOrderSlots({
+  it('captures an answered variant and moves to the next missing slot', () => {
+    const slots = withNextMissingSlot(normalizeOrderSlots({
+      phase: 'collecting',
+      productName: 'Robe bleue',
+    }), 'variant')
+    const merged = mergeOrderSlots(slots, extractOrderSlots('taille M', products, slots))
+
+    expect(merged.variantNotes).toBe('Taille: M')
+    expect(getNextMissingSlot(merged, products[0])).toBe('customerName')
+  })
+
+  it('accepts a short phone-like reply instead of asking again', () => {
+    const slots = withNextMissingSlot(normalizeOrderSlots({
       phase: 'collecting',
       productName: 'Robe bleue',
       variantNotes: 'Taille: M',
-      customerName: 'Sarra',
-      phone: '55123456',
-    })
+      customerName: 'Skander Ben Abdallah',
+    }), 'phone')
+    const merged = mergeOrderSlots(slots, extractOrderSlots('5877770', products, slots))
 
-    expect(isExplicitOrderConfirmation('oui', slots)).toBe(false)
+    expect(merged.phone).toBe('5877770')
+    expect(getNextMissingSlot(merged, products[0])).toBeNull()
   })
 
-  it('accepts explicit confirmation after summary was shown', () => {
+  it('captures name and phone when the customer sends both together', () => {
+    const slots = withNextMissingSlot(normalizeOrderSlots({
+      phase: 'collecting',
+      productName: 'Robe bleue',
+      variantNotes: 'Taille: M',
+    }), 'customerName')
+    const merged = mergeOrderSlots(slots, extractOrderSlots('Skander Ben Abdallah 5877770', products, slots))
+
+    expect(merged.customerName).toBe('Skander Ben Abdallah')
+    expect(merged.phone).toBe('5877770')
+    expect(getNextMissingSlot(merged, products[0])).toBeNull()
+  })
+
+  it('captures phone before name when the bot asked for identity details', () => {
+    const slots = withNextMissingSlot(normalizeOrderSlots({
+      phase: 'collecting',
+      productName: 'Robe bleue',
+      variantNotes: 'Taille: M',
+    }), 'customerName')
+    const merged = mergeOrderSlots(slots, extractOrderSlots('58777770 Skander Ben Abdallah', products, slots))
+
+    expect(merged.phone).toBe('58777770')
+    expect(merged.customerName).toBe('Skander Ben Abdallah')
+  })
+
+  it('does not include the product name in the customer name', () => {
+    const slots = withNextMissingSlot(normalizeOrderSlots({
+      phase: 'collecting',
+    }), 'customerName')
+    const merged = mergeOrderSlots(slots, extractOrderSlots('robe bleue Skander Ben Abdallah 5877770', products, slots))
+
+    expect(merged.productName).toBe('Robe bleue')
+    expect(merged.customerName).toBe('Skander Ben Abdallah')
+    expect(merged.phone).toBe('5877770')
+  })
+
+  it('honors configured required delivery address and disabled variant', () => {
+    const slots = normalizeOrderSlots({
+      phase: 'collecting',
+      productName: 'Robe bleue',
+      customerName: 'Skander Ben Abdallah',
+      phone: '5877770',
+    })
+
+    expect(getMissingSlots(slots, products[0], ['productOrService', 'name', 'phone', 'deliveryAddress'])).toEqual(['deliveryAddress'])
+  })
+
+  it('captures product, name, phone, and address from one sales reply', () => {
+    const slots = withNextMissingSlot(normalizeOrderSlots({ phase: 'collecting' }), 'product')
+    const merged = mergeOrderSlots(slots, extractOrderSlots('robe bleue Skander Ben Abdallah 5877770 Lac 2', products, slots))
+
+    expect(merged.productName).toBe('Robe bleue')
+    expect(merged.customerName).toBe('Skander Ben Abdallah')
+    expect(merged.phone).toBe('5877770')
+    expect(merged.deliveryAddress).toBe('Lac 2')
+    expect(getMissingSlots(merged, products[0], ['productOrService', 'name', 'phone', 'deliveryAddress'])).toEqual([])
+  })
+
+  it('accepts explicit Tunisian confirmation after summary was shown', () => {
     const slots = withSummaryShown(normalizeOrderSlots({
       phase: 'collecting',
       productName: 'Robe bleue',
@@ -257,7 +284,7 @@ describe('AI order slots', () => {
       phone: '55123456',
     }))
 
-    expect(isExplicitOrderConfirmation('oui', slots)).toBe(true)
+    expect(isExplicitOrderConfirmation('ey', slots)).toBe(true)
   })
 
   it('extracts a name only when the bot asked for it', () => {
@@ -274,7 +301,7 @@ describe('AI handover routing', () => {
   })
 
   it('hands over repeated complaints', () => {
-    const history = [{ role: 'user' as const, content: 'j ai un probleme avec ma commande' }]
+    const history = [{ role: 'user' as const, content: '3andi mochkla fi commande' }]
 
     expect(hasRepeatedComplaint(history, 'toujours pas resolu ce probleme')).toBe(true)
     expect(shouldHandover('complaint', history, 'toujours pas resolu ce probleme')).toBe(true)

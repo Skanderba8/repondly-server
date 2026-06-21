@@ -1,9 +1,8 @@
 import { type AiChatMessage } from '@/lib/ai/config'
-import { type ProductPromptRecord } from '@/lib/ai/promptBuilder'
+import { type OrderFieldKey, type ProductPromptRecord } from '@/lib/ai/promptBuilder'
 
 export type OrderPhase = 'browsing' | 'collecting' | 'confirming' | 'done'
-
-export type OrderSlotKey = 'product' | 'variant' | 'customerName' | 'phone'
+export type OrderSlotKey = 'product' | 'variant' | 'customerName' | 'phone' | 'deliveryAddress'
 
 export type OrderSlots = {
   phase: OrderPhase
@@ -31,7 +30,9 @@ const DEFAULT_ORDER_SLOTS: OrderSlots = {
   summaryShownAt: null,
 }
 
-const CONFIRMATION_PATTERN = /^(oui|yes|ey|ay|eh|ok|daccord|behi|tamam|na3am|نعم|تمام)$/i
+const PHONE_PATTERN = /(?:\+?216[\s.-]?)?\d(?:[\s.-]?\d){5,11}\b/
+const CONFIRMATION_PATTERN = /^(oui|yes|ey|ay|eh|ok|daccord|behi|sahha|tamam|na3am|confirmi|confirm)$/i
+const ADDRESS_PATTERN = /\b(rue|avenue|av|cite|route|residence|immeuble|etage|appartement|app|bloc|tunis|ariana|marsa|sousse|sfax|nabeul|ben arous|bizerte|manouba|kram|lac|menzah|manar|mourouj|charguia|ghazela|jardin|centre ville)\b/i
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -47,12 +48,6 @@ function normalizeText(value: string) {
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
 }
 
-function isConfirmationText(value: string) {
-  const trimmed = value.trim()
-  if (trimmed === '✅') return true
-  return CONFIRMATION_PATTERN.test(normalizeText(trimmed).replace(/\s+/g, ''))
-}
-
 function normalizeProductText(value: string) {
   return value
     .trim()
@@ -61,21 +56,8 @@ function normalizeProductText(value: string) {
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
 }
 
-function contextTokens(value: string) {
-  return normalizeText(value)
-    .split(/\s+/)
-    .map((token) => token.replace(/s$/, ''))
-    .filter((token) => token.length > 1)
-}
-
-function tokenMatches(queryToken: string, productToken: string) {
-  if (productToken.includes(queryToken) || queryToken.includes(productToken)) return true
-  if (queryToken.length > 4 && queryToken.startsWith('l')) {
-    const withoutArticle = queryToken.slice(1)
-    return productToken.includes(withoutArticle) || withoutArticle.includes(productToken)
-  }
-
-  return false
+function isConfirmationText(value: string) {
+  return CONFIRMATION_PATTERN.test(normalizeText(value).replace(/\s+/g, ''))
 }
 
 function normalizeNullableString(value: unknown) {
@@ -93,11 +75,11 @@ export function normalizeOrderSlots(value: unknown): OrderSlots {
   const phase = value.phase === 'collecting' || value.phase === 'confirming' || value.phase === 'done'
     ? value.phase
     : 'browsing'
-
   const lastAskedSlot = value.lastAskedSlot === 'product'
     || value.lastAskedSlot === 'variant'
     || value.lastAskedSlot === 'customerName'
     || value.lastAskedSlot === 'phone'
+    || value.lastAskedSlot === 'deliveryAddress'
     ? value.lastAskedSlot
     : null
 
@@ -116,14 +98,45 @@ export function normalizeOrderSlots(value: unknown): OrderSlots {
 }
 
 export function extractPhone(text: string) {
-  const match = text.match(/(?:\+?216[\s.-]?)?([24579]\d[\s.-]?\d{3}[\s.-]?\d{3})\b/)
+  const match = text.match(PHONE_PATTERN)
   return match ? match[0].replace(/[^\d+]/g, '') : null
 }
 
 export function extractQuantity(text: string, phone: string | null) {
-  const withoutPhone = phone ? text.replace(/(?:\+?216[\s.-]?)?[24579]\d[\s.-]?\d{3}[\s.-]?\d{3}\b/, ' ') : text
-  const match = withoutPhone.match(/\b([1-9]\d?)\b/)
+  const withoutPhone = phone ? text.replace(PHONE_PATTERN, ' ') : text
+  const match = withoutPhone.match(/(?:\b(?:quantite|quantité|qty|qte|x|fois|pieces|pièces|pcs|unit[eé]s?|nheb|je veux|je prends|prendre|commander|commande)\s+|\b)([1-9]\d?)\s*(?:x|fois|pieces|pièces|pcs|unit[eé]s?)\b/i)
   return match ? Number(match[1]) : null
+}
+
+function contextTokens(value: string) {
+  return normalizeText(value)
+    .split(/\s+/)
+    .map((token) => token.replace(/s$/, ''))
+    .filter((token) => token.length > 1)
+}
+
+function tokenMatches(queryToken: string, productToken: string) {
+  if (productToken.includes(queryToken) || queryToken.includes(productToken)) return true
+  if (canonicalProductToken(queryToken) === canonicalProductToken(productToken)) return true
+  if (queryToken.length > 4 && queryToken.startsWith('l')) {
+    const withoutArticle = queryToken.slice(1)
+    return productToken.includes(withoutArticle) || withoutArticle.includes(productToken)
+  }
+
+  return false
+}
+
+function canonicalProductToken(value: string) {
+  return value
+    .replace(/ou/g, 'o')
+    .replace(/[ae]$/i, '')
+}
+
+export function findExactProductMention(text: string, products: Array<{ name: string }>) {
+  const normalized = ` ${normalizeProductText(text).replace(/\s+/g, ' ')} `
+  return [...products]
+    .sort((a, b) => normalizeProductText(b.name).length - normalizeProductText(a.name).length)
+    .find((product) => normalized.includes(` ${normalizeProductText(product.name).replace(/\s+/g, ' ')} `))?.name ?? null
 }
 
 export function findProductMention(text: string, products: Array<{ name: string }>) {
@@ -143,11 +156,6 @@ export function findProductMention(text: string, products: Array<{ name: string 
     .sort((a, b) => (b.score / b.total) - (a.score / a.total) || b.score - a.score)
 
   return scored[0]?.product.name ?? null
-}
-
-export function findExactProductMention(text: string, products: Array<{ name: string }>) {
-  const normalized = ` ${normalizeProductText(text).replace(/\s+/g, ' ')} `
-  return products.find((product) => normalized.includes(` ${normalizeProductText(product.name).replace(/\s+/g, ' ')} `))?.name ?? null
 }
 
 export function getMatchedProduct<T extends { name: string }>(text: string, products: T[]) {
@@ -177,23 +185,82 @@ export function extractVariantNotes(message: string, product: ProductPromptRecor
     return selectedValue ? [`${variant.name}: ${selectedValue}`] : []
   })
 
-  return selections.length === product.variants.length ? selections.join(', ') : null
+  return selections.length > 0 ? selections.join(', ') : null
 }
 
-function extractCustomerName(message: string, slots: OrderSlots) {
-  const trimmed = message.trim()
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function stripMatchedProductName(value: string, productName: string | null) {
+  if (!productName) return value
+
+  const productTokens = normalizeProductText(productName).split(/\s+/).filter(Boolean)
+  if (productTokens.length === 0) return value
+
+  const words = value.trim().split(/\s+/)
+  const remaining = words.filter((word) => !productTokens.includes(normalizeProductText(word)))
+  return remaining.join(' ').trim()
+}
+
+function stripKnownOrderParts(value: string, productName: string | null, customerName: string | null, phone: string | null, variantNotes: string | null) {
+  let next = value
+  if (phone) next = next.replace(PHONE_PATTERN, ' ')
+  if (productName) next = stripMatchedProductName(next, productName)
+  if (customerName) {
+    for (const token of customerName.split(/\s+/).filter(Boolean)) {
+      next = next.replace(new RegExp(`\\b${escapeRegExp(token)}\\b`, 'i'), ' ')
+    }
+  }
+  if (variantNotes) {
+    const [, valuePart] = variantNotes.split(':')
+    if (valuePart?.trim()) next = next.replace(new RegExp(`\\b${escapeRegExp(valuePart.trim())}\\b`, 'i'), ' ')
+  }
+
+  return next.replace(/\s+/g, ' ').trim()
+}
+
+function extractCustomerName(message: string, slots: OrderSlots, productName: string | null) {
+  const phoneMatch = message.match(PHONE_PATTERN)
+  const beforePhone = phoneMatch?.index !== undefined ? message.slice(0, phoneMatch.index) : message
+  const afterPhone = phoneMatch?.index !== undefined ? message.slice(phoneMatch.index + phoneMatch[0].length) : ''
+  const source = beforePhone.trim() || extractNameFromAddressTail(afterPhone) || (slots.lastAskedSlot === 'customerName' ? afterPhone : message)
+  const trimmed = stripMatchedProductName(source, productName).trim()
   const normalized = normalizeText(trimmed)
   if (!trimmed || isConfirmationText(trimmed)) return null
-  if (extractPhone(trimmed)) return null
+  if (productName && !phoneMatch) return null
 
-  const explicit = trimmed.match(/\b(?:je suis|moi c est|moi c'est|mon nom est|je m appelle|je m'appelle|ism[iy]|ismi)\s+([\p{L}\s'-]{2,60})/iu)
+  const explicit = trimmed.match(/\b(?:je suis|moi c est|moi c'est|mon nom est|je m appelle|je m'appelle|ism[iy]|ismi|esmi|ena)\s+([\p{L}\s'-]{2,60})/iu)
   if (explicit?.[1]) return explicit[1].trim()
 
-  if (slots.lastAskedSlot !== 'customerName') return null
-  if (/\b(prix|livraison|taille|couleur|photo|combien|9adeh|ch7al|commande|commander|acheter)\b/i.test(normalized)) return null
+  if (slots.lastAskedSlot !== 'customerName' && !phoneMatch) return null
+  if (/\b(prix|livraison|taille|couleur|photo|combien|9adeh|ch7al|chniya|chnowa|fama|souma|soum|commande|commander|ncommandi|acheter|nheb|n7eb)\b/i.test(normalized)) return null
   if (!/^[\p{L}\s'-]{2,60}$/u.test(trimmed)) return null
 
   return trimmed
+}
+
+function extractNameFromAddressTail(value: string) {
+  const words = value.trim().split(/\s+/).filter(Boolean)
+  if (words.length < 5 || !ADDRESS_PATTERN.test(value)) return null
+
+  const tail = words.slice(-3).join(' ')
+  return /^[\p{L}\s'-]{5,60}$/u.test(tail) ? tail : null
+}
+
+function extractDeliveryAddress(message: string, slots: OrderSlots, productName: string | null, customerName: string | null, phone: string | null, variantNotes: string | null) {
+  const phoneMatch = message.match(PHONE_PATTERN)
+  const afterPhone = phoneMatch?.index !== undefined ? message.slice(phoneMatch.index + phoneMatch[0].length).trim() : ''
+  const candidate = afterPhone
+    ? stripKnownOrderParts(afterPhone, productName, customerName, null, variantNotes)
+    : stripKnownOrderParts(message, productName, customerName, phone, variantNotes)
+
+  if (!candidate) return null
+  if (slots.lastAskedSlot === 'deliveryAddress') return candidate
+  if (afterPhone && /[\p{L}]/u.test(candidate) && (/\d/.test(candidate) || candidate.split(/\s+/).filter(Boolean).length >= 2)) return candidate
+  if (ADDRESS_PATTERN.test(candidate)) return candidate
+
+  return null
 }
 
 export function extractOrderSlots(
@@ -213,8 +280,18 @@ export function extractOrderSlots(
       ? products.find((item) => item.name === currentSlots.productName) ?? null
       : null
   const variantNotes = extractVariantNotes(message, product)
-  const explicitQuantity = extractQuantity(routedSlots.quantity ?? message, phone)
-  const customerName = extractCustomerName(message, currentSlots)
+  const explicitQuantity = currentSlots.lastAskedSlot === 'deliveryAddress'
+    ? null
+    : extractQuantity(routedSlots.quantity ?? message, phone)
+  const customerName = extractCustomerName(message, currentSlots, productName ?? currentSlots.productName)
+  const deliveryAddress = extractDeliveryAddress(
+    message,
+    currentSlots,
+    productName ?? currentSlots.productName,
+    customerName ?? currentSlots.customerName,
+    phone ?? currentSlots.phone,
+    variantNotes ?? currentSlots.variantNotes,
+  )
 
   return {
     productName,
@@ -222,6 +299,7 @@ export function extractOrderSlots(
     quantity: explicitQuantity,
     customerName,
     phone,
+    deliveryAddress,
   }
 }
 
@@ -233,21 +311,28 @@ export function mergeOrderSlots(current: OrderSlots, extracted: ReturnType<typeo
     quantity: extracted.quantity ?? current.quantity,
     customerName: extracted.customerName ?? current.customerName,
     phone: extracted.phone ?? current.phone,
+    deliveryAddress: extracted.deliveryAddress ?? current.deliveryAddress,
   }
 
-  if (next.phase === 'browsing' && (next.productName || next.customerName || next.phone)) {
+  if (next.phase === 'browsing' && (next.productName || next.customerName || next.phone || next.deliveryAddress)) {
     next.phase = 'collecting'
   }
 
   return next
 }
 
-export function getNextMissingSlot(slots: OrderSlots, product: ProductPromptRecord | null): OrderSlotKey | null {
-  if (!slots.productName) return 'product'
-  if (product?.variants.length && !slots.variantNotes) return 'variant'
-  if (!slots.customerName) return 'customerName'
-  if (!slots.phone) return 'phone'
-  return null
+export function getMissingSlots(slots: OrderSlots, product: ProductPromptRecord | null, requiredFields: OrderFieldKey[] = ['productOrService', 'name', 'phone', ...(product?.variants.length ? ['variant' as const] : [])]): OrderSlotKey[] {
+  return [
+    requiredFields.includes('productOrService') && !slots.productName ? 'product' : null,
+    requiredFields.includes('variant') && product?.variants.length && !slots.variantNotes ? 'variant' : null,
+    requiredFields.includes('name') && !slots.customerName ? 'customerName' : null,
+    requiredFields.includes('phone') && !slots.phone ? 'phone' : null,
+    requiredFields.includes('deliveryAddress') && !slots.deliveryAddress ? 'deliveryAddress' : null,
+  ].filter((slot): slot is OrderSlotKey => Boolean(slot))
+}
+
+export function getNextMissingSlot(slots: OrderSlots, product: ProductPromptRecord | null, requiredFields?: OrderFieldKey[]): OrderSlotKey | null {
+  return getMissingSlots(slots, product, requiredFields)[0] ?? null
 }
 
 export function isExplicitOrderConfirmation(message: string, slots: OrderSlots) {
@@ -260,11 +345,11 @@ export function isOrderSignal(message: string, intent: string) {
   return intent === 'order_start'
     || intent === 'order_name'
     || intent === 'order_phone'
-    || /\b(commande|commander|order|acheter|passer|reserve|reserver|prendre)\b/.test(normalized)
+    || /\b(commande|commander|ncommandi|commandi|order|acheter|passer|reserve|reserver|prendre|nheb|n7eb|nekhou|ne5ou)\b/.test(normalized)
 }
 
 export function hasRepeatedComplaint(history: AiChatMessage[], latestMessage: string) {
-  const complaintPattern = /\b(reclamation|plainte|probleme|remboursement|retour|pas content|fache|arnaque|defaut|cass|retard)\b/i
+  const complaintPattern = /\b(reclamation|plainte|probleme|mochkla|moshkel|remboursement|retour|pas content|fache|za3fan|ghalet|arnaque|defaut|cass|retard|t3attlet)\b/i
   const latestIsComplaint = complaintPattern.test(normalizeText(latestMessage))
   if (!latestIsComplaint) return false
 

@@ -2,7 +2,7 @@
 // Connected to parser.ts, webhook auto-replies, and the bot test endpoint. Edit this file when adding new bot actions or changing order validation.
 import { Prisma } from '@prisma/client'
 import { type AiAction } from '@/lib/ai/parser'
-import { type ProductPromptRecord } from '@/lib/ai/promptBuilder'
+import { parseKnowledgeConfig, type OrderFieldKey, type ProductPromptRecord } from '@/lib/ai/promptBuilder'
 import { normalizeOrderSlots } from '@/lib/ai/slots'
 import { mapOrder } from '@/lib/orders'
 import { prisma } from '@/lib/prisma'
@@ -15,6 +15,7 @@ type ExecuteActionParams = {
   action: AiAction | null
   products: ProductPromptRecord[]
   testMode: boolean
+  requiredFields?: OrderFieldKey[]
 }
 
 const TEST_CONTACT_EXTERNAL_ID_PREFIX = 'bot-test'
@@ -35,12 +36,14 @@ function normalizeItems(action: AiAction, products: ProductPromptRecord[]) {
     .filter((item) => item.productName && item.quantity > 0)
 }
 
-export function validateOrderAction(action: AiAction) {
+export function validateOrderAction(action: AiAction, requiredFields: OrderFieldKey[] = ['productOrService', 'name', 'phone']) {
   const items = action.items?.filter((item) => item.productName?.trim()) ?? []
   const missing = [
-    items.length === 0 ? 'produit ou service' : null,
-    !(action.customerName?.trim() || action.name?.trim()) ? 'nom complet' : null,
-    !action.phone?.trim() ? 'telephone' : null,
+    requiredFields.includes('productOrService') && items.length === 0 ? 'produit ou service' : null,
+    requiredFields.includes('name') && !(action.customerName?.trim() || action.name?.trim()) ? 'nom complet' : null,
+    requiredFields.includes('phone') && !action.phone?.trim() ? 'telephone' : null,
+    requiredFields.includes('deliveryAddress') && !action.deliveryAddress?.trim() ? 'adresse de livraison' : null,
+    requiredFields.includes('variant') && !action.notes?.trim() ? 'variante produit' : null,
   ].filter(Boolean)
 
   return missing as string[]
@@ -76,7 +79,8 @@ async function createOrder(params: ExecuteActionParams) {
   if (!params.action) return null
   const action = params.action
 
-  const missing = validateOrderAction(action)
+  const requiredFields = params.requiredFields ?? await loadRequiredOrderFields(params.businessId)
+  const missing = validateOrderAction(action, requiredFields)
   if (missing.length > 0) {
     await appendConversationSummary(params.conversationId, `Action commande bloquee: champs manquants: ${missing.join(', ')}.`)
     return null
@@ -218,6 +222,16 @@ async function createOrder(params: ExecuteActionParams) {
   }
 
   return order ? mapOrder(order) : null
+}
+
+async function loadRequiredOrderFields(businessId: string): Promise<OrderFieldKey[]> {
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { botKnowledge: true },
+  })
+  const knowledge = parseKnowledgeConfig(business?.botKnowledge)
+
+  return knowledge.orderCapture.enabled ? knowledge.orderCapture.requiredFields : []
 }
 
 export async function executeAiAction(params: ExecuteActionParams) {

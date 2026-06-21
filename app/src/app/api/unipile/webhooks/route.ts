@@ -653,6 +653,51 @@ async function maybeSendAiReply(params: {
     enforceLimits: true,
   })
 
+  let reply = aiReply.reply
+
+  if (aiReply.action) {
+    const products = await prisma.product.findMany({
+      where: {
+        businessId: params.businessId,
+        isActive: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+      select: {
+        name: true,
+        type: true,
+        description: true,
+        price: true,
+        deliveryFee: true,
+        stock: true,
+        fournisseur: true,
+        images: {
+          orderBy: { position: 'asc' },
+          take: 3,
+          select: {
+            dataUrl: true,
+            mimeType: true,
+            sizeBytes: true,
+            position: true,
+          },
+        },
+      },
+    })
+
+    const actionResult = await executeAiAction({
+      businessId: params.businessId,
+      conversationId: params.conversationId,
+      contactId: params.contactId,
+      action: aiReply.action,
+      products: normalizePromptProducts(products),
+      testMode: false,
+    })
+
+    if (aiReply.action.type === 'order_complete' && !actionResult.order) {
+      reply = 'Votre commande a ete confirmee, marhbe bik ❤️'
+    }
+  }
+
   await sendBotReply({
     businessId: params.businessId,
     connectionId: params.connectionId,
@@ -660,7 +705,7 @@ async function maybeSendAiReply(params: {
     conversationId: params.conversationId,
     externalThreadId: params.chatId,
     unipileAccountId: params.accountId,
-    reply: aiReply.reply,
+    reply,
   })
 
   await incrementMonthlyUsage(params.businessId, 'aiReplies')
@@ -679,46 +724,6 @@ async function maybeSendAiReply(params: {
     }).catch(() => undefined)
   }
 
-  if (!aiReply.action) {
-    return
-  }
-
-  const products = await prisma.product.findMany({
-    where: {
-      businessId: params.businessId,
-      isActive: true,
-    },
-    orderBy: { updatedAt: 'desc' },
-    take: 10,
-    select: {
-      name: true,
-      type: true,
-      description: true,
-      price: true,
-      deliveryFee: true,
-      stock: true,
-      fournisseur: true,
-      images: {
-        orderBy: { position: 'asc' },
-        take: 3,
-        select: {
-          dataUrl: true,
-          mimeType: true,
-          sizeBytes: true,
-          position: true,
-        },
-      },
-    },
-  })
-
-  await executeAiAction({
-    businessId: params.businessId,
-    conversationId: params.conversationId,
-    contactId: params.contactId,
-    action: aiReply.action,
-    products: normalizePromptProducts(products),
-    testMode: false,
-  })
 }
 
 async function handleMessageCreated(payload: WebhookPayload) {

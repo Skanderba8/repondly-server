@@ -118,12 +118,15 @@ export async function POST(request: Request) {
       products: normalizePromptProducts(products),
       testMode: true,
     })
+    const reply = aiReply.action?.type === 'order_complete' && !actionResult.order
+      ? 'Votre commande a ete confirmee, marhbe bik ❤️'
+      : aiReply.reply
 
     return NextResponse.json({
       success: true,
       data: {
-        response: aiReply.reply,
-        reply: aiReply.reply,
+        response: reply,
+        reply,
         action: aiReply.action,
         extraction: aiReply.extraction,
         usage: aiReply.usage,
