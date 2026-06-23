@@ -6,7 +6,7 @@
 
 /* ============================================================================
    DESIGN TOKENS
-   Single-hue-anchored palette. Everything derives from indigo (#4353FF).
+   Single-hue-anchored palette. Everything derives from deep blue (#1D4ED8).
    Status colors are each from a distinct hue, at matched saturation.
    No decorative random colors — every value earns its place.
    ============================================================================ */
@@ -15,28 +15,28 @@
   color-scheme: light;
 
   /* --- Surfaces ----------------------------------------------------------- */
-  --_base:     #F5F6FB;
+  --_base:     #EEF3FB;
   --_card:     #FFFFFF;
-  --_glass:    rgba(255, 255, 255, 0.86);
-  --_hover:    rgba(64, 87, 255, 0.055);
+  --_glass:    rgba(255, 255, 255, 0.84);
+  --_hover:    rgba(29, 78, 216, 0.075);
   --_elevated: #FFFFFF;
 
   /* --- Lines (borders) ---------------------------------------------------- */
-  --_line:        #E4E7F0;
-  --_line-strong: #D8DEEA;
+  --_line:        #DCE5F2;
+  --_line-strong: #C9D6E8;
 
   /* --- Ink (text) --------------------------------------------------------- */
-  --_ink-1:   #111827;
-  --_ink-2:   #6B7280;
-  --_ink-3:   #9CA3AF;
+  --_ink-1:   #0F1B33;
+  --_ink-2:   #5B6880;
+  --_ink-3:   #8B98AD;
   --_ink-inv: #FFFFFF;
 
   /* --- Brand — electric indigo ------------------------------------------- */
-  --_brand:         #4057FF;
-  --_brand-hover:   #2638D9;
-  --_brand-press:   #1F2FB8;
+  --_brand:         #1D4ED8;
+  --_brand-hover:   #1E40AF;
+  --_brand-press:   #1E3A8A;
   --_brand-surface: #EEF2FF;
-  --_brand-line:    #C7D2FE;
+  --_brand-line:    #B8CAF7;
 
   /* --- Semantic: positive (emerald) --------------------------------------- */
   --_ok:         #059669;
@@ -53,10 +53,10 @@
   --_fail-surface: #FEF2F2;
   --_fail-line:    #FECACA;
 
-  /* --- Semantic: follow-up (violet) -------------------------------------- */
-  --_follow:         #7C3AED;
-  --_follow-surface: #F5F3FF;
-  --_follow-line:    #DDD6FE;
+  /* --- Semantic: follow-up (blue) ---------------------------------------- */
+  --_follow:         #2563EB;
+  --_follow-surface: #EFF6FF;
+  --_follow-line:    #BFDBFE;
 
   /* --- Semantic: teal (confirmed channel / badge) ------------------------ */
   --_teal:         #0D9488;
@@ -73,16 +73,16 @@
   /* --- Shadows ----------------------------------------------------------- */
   --_sh-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
   --_sh-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --_sh-md: 0 8px 24px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --_sh-lg: 0 16px 48px rgba(0,0,0,0.13), 0 4px 16px rgba(0,0,0,0.06);
-  --_sh-focus: 0 0 0 3.5px rgba(67, 83, 255, 0.18);
+  --_sh-md: 0 10px 28px rgba(18, 38, 75, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --_sh-lg: 0 18px 52px rgba(15, 35, 72, 0.16), 0 4px 16px rgba(15, 35, 72, 0.08);
+  --_sh-focus: 0 0 0 3.5px rgba(29, 78, 216, 0.16);
 
   /* --- Motion ------------------------------------------------------------ */
   --_ease: cubic-bezier(0.25, 0.1, 0.25, 1);
   --_dur: 150ms;
 
   /* --- Layout ------------------------------------------------------------ */
-  --sidebar-width:    230px;
+  --sidebar-width:    218px;
   --topbar-height:    64px;
   --bottomnav-height: 60px;
 
@@ -164,8 +164,9 @@ body {
   min-height: 100dvh;
   margin: 0;
   background:
-    radial-gradient(circle at 20% 0%, rgba(64, 87, 255, 0.06), transparent 30%),
-    linear-gradient(180deg, #F8F9FF 0%, #F4F6FB 100%);
+    radial-gradient(circle at 18% 0%, rgba(29, 78, 216, 0.08), transparent 31%),
+    radial-gradient(circle at 92% 10%, rgba(14, 165, 233, 0.07), transparent 26%),
+    linear-gradient(180deg, #F5F8FE 0%, #EEF3FB 54%, #EAF0F8 100%);
   color: var(--_ink-1);
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text",
     "Segoe UI", system-ui, sans-serif;
@@ -204,8 +205,9 @@ input, textarea, select, button { outline: none; }
   display: flex;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 20% 0%, rgba(64, 87, 255, 0.06), transparent 30%),
-    linear-gradient(180deg, #F8F9FF 0%, #F4F6FB 100%);
+    radial-gradient(circle at 18% 0%, rgba(29, 78, 216, 0.08), transparent 31%),
+    radial-gradient(circle at 92% 10%, rgba(14, 165, 233, 0.07), transparent 26%),
+    linear-gradient(180deg, #F5F8FE 0%, #EEF3FB 54%, #EAF0F8 100%);
 }
 
 .nx-stage {
@@ -253,14 +255,15 @@ input, textarea, select, button { outline: none; }
   display: none;
   width: var(--sidebar-width);
   flex-direction: column;
-  border-right: 1px solid var(--_line);
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
+  border-right: 1px solid rgba(184, 202, 247, 0.68);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
   background:
-    radial-gradient(circle at 10% 8%, rgba(64, 87, 255, 0.055), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 255, 0.92));
-  backdrop-filter: blur(22px) saturate(1.25);
-  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+    radial-gradient(circle at 14% 4%, rgba(29, 78, 216, 0.105), transparent 30%),
+    linear-gradient(180deg, rgba(250, 252, 255, 0.95), rgba(238, 244, 253, 0.92));
+  box-shadow: inset -1px 0 0 rgba(255,255,255,0.78);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
 }
 
 /* Signature gradient fade at bottom */
@@ -272,8 +275,8 @@ input, textarea, select, button { outline: none; }
   right: 0;
   height: 160px;
   background:
-    linear-gradient(to bottom, transparent, rgba(64, 87, 255, 0.035)),
-    radial-gradient(circle at 40% 95%, rgba(64, 87, 255, 0.05), transparent 45%);
+    linear-gradient(to bottom, transparent, rgba(29, 78, 216, 0.055)),
+    radial-gradient(circle at 40% 95%, rgba(29, 78, 216, 0.08), transparent 45%);
   pointer-events: none;
 }
 
@@ -282,7 +285,7 @@ input, textarea, select, button { outline: none; }
   height: var(--topbar-height);
   align-items: center;
   gap: 10px;
-  padding: 0 22px;
+  padding: 0 20px;
   flex-shrink: 0;
 }
 
@@ -293,13 +296,13 @@ input, textarea, select, button { outline: none; }
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--_brand);
+  border-radius: 9px;
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
   color: var(--_ink-inv);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  box-shadow: 0 8px 18px rgba(64, 87, 255, 0.24);
+  box-shadow: 0 10px 22px rgba(29, 78, 216, 0.28);
 }
 
 .nx-sidebar-mark img {
@@ -312,19 +315,19 @@ input, textarea, select, button { outline: none; }
 
 .nx-sidebar-logo > span {
   color: var(--_ink-1);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 750;
   letter-spacing: -0.02em;
 }
 
 .nx-nav-section {
-  padding: 12px 12px 4px;
+  padding: 10px 12px 4px;
 }
 
 .nx-nav-label {
   display: block;
-  margin-bottom: 8px;
-  padding: 0 12px;
+  margin-bottom: 7px;
+  padding: 0 8px;
   color: var(--_ink-3);
   font-size: 10px;
   font-weight: 700;
@@ -333,16 +336,17 @@ input, textarea, select, button { outline: none; }
 }
 
 .nx-nav-item {
+  position: relative;
   display: flex;
-  height: 38px;
+  height: 37px;
   align-items: center;
   gap: 11px;
   border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 0 12px;
+  border-radius: 9px;
+  padding: 0 10px;
   color: var(--_ink-2);
   font-size: 13.5px;
-  font-weight: 620;
+  font-weight: 600;
   transition:
     background var(--_dur) var(--_ease),
     color var(--_dur) var(--_ease);
@@ -351,24 +355,36 @@ input, textarea, select, button { outline: none; }
 .nx-nav-item svg {
   width: 16px;
   height: 16px;
-  color: #65708C;
+  color: #6F7C94;
   flex-shrink: 0;
   transition: color var(--_dur) var(--_ease);
 }
 
 .nx-nav-item:hover {
-  background: rgba(64, 87, 255, 0.1);
+  background: rgba(29, 78, 216, 0.08);
   color: var(--_brand);
 }
 .nx-nav-item:hover svg { color: var(--_brand); }
 
 .nx-nav-item.is-active {
-  border-color: var(--_brand);
-  background: var(--_brand);
-  color: var(--_ink-inv);
+  border-color: rgba(29, 78, 216, 0.14);
+  background: rgba(29, 78, 216, 0.11);
+  color: var(--_brand);
   font-weight: 600;
 }
-.nx-nav-item.is-active svg { color: var(--_ink-inv); }
+.nx-nav-item.is-active svg { color: var(--_brand); }
+.nx-nav-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  border-radius: 0 4px 4px 0;
+  background: var(--_brand);
+  box-shadow: 0 0 10px rgba(29, 78, 216, 0.42);
+  transform: translateY(-50%);
+}
 
 .nx-nav-badge {
   display: flex;
@@ -392,19 +408,19 @@ input, textarea, select, button { outline: none; }
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 14px 12px 16px;
+  padding: 12px 12px 16px;
 }
 
 .nx-team-block {
   display: flex;
   align-items: center;
   gap: 10px;
-  border-top: 1px solid var(--_line);
-  border-radius: 0;
-  padding: 14px 4px 0;
+  border-top: 1px solid rgba(201, 214, 232, 0.82);
+  border-radius: 9px;
+  padding: 10px;
   transition: background var(--_dur) var(--_ease);
 }
-.nx-team-block:hover { background: rgba(0, 0, 0, 0.04); }
+.nx-team-block:hover { background: rgba(29, 78, 216, 0.06); }
 
 .nx-workspace-card {
   display: flex;
@@ -477,12 +493,12 @@ input, textarea, select, button { outline: none; }
   display: flex;
   height: var(--topbar-height);
   align-items: center;
-  gap: 14px;
-  border-bottom: 1px solid var(--_line);
-  background: rgba(248, 250, 255, 0.86);
-  backdrop-filter: blur(22px) saturate(1.25);
-  -webkit-backdrop-filter: blur(22px) saturate(1.25);
-  padding: 0 24px;
+  gap: 16px;
+  border-bottom: 1px solid rgba(201, 214, 232, 0.82);
+  background: rgba(245, 248, 254, 0.86);
+  backdrop-filter: blur(18px) saturate(1.18);
+  -webkit-backdrop-filter: blur(18px) saturate(1.18);
+  padding: 0 28px;
 }
 
 .nx-topbar-title {
@@ -491,10 +507,10 @@ input, textarea, select, button { outline: none; }
   max-width: min(360px, 34vw);
   transform: translateX(-50%);
   overflow: hidden;
-  color: var(--_ink-1);
-  font-size: 17px;
-  font-weight: 760;
-  letter-spacing: -0.015em;
+  color: #33405A;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -503,13 +519,13 @@ input, textarea, select, button { outline: none; }
 /* Pill-shaped search — iOS 26 search bar */
 .nx-search {
   display: flex;
-  height: 38px;
-  max-width: 360px;
+  height: 36px;
+  max-width: 400px;
   flex: 1;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--_line-strong);
-  border-radius: 8px;
+  border: 1px solid rgba(201, 214, 232, 0.9);
+  border-radius: var(--_r-pill);
   background: rgba(255, 255, 255, 0.86);
   padding: 0 12px;
   box-shadow: var(--_sh-xs);
@@ -523,7 +539,7 @@ input, textarea, select, button { outline: none; }
   border: 0;
   background: transparent;
   color: var(--_ink-1);
-  font-size: 13.5px;
+  font-size: 13px;
 }
 .nx-search input::placeholder { color: var(--_ink-3); }
 .nx-search kbd {
@@ -534,7 +550,7 @@ input, textarea, select, button { outline: none; }
   justify-content: center;
   border: 1px solid var(--_line);
   border-radius: 6px;
-  background: #F8FAFF;
+  background: #F4F7FD;
   color: var(--_ink-2);
   font-size: 11px;
   font-weight: 700;
@@ -551,17 +567,18 @@ input, textarea, select, button { outline: none; }
   height: 34px;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  border: 1px solid rgba(201, 214, 232, 0.8);
+  border-radius: var(--_r-pill);
+  background: rgba(255, 255, 255, 0.84);
   color: #59627A;
   transition:
     background var(--_dur) var(--_ease),
     color var(--_dur) var(--_ease);
 }
 .nx-topbar-icon:hover {
-  border-color: var(--_line);
+  border-color: var(--_line-strong);
   background: #FFFFFF;
-  color: var(--_ink-2);
+  color: var(--_brand);
 }
 
 .nx-user-block {
@@ -569,9 +586,9 @@ input, textarea, select, button { outline: none; }
   align-items: center;
   gap: 8px;
   border: 1px solid var(--_line);
-  border-radius: 10px;
+  border-radius: var(--_r-pill);
   background: rgba(255, 255, 255, 0.82);
-  padding: 6px 8px;
+  padding: 5px 9px 5px 5px;
   box-shadow: var(--_sh-xs);
 }
 
@@ -595,9 +612,9 @@ input, textarea, select, button { outline: none; }
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--_brand);
-  box-shadow: 0 8px 18px rgba(64, 87, 255, 0.2);
+  border-radius: var(--_r-pill);
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.2);
 }
 
 .nx-topbar-logo img {
@@ -618,7 +635,7 @@ input, textarea, select, button { outline: none; }
   flex-direction: column;
   gap: 4px;
   border: 1px solid var(--_line);
-  border-radius: 8px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.96);
   padding: 6px;
   box-shadow: var(--_sh-md);
@@ -661,7 +678,7 @@ input, textarea, select, button { outline: none; }
   align-items: center;
   gap: 8px;
   border: 1px solid var(--_line);
-  border-radius: 8px;
+  border-radius: var(--_r-pill);
   background: rgba(255, 255, 255, 0.88);
   padding: 0 13px;
   color: var(--_ink-1);
@@ -674,10 +691,10 @@ input, textarea, select, button { outline: none; }
    CARD
    ============================================================================ */
 .nx-card {
-  border: 1px solid var(--_line);
-  border-radius: var(--_r-md);
-  background: var(--_card);
-  box-shadow: var(--_sh-xs);
+  border: 1px solid rgba(201, 214, 232, 0.88);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--_sh-sm);
 }
 
 .nx-card-header {
@@ -738,15 +755,15 @@ input, textarea, select, button { outline: none; }
    ============================================================================ */
 .nx-btn {
   display: inline-flex;
-  height: 34px;
+  height: 36px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border-radius: var(--_r-sm);
-  padding: 0 13px;
+  border-radius: var(--_r-pill);
+  padding: 0 15px;
   font-size: 13px;
-  font-weight: 590;
+  font-weight: 700;
   line-height: 1;
   white-space: nowrap;
   transition:
@@ -761,24 +778,24 @@ input, textarea, select, button { outline: none; }
 
 .nx-btn-primary {
   border: 1px solid transparent;
-  background: var(--_brand);
+  background: linear-gradient(135deg, #2563EB, var(--_brand));
   color: var(--_ink-inv);
-  box-shadow: 0 1px 3px rgba(67, 83, 255, 0.22), 0 1px 1px rgba(0,0,0,0.06);
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.22), 0 1px 1px rgba(0,0,0,0.04);
 }
 .nx-btn-primary:hover {
-  background: var(--_brand-hover);
-  box-shadow: 0 2px 10px rgba(67, 83, 255, 0.32);
+  background: linear-gradient(135deg, #1D4ED8, var(--_brand-hover));
+  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.3);
 }
 
 .nx-btn-secondary {
   border: 1px solid var(--_line-strong);
-  background: var(--_card);
-  color: var(--_ink-2);
+  background: rgba(255, 255, 255, 0.9);
+  color: #26324A;
   box-shadow: var(--_sh-xs);
 }
 .nx-btn-secondary:hover {
   background: var(--_hover);
-  color: var(--_ink-1);
+  color: var(--_brand);
 }
 
 .nx-btn-ghost {
@@ -802,10 +819,10 @@ input, textarea, select, button { outline: none; }
   border-color: var(--_fail);
 }
 
-.nx-btn-sm   { height: 28px; padding: 0 10px; font-size: 12px; border-radius: var(--_r-xs); }
+.nx-btn-sm   { height: 30px; padding: 0 12px; font-size: 12px; border-radius: var(--_r-pill); }
 .nx-btn-lg   { height: 40px; padding: 0 18px; font-size: 14px; font-weight: 600; }
-.nx-btn-icon    { width: 28px; height: 28px; padding: 0; border-radius: var(--_r-sm); }
-.nx-btn-icon-md { width: 32px; height: 32px; padding: 0; border-radius: var(--_r-sm); }
+.nx-btn-icon    { width: 30px; height: 30px; padding: 0; border-radius: var(--_r-pill); }
+.nx-btn-icon-md { width: 34px; height: 34px; padding: 0; border-radius: var(--_r-pill); }
 
 /* ============================================================================
    BADGES
@@ -817,7 +834,8 @@ input, textarea, select, button { outline: none; }
   border-radius: var(--_r-pill);
   padding: 0 8px;
   font-size: 11px;
-  font-weight: 600;
+  border: 1px solid currentColor;
+  font-weight: 700;
   white-space: nowrap;
   letter-spacing: 0.01em;
 }
@@ -834,11 +852,11 @@ input, textarea, select, button { outline: none; }
    ============================================================================ */
 .nx-input {
   width: 100%;
-  height: 36px;
-  border: 1px solid var(--_line);
-  border-radius: var(--_r-sm);
-  background: var(--_card);
-  padding: 0 12px;
+  height: 38px;
+  border: 1px solid rgba(201, 214, 232, 0.9);
+  border-radius: var(--_r-pill);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0 14px;
   color: var(--_ink-1);
   font-size: 13px;
   transition:
@@ -957,7 +975,7 @@ input, textarea, select, button { outline: none; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
+  padding: 24px;
   text-align: center;
 }
 
@@ -968,10 +986,10 @@ input, textarea, select, button { outline: none; }
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  border: 1px solid var(--_line);
-  border-radius: var(--_r-sm);
-  background: rgba(0, 0, 0, 0.03);
-  color: var(--_ink-3);
+  border: 1px solid var(--_brand-line);
+  border-radius: 12px;
+  background: var(--_brand-surface);
+  color: var(--_brand);
 }
 
 .nx-filter-chip {
@@ -1079,7 +1097,7 @@ input, textarea, select, button { outline: none; }
 .nx-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .nx-summary-card {
@@ -1087,12 +1105,34 @@ input, textarea, select, button { outline: none; }
   min-height: 126px;
   grid-template-columns: 48px 1fr;
   gap: 14px;
-  border: 1px solid var(--_line);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(201, 214, 232, 0.88);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.9);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.94), rgba(250,252,255,0.9));
   padding: 20px 16px 14px;
-  box-shadow: var(--_sh-xs);
+  box-shadow: var(--_sh-sm);
+  transition: border-color var(--_dur) var(--_ease), transform var(--_dur) var(--_ease), box-shadow var(--_dur) var(--_ease);
 }
+
+.nx-summary-card:hover {
+  border-color: var(--_line-strong);
+  box-shadow: var(--_sh-md);
+  transform: translateY(-1px);
+}
+
+.nx-summary-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, #2563EB, #1D4ED8);
+}
+
+.nx-summary-card:nth-child(2)::before { background: linear-gradient(90deg, #F59E0B, #D97706); }
+.nx-summary-card:nth-child(3)::before { background: linear-gradient(90deg, #2DD4BF, #0891B2); }
+.nx-summary-card:nth-child(4)::before { background: linear-gradient(90deg, #F43F5E, #BE123C); }
 
 .nx-summary-icon {
   display: flex;
@@ -1101,9 +1141,27 @@ input, textarea, select, button { outline: none; }
   align-items: center;
   justify-content: center;
   border: 1px solid var(--_brand-line);
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--_brand-surface);
   color: var(--_brand);
+}
+
+.nx-summary-card:nth-child(2) .nx-summary-icon {
+  border-color: #FDE68A;
+  background: #FFFBEB;
+  color: #D97706;
+}
+
+.nx-summary-card:nth-child(3) .nx-summary-icon {
+  border-color: #99F6E4;
+  background: #F0FDFA;
+  color: #0D9488;
+}
+
+.nx-summary-card:nth-child(4) .nx-summary-icon {
+  border-color: #FECACA;
+  background: #FEF2F2;
+  color: #DC2626;
 }
 
 .nx-summary-label {
@@ -1115,8 +1173,8 @@ input, textarea, select, button { outline: none; }
 .nx-summary-card strong {
   display: block;
   margin-top: 8px;
-  color: #0F172A;
-  font-size: 28px;
+  color: #0F1B33;
+  font-size: 34px;
   font-weight: 780;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -1128,14 +1186,15 @@ input, textarea, select, button { outline: none; }
   height: 34px;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid var(--_line);
-  border-radius: 8px;
-  background: #FFFFFF;
-  padding: 0 10px;
-  color: #26324A;
+  border: 1px solid transparent;
+  border-top: 1px solid rgba(201, 214, 232, 0.88);
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--_brand);
   font-size: 12px;
   font-weight: 700;
-  box-shadow: var(--_sh-xs);
+  box-shadow: none;
 }
 
 .nx-dashboard-grid {
@@ -1147,10 +1206,10 @@ input, textarea, select, button { outline: none; }
 
 .nx-panel {
   overflow: hidden;
-  border: 1px solid var(--_line);
+  border: 1px solid rgba(201, 214, 232, 0.88);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: var(--_sh-xs);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--_sh-sm);
 }
 
 .nx-panel-header {
@@ -1159,6 +1218,7 @@ input, textarea, select, button { outline: none; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  border-bottom: 1px solid rgba(220, 229, 242, 0.72);
   padding: 0 18px;
 }
 
@@ -1204,7 +1264,7 @@ input, textarea, select, button { outline: none; }
   height: 30px;
   align-items: center;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--_r-pill);
   background: transparent;
   padding: 0 12px;
   color: #59627A;
@@ -1213,6 +1273,7 @@ input, textarea, select, button { outline: none; }
 }
 
 .nx-tab-row button.is-active {
+  border-color: var(--_brand-line);
   background: var(--_brand-surface);
   color: var(--_brand);
 }
@@ -1360,7 +1421,7 @@ input, textarea, select, button { outline: none; }
 .nx-channel-icon.is-blue { background: #3B82F6; }
 .nx-channel-icon.is-green { background: #10B981; }
 .nx-channel-icon.is-pink { background: #EC4899; }
-.nx-channel-icon.is-indigo { background: #4057FF; }
+.nx-channel-icon.is-indigo { background: #1D4ED8; }
 .nx-channel-icon.is-cyan { background: #06B6D4; }
 
 .nx-channel-row em {
@@ -1384,7 +1445,7 @@ input, textarea, select, button { outline: none; }
   height: 78px;
   align-items: center;
   justify-content: center;
-  border: 9px solid #E6ECFF;
+  border: 9px solid #DDE8FF;
   border-radius: 999px;
   color: #0F172A;
   font-size: 26px;
@@ -1431,6 +1492,10 @@ input, textarea, select, button { outline: none; }
   color: #48536B;
   font-size: 12px;
   font-weight: 700;
+}
+
+.nx-action-list a svg:first-child {
+  color: var(--_brand);
 }
 
 .nx-mini-recommendation-body {

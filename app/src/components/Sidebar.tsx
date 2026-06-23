@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Bell, Bot, Inbox, LayoutDashboard, Package, Settings, ShoppingBag, Users } from 'lucide-react'
+import { BarChart3, Bell, Bot, ChevronUp, Inbox, LayoutDashboard, Package, Settings, ShoppingBag, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { buildInitials } from '@/lib/utils/initials'
 
 const sections = [
   {
@@ -36,7 +37,7 @@ type SidebarProps = {
   business: { name: string; plan: string }
 }
 
-export function Sidebar(_props: SidebarProps) {
+export function Sidebar({ business }: SidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -72,6 +73,18 @@ export function Sidebar(_props: SidebarProps) {
           </div>
         ))}
       </nav>
+      <div className="nx-sidebar-bottom">
+        <div className="nx-team-block">
+          <div className="nx-sidebar-mark" aria-hidden="true">
+            {buildInitials(business.name)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold leading-tight text-[color:var(--text-primary)]">{business.name}</p>
+            <p className="truncate text-[11px] leading-tight text-[color:var(--text-muted)]">Plan {business.plan}</p>
+          </div>
+          <ChevronUp className="h-3.5 w-3.5 text-[color:var(--text-muted)]" aria-hidden="true" />
+        </div>
+      </div>
     </aside>
   )
 }
